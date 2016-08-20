@@ -16,6 +16,9 @@
 # User editable area
 #====================================================================================
 
+SKETCH = $(HOME)/src/sketchbook/esp8266/serre/serre.ino
+EXTRA_SRC = getenv.c SFE_BMP180.cpp strftime.c tzset.c timezone.c scanf.c bcopy.c strtoq.c strtouq.c personal.c
+
 # ESP_ROOT=/home/danny/.arduino15/packages/esp8266/hardware/esp8266/2.3.0
 # ESP_LIBS=$(ESP_ROOT)/libraries
 # BUILD_ROOT = buildroot-2.3.0
@@ -26,13 +29,9 @@ ESP_LIBS=$(ESP_ROOT)/libraries
 BUILD_ROOT = buildroot-2.2.0
 LIBCPP=
 
-SKETCH = $(HOME)/src/sketchbook/esp8266/serre/serre.ino
 # EXTRA_SRC = strftime.c getenv.c timezone.c
-# EXTRA_SRC = getenv.c gdbstub/gdbstub.c gdbstub/gdbstub-entry.S
-EXTRA_SRC = getenv.c SFE_BMP180.cpp
 # EXTRA_INCLUDE = ${ESP_ROOT}/libraries/GDBStub/src
 
-# SKETCH = $(HOME)/src/sketchbook/esp8266/serre/mqtt_esp8266.ino
 UPLOAD_AVAHI_NAME = OTA-Serre.local
 
 MYLIBS = $(HOME)/src/sketchbook/esp8266/libraries
@@ -43,7 +42,6 @@ LIBS = $(ESP_LIBS)/Wire \
        $(MYLIBS)/SmtpClient \
        $(ESP_LIBS)/ESP8266mDNS \
        $(ESP_LIBS)/ESP8266WebServer \
-       ${MYLIBS}/tzstuff \
        ${MYLIBS}/pubsubclient
 
 #=== Project specific definitions: sketch and list of needed libraries
@@ -193,6 +191,7 @@ showotaip:
 clean:
 	echo Removing all intermediate build files...
 	rm  -f $(OBJ_DIR)/*
+	rm -rf ${BUILD_ROOT}
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)

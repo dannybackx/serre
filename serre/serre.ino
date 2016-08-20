@@ -5,16 +5,12 @@
 #define	ENABLE_I2C
 
 #include <ESP8266WiFi.h>
-#ifdef ENABLE_I2C
 #include <Wire.h>       // Required to compile UPnP
-#endif
 #include "PubSubClient.h"
 #include "SFE_BMP180.h"
 
 extern "C" {
-#ifdef ENABLE_SNTP
 #include <sntp.h>
-#endif
 #include <time.h>
 }
 
@@ -31,16 +27,10 @@ const char* password = MY_WIFI_PASSWORD;
 WiFiClient	espClient;
 PubSubClient	client(espClient);
 
-const char* mqtt_server = "192.168.1.176";
-const int mqtt_port = 1883;
+#include "personal.h"
 
-char *mqtt_topic_serre = "Serre";
-char *mqtt_topic_bmp180 = "Serre/BMP180";
-char *mqtt_topic_valve = "Serre/Valve";
 int mqtt_initial = 1;
 
-// Pin definitions
-int	solenoidPin = 0;
 //
 // Test results from testwemosd1/testwemosd1 :
 // Note this is with an old model Wemos D1 (http://www.wemos.cc/Products/d1.html).
@@ -83,11 +73,8 @@ double		newPressure, newTemperature, oldPressure, oldTemperature;
 int		percentage;		// How much of a difference before notify
 int		valve = 0;		// Closed = 0
 
-#ifdef ENABLE_SNTP
 struct tm *now;
-//char	*the_time;
 char	buffer[64];
-#endif
 
 // Forward declarations
 void callback(char * topic, byte *payload, unsigned int length);
@@ -98,14 +85,11 @@ void BMPInitialize(), BMPQuery();
 // Arduino setup function
 void setup() {
   Serial.begin(9600);
-#ifdef ENABLE_I2C
   Wire.begin();		// Default SDA / SCL are xx / xx
-#endif
-//  Serial.setDebugOutput(true);
   
   delay(3000);    // Allow you to plug in the console
   
-  Serial.println("\n\nMQTT Greenhouse Watering and Sensor Module\n");
+  Serial.println(startup_text);
   Serial.printf("Boot version %d, flash chip size %d, SDK version %s\n",
     ESP.getBootVersion(), ESP.getFlashChipSize(), ESP.getSdkVersion());
 
@@ -139,23 +123,18 @@ void setup() {
   Serial.print("MAC "); Serial.print(WiFi.macAddress());
   Serial.printf(", SSID {%s}, IP %s, GW %s\n", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
 
-#ifdef ENABLE_SNTP
-  Serial.println("Initialize SNTP ...");
   // Set up real time clock
+  Serial.println("Initialize SNTP ...");
   sntp_init();
   sntp_setservername(0, "ntp.scarlet.be");
   sntp_setservername(1, "ntp.belnet.be");
+
+  // FIXME
   // This is a bad idea : fixed time zone, no DST processing, .. but it works for now.
   // (void)sntp_set_timezone(+2);
-  // (void)sntp_set_timezone(0);		// GMT, leaving this out default to somewhere in Asia
-#endif
-
-  // DEBUG
-  Serial.print("Timezone ");
-  Serial.println(getenv("TZ"));
   tzset();
 
-#ifdef ENABLE_OTA
+  // OTA : allow for software upgrades
   Serial.printf("Starting OTA listener ...\n");
   ArduinoOTA.onStart([]() {
     ValveReset();
@@ -201,13 +180,10 @@ void setup() {
   // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.begin();
-#endif
 
-#ifdef ENABLE_SNTP
-  time_t t;
-  // Wait for a correct time, and report it
+  // SNTP : wait for a correct time, and report it
   Serial.printf("Time ");
-  t = sntp_get_current_timestamp();
+  time_t t = sntp_get_current_timestamp();
   while (t < 0x1000) {
     Serial.printf(".");
     delay(1000);
@@ -216,7 +192,6 @@ void setup() {
   now = localtime(&t);
   strftime(buffer, sizeof(buffer), " %F %T", now);
   Serial.println(buffer);
-#endif
 
   // MQTT
   Serial.print("Starting MQTT ");
@@ -224,25 +199,18 @@ void setup() {
   client.setCallback(callback);
   Serial.println("done");
 
-#ifdef ENABLE_I2C
-  // BMP180
+  // BMP180 temperature and air pressure sensor
   Serial.print("Initializing BMP180 ... ");
   BMPInitialize();
-  if (bmp)
-    Serial.println("ok");
-  else
-    Serial.println("failed");
-#endif
+  Serial.println(bmp ? "ok" : "failed");
 
-  pinMode(solenoidPin, OUTPUT);
+  pinMode(valve_pin, OUTPUT);
 
   Serial.println("Ready");
 }
 
 void loop() {
-#ifdef ENABLE_OTA
     ArduinoOTA.handle();
-#endif
 
   // MQTT
   if (!client.connected()) {
@@ -272,12 +240,12 @@ void loop() {
 
 void ValveOpen() {
   valve = 1;
-  digitalWrite(solenoidPin, 1);
+  digitalWrite(valve_pin, 1);
 }
 
 void ValveReset() {
   valve = 0;
-  digitalWrite(solenoidPin, 0);
+  digitalWrite(valve_pin, 0);
 }
 
 void callback(char *topic, byte *payload, unsigned int length) {
@@ -351,20 +319,13 @@ void reconnect(void) {
       Serial.println("connected");
       // Once connected, publish an announcement...
       if (mqtt_initial) {
-#ifdef ENABLE_SNTP
 	strftime(buffer, sizeof(buffer), "boot %F %T", now);
         client.publish(mqtt_topic_serre, buffer);
-#else
-        client.publish(mqtt_topic_serre, "boot");
-#endif
+
 	mqtt_initial = 0;
       } else {
-#ifdef ENABLE_SNTP
 	strftime(buffer, sizeof(buffer), "reconnect %F %T", now);
         client.publish(mqtt_topic_serre, buffer);
-#else
-        client.publish(mqtt_topic_serre, "reconnect");
-#endif
       }
 
       // ... and (re)subscribe
@@ -406,7 +367,6 @@ void BMPQuery() {
   if (bmp == 0)
     return;
 
-#ifdef ENABLE_I2C
   // This is a multi-part query to the I2C device, see the SFE_BMP180 source files.
   char d1 = bmp->startTemperature();
   delay(d1);
@@ -442,5 +402,4 @@ void BMPQuery() {
 #endif
     return;
   }
-#endif
 }
