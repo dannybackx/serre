@@ -20,8 +20,10 @@ extern "C" {
 static int OTAprev;
 
 #include "mywifi.h"
-const char* ssid     = MY_SSID;
-const char* password = MY_WIFI_PASSWORD;
+const char *ssid     = MY_SSID;
+const char *password = MY_WIFI_PASSWORD;
+const char *mqtt_user = MY_MQTT_USER;
+const char *mqtt_password = MY_MQTT_PASSWORD;
 
 // MQTT
 WiFiClient	espClient;
@@ -317,7 +319,8 @@ void callback(char *topic, byte *payload, unsigned int length) {
     } else if (strncmp(pl, mqtt_topic_valve_stop, length) == 0) {
       if (verbose & VERBOSE_VALVE) Serial.println("Topic valve stop");
     } else if (strncmp(pl, mqtt_topic_restart, length) == 0) {
-      if (verbose & VERBOSE_VALVE) Serial.println("Topic reboot");
+      // Reboot the ESP without a software update.
+      ESP.restart();
     } else if (strncmp(pl, mqtt_topic_boot_time, length) == 0) {
       if (verbose & VERBOSE_SYSTEM) Serial.println("Topic boot time");
 
@@ -326,6 +329,10 @@ void callback(char *topic, byte *payload, unsigned int length) {
       client.publish(mqtt_topic_boot_time, reply);
 
       if (verbose & VERBOSE_SYSTEM) Serial.printf("Reply {%s} {%s}\n", mqtt_topic_boot_time, reply);
+    } else if (strncmp(pl, mqtt_topic_reconnects, length) == 0) {
+      // Report the number of MQTT reconnects to our broker
+      sprintf(reply, "Reconnect count %d", nreconnects);
+      client.publish(mqtt_topic_reconnects, reply);
     }
 
     // End topic == mqtt_topic_serre
@@ -346,7 +353,7 @@ void reconnect(void) {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("ESP8266Client")) {
+    if (client.connect("ESP8266Client", mqtt_user, mqtt_password)) {
       Serial.println("connected");
 
       // Get the current time

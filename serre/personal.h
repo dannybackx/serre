@@ -16,6 +16,7 @@ extern const char *mqtt_topic_report_freq;
 extern const char *mqtt_topic_reconnects;
 extern const char *mqtt_topic_restart;
 extern const char *mqtt_topic_boot_time;
+extern const char *mqtt_topic_schedule;
 
 // Pin definitions
 extern const int	valve_pin;
@@ -23,3 +24,4 @@ extern const int	valve_pin;
 extern const char *startup_text;
 
 extern int verbose;
+extern char *watering_schedule_string;
