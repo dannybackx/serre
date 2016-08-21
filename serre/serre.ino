@@ -56,15 +56,6 @@ int mqtt_initial = 1;
 //	0		D8
 //
 
-#define	VERBOSE_OTA		0x01
-#define	VERBOSE_VALVE		0x02
-#define	VERBOSE_BMP		0x04
-#define	VERBOSE_CALLBACK	0x08
-#define	VERBOSE_SYSTEM		0x10
-#define	VERBOSE_6		0x20
-#define	VERBOSE_7		0x40
-#define	VERBOSE_8		0x80
-
 // All kinds of variables
 int		pin14;
 int		count = 0;
@@ -249,101 +240,6 @@ void ValveOpen() {
 void ValveReset() {
   valve = 0;
   digitalWrite(valve_pin, 0);
-}
-
-void callback(char *topic, byte *payload, unsigned int length) {
-  char *pl = (char *)payload;
-  char reply[80];
-
-  if (verbose & VERBOSE_CALLBACK) {
-    Serial.print("Message arrived, topic [");
-    Serial.print(topic);
-    Serial.print("], payload {");
-    for (int i=0; i<length; i++) {
-      Serial.print((char)payload[i]);
-    }
-    Serial.printf(",%d}\n", length);
-  }
-
-  /*
-  Serial.printf("Comparing strcmp(%s, %s) -> %d\n",
-    topic, mqtt_topic_serre, strcmp(topic, mqtt_topic_serre));
-  Serial.printf("Comparing strncmp(%s, %s, %d) -> %d\n",
-    pl, mqtt_topic_boot_time, length, strncmp(pl, mqtt_topic_boot_time, length));
-  /* */
-
-  /*
-   * Requests for information, or commands for the module
-   */
-  if (strcmp(topic, mqtt_topic_serre) == 0) {
-    /*
-     * Note : must always compare just the indicated length when comparing with payload.
-     * Also make sure to compare in the right order, e.g.
-     *   Serre/Valve/0
-     * needs to be matched before
-     *   Serre/Valve
-     */
-    if (strncmp(pl, mqtt_topic_bmp180, length) == 0) {
-      /*
-       * Read temperature / barometric pressure
-       */
-      if (verbose & VERBOSE_BMP) Serial.println("Topic bmp");
-
-      if (bmp) {
-        BMPQuery();
-
-        int a, b, c;
-        // Temperature
-        a = (int) newTemperature;
-        double td = newTemperature - a;
-        b = 100 * td;
-        c = newPressure;
-
-        // Format the result
-        sprintf(reply, "bmp (%2d.%02d, %d)", a, b, c);
-  
-      } else {
-        sprintf(reply, "No sensor detected");
-      }
-
-      if (verbose & VERBOSE_BMP) Serial.println(reply);
-      client.publish(mqtt_topic_bmp180, reply);
-    } else if (strncmp(pl, mqtt_topic_valve, length) == 0) {
-      /*
-       * Read valve/pump status
-       */
-      if (verbose & VERBOSE_VALVE) Serial.println("Topic valve");
-      client.publish(mqtt_topic_valve, valve ? "Open" : "Closed");
-    } else if (strncmp(pl, mqtt_topic_valve_start, length) == 0) {
-      if (verbose & VERBOSE_VALVE) Serial.println("Topic valve start");
-    } else if (strncmp(pl, mqtt_topic_valve_stop, length) == 0) {
-      if (verbose & VERBOSE_VALVE) Serial.println("Topic valve stop");
-    } else if (strncmp(pl, mqtt_topic_restart, length) == 0) {
-      // Reboot the ESP without a software update.
-      ESP.restart();
-    } else if (strncmp(pl, mqtt_topic_boot_time, length) == 0) {
-      if (verbose & VERBOSE_SYSTEM) Serial.println("Topic boot time");
-
-      now = localtime(&tsboot);
-      strftime(reply, sizeof(reply), "Last booted on %F at %T", now);
-      client.publish(mqtt_topic_boot_time, reply);
-
-      if (verbose & VERBOSE_SYSTEM) Serial.printf("Reply {%s} {%s}\n", mqtt_topic_boot_time, reply);
-    } else if (strncmp(pl, mqtt_topic_reconnects, length) == 0) {
-      // Report the number of MQTT reconnects to our broker
-      sprintf(reply, "Reconnect count %d", nreconnects);
-      client.publish(mqtt_topic_reconnects, reply);
-    }
-
-    // End topic == mqtt_topic_serre
-
-  } else if (strcmp(topic, mqtt_topic_bmp180) == 0) {
-    // Ignore, this is a message we've sent out ourselves
-  } else if (strcmp(topic, mqtt_topic_valve) == 0) {
-    // Ignore, this is a message we've sent out ourselves
-  } else {
-    Serial.println("Unknown topic");
-  }
 }
 
 void reconnect(void) {
