@@ -129,6 +129,13 @@ BUILD_INFO_H = $(OBJ_DIR)/buildinfo.h
 BUILD_INFO_CPP = $(OBJ_DIR)/buildinfo.cpp
 BUILD_INFO_OBJ = $(BUILD_INFO_CPP)$(OBJ_EXT)
 
+# Temp files
+VI_TMP1=	${USER_SRC:.c=.c~}
+VI_TMP2=	${VI_TMP1:.ino=.ino~}
+VI_TMP3=	${VI_TMP2:.cpp=.cpp~}
+VI_TMPFILES=	${VI_TMP3:.h=.h~}
+BAK_FILES=
+
 $(BUILD_INFO_H): | $(OBJ_DIR)
 	echo "typedef struct { const char *date, *time, *src_version, *env_version;} _tBuildInfo; extern _tBuildInfo _BuildInfo;" >$@
 
@@ -190,7 +197,8 @@ showotaip:
 
 clean:
 	echo Removing all intermediate build files...
-	rm  -f $(OBJ_DIR)/*
+	rm -f ${VI_TMPFILES} ${BAK_FILES}
+	rm -f $(OBJ_DIR)/*
 	rm -rf ${BUILD_ROOT}
 
 $(OBJ_DIR):

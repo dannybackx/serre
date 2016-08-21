@@ -58,7 +58,7 @@ int mqtt_initial = 1;
 #define	VERBOSE_VALVE		0x02
 #define	VERBOSE_BMP		0x04
 #define	VERBOSE_CALLBACK	0x08
-#define	VERBOSE_5		0x10
+#define	VERBOSE_SYSTEM		0x10
 #define	VERBOSE_6		0x20
 #define	VERBOSE_7		0x40
 #define	VERBOSE_8		0x80
@@ -67,14 +67,15 @@ int mqtt_initial = 1;
 int		pin14;
 int		count = 0;
 SFE_BMP180	*bmp = 0;
-int		verbose = 0;
 // char		temperature[BMP180_STATE_LENGTH], pressure[BMP180_STATE_LENGTH];
 double		newPressure, newTemperature, oldPressure, oldTemperature;
 int		percentage;		// How much of a difference before notify
 int		valve = 0;		// Closed = 0
 
-struct tm *now;
-char	buffer[64];
+time_t		tsnow, tsboot;
+int		nreconnects = 0;
+struct tm	*now;
+char		buffer[64];
 
 // Forward declarations
 void callback(char * topic, byte *payload, unsigned int length);
@@ -183,13 +184,13 @@ void setup() {
 
   // SNTP : wait for a correct time, and report it
   Serial.printf("Time ");
-  time_t t = sntp_get_current_timestamp();
-  while (t < 0x1000) {
+  tsboot = tsnow = sntp_get_current_timestamp();
+  while (tsnow < 0x1000) {
     Serial.printf(".");
     delay(1000);
-    t = sntp_get_current_timestamp();
+    tsboot = tsnow = sntp_get_current_timestamp();
   }
-  now = localtime(&t);
+  now = localtime(&tsnow);
   strftime(buffer, sizeof(buffer), " %F %T", now);
   Serial.println(buffer);
 
@@ -210,7 +211,7 @@ void setup() {
 }
 
 void loop() {
-    ArduinoOTA.handle();
+  ArduinoOTA.handle();
 
   // MQTT
   if (!client.connected()) {
@@ -266,13 +267,25 @@ void callback(char *topic, byte *payload, unsigned int length) {
   Serial.printf("Comparing strcmp(%s, %s) -> %d\n",
     topic, mqtt_topic_serre, strcmp(topic, mqtt_topic_serre));
   Serial.printf("Comparing strncmp(%s, %s, %d) -> %d\n",
-    pl, mqtt_topic_bmp180, length, strncmp(pl, mqtt_topic_bmp180, length));
+    pl, mqtt_topic_boot_time, length, strncmp(pl, mqtt_topic_boot_time, length));
   /* */
 
+  /*
+   * Requests for information, or commands for the module
+   */
   if (strcmp(topic, mqtt_topic_serre) == 0) {
+    /*
+     * Note : must always compare just the indicated length when comparing with payload.
+     * Also make sure to compare in the right order, e.g.
+     *   Serre/Valve/0
+     * needs to be matched before
+     *   Serre/Valve
+     */
     if (strncmp(pl, mqtt_topic_bmp180, length) == 0) {
-      // This is a request to read temperature / humidity data
-      Serial.println("Topic bmp");
+      /*
+       * Read temperature / barometric pressure
+       */
+      if (verbose & VERBOSE_BMP) Serial.println("Topic bmp");
 
       if (bmp) {
         BMPQuery();
@@ -291,12 +304,28 @@ void callback(char *topic, byte *payload, unsigned int length) {
         sprintf(reply, "No sensor detected");
       }
 
-      if (verbose & VERBOSE_BMP)
-        Serial.println(reply);
+      if (verbose & VERBOSE_BMP) Serial.println(reply);
       client.publish(mqtt_topic_bmp180, reply);
-    } else if (strcmp(pl, mqtt_topic_valve) == 0) {
-      Serial.println("Topic valve");
+    } else if (strncmp(pl, mqtt_topic_valve, length) == 0) {
+      /*
+       * Read valve/pump status
+       */
+      if (verbose & VERBOSE_VALVE) Serial.println("Topic valve");
       client.publish(mqtt_topic_valve, valve ? "Open" : "Closed");
+    } else if (strncmp(pl, mqtt_topic_valve_start, length) == 0) {
+      if (verbose & VERBOSE_VALVE) Serial.println("Topic valve start");
+    } else if (strncmp(pl, mqtt_topic_valve_stop, length) == 0) {
+      if (verbose & VERBOSE_VALVE) Serial.println("Topic valve stop");
+    } else if (strncmp(pl, mqtt_topic_restart, length) == 0) {
+      if (verbose & VERBOSE_VALVE) Serial.println("Topic reboot");
+    } else if (strncmp(pl, mqtt_topic_boot_time, length) == 0) {
+      if (verbose & VERBOSE_SYSTEM) Serial.println("Topic boot time");
+
+      now = localtime(&tsboot);
+      strftime(reply, sizeof(reply), "Last booted on %F at %T", now);
+      client.publish(mqtt_topic_boot_time, reply);
+
+      if (verbose & VERBOSE_SYSTEM) Serial.printf("Reply {%s} {%s}\n", mqtt_topic_boot_time, reply);
     }
 
     // End topic == mqtt_topic_serre
@@ -311,12 +340,19 @@ void callback(char *topic, byte *payload, unsigned int length) {
 }
 
 void reconnect(void) {
+  nreconnects++;
+
   // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
     if (client.connect("ESP8266Client")) {
       Serial.println("connected");
+
+      // Get the current time
+      tsnow = sntp_get_current_timestamp();
+      now = localtime(&tsnow);
+
       // Once connected, publish an announcement...
       if (mqtt_initial) {
 	strftime(buffer, sizeof(buffer), "boot %F %T", now);
