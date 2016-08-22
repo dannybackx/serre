@@ -41,7 +41,6 @@ extern "C" {
 
 extern PubSubClient	client;
 
-#include "personal.h"
 #include "global.h"
 
 void callback(char *topic, byte *payload, unsigned int length) {
