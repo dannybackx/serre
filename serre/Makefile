@@ -17,7 +17,7 @@
 #====================================================================================
 
 SKETCH = $(HOME)/src/sketchbook/esp8266/serre/serre.ino
-EXTRA_SRC = getenv.c SFE_BMP180.cpp strftime.c tzset.c timezone.c scanf.c bcopy.c strtoq.c strtouq.c personal.c callback.cpp
+EXTRA_SRC = getenv.c SFE_BMP180.cpp strftime.c tzset.c timezone.c scanf.c bcopy.c strtoq.c strtouq.c personal.c callback.cpp Water.cpp
 
 # ESP_ROOT=/home/danny/.arduino15/packages/esp8266/hardware/esp8266/2.3.0
 # ESP_LIBS=$(ESP_ROOT)/libraries

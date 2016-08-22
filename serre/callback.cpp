@@ -1,4 +1,27 @@
 /*
+ * Copyright (c) 2016 Danny Backx
+ *
+ * License (MIT license):
+ *   Permission is hereby granted, free of charge, to any person obtaining a copy
+ *   of this software and associated documentation files (the "Software"), to deal
+ *   in the Software without restriction, including without limitation the rights
+ *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the Software is
+ *   furnished to do so, subject to the following conditions:
+ *
+ *   The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *   THE SOFTWARE.
+ */
+
+/*
  * Handle the MQTT communication
  */
 
@@ -25,6 +48,8 @@ void callback(char *topic, byte *payload, unsigned int length) {
   char *pl = (char *)payload;
   char reply[80];
 
+  pl[length] = 0;
+
   if (verbose & VERBOSE_CALLBACK) {
     Serial.print("Message arrived, topic [");
     Serial.print(topic);
@@ -35,7 +60,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
     Serial.printf(",%d}\n", length);
   }
 
-  /*
+  /* */
   Serial.printf("Comparing strcmp(%s, %s) -> %d\n",
     topic, mqtt_topic_serre, strcmp(topic, mqtt_topic_serre));
   Serial.printf("Comparing strncmp(%s, %s, %d) -> %d\n",
@@ -103,6 +128,11 @@ void callback(char *topic, byte *payload, unsigned int length) {
       // Report the number of MQTT reconnects to our broker
       sprintf(reply, "Reconnect count %d", nreconnects);
       client.publish(mqtt_topic_reconnects, reply);
+    } else if (strncmp(pl, mqtt_topic_schedule, length) == 0) {
+      char *sched = water->getSchedule();
+      client.publish(mqtt_topic_schedule, sched);
+      Serial.printf("Schedule %s -> %s\n", mqtt_topic_schedule, sched);
+      free(sched);
     }
 
     // End topic == mqtt_topic_serre
@@ -111,6 +141,12 @@ void callback(char *topic, byte *payload, unsigned int length) {
     // Ignore, this is a message we've sent out ourselves
   } else if (strcmp(topic, mqtt_topic_valve) == 0) {
     // Ignore, this is a message we've sent out ourselves
+  } else if (strcmp(topic, mqtt_topic_schedule_set) == 0) {
+    Serial.printf("Set schedule to %s\n", pl);
+    water->setSchedule(pl);
+  } else if (strcmp(topic, mqtt_topic_verbose) == 0) {
+    sscanf(pl, "%d", &verbose);
+    Serial.printf("Verbosity set to %d\n", verbose);
   } else {
     Serial.println("Unknown topic");
   }

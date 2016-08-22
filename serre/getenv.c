@@ -2,7 +2,7 @@
 */
 
 #include <stdio.h>
-#include "personal.h"
+#include "global.h"
 
 char *getenv(char *varname) {
   if (strcmp(varname, "TZ") == 0) {

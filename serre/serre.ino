@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2016 Danny Backx
+ *
+ * License (MIT license):
+ *   Permission is hereby granted, free of charge, to any person obtaining a copy
+ *   of this software and associated documentation files (the "Software"), to deal
+ *   in the Software without restriction, including without limitation the rights
+ *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the Software is
+ *   furnished to do so, subject to the following conditions:
+ *
+ *   The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *   THE SOFTWARE.
+ */
+
 // See http://www.bc-robotics.com/tutorials/controlling-a-solenoid-valve-with-arduino/
 
 #define ENABLE_OTA
@@ -29,7 +52,8 @@ const char *mqtt_password = MY_MQTT_PASSWORD;
 WiFiClient	espClient;
 PubSubClient	client(espClient);
 
-#include "personal.h"
+#include "global.h"
+#include "Water.h"
 
 int mqtt_initial = 1;
 
@@ -69,6 +93,10 @@ time_t		tsnow, tsboot;
 int		nreconnects = 0;
 struct tm	*now;
 char		buffer[64];
+
+Water		*water = NULL;
+
+int oldstate = 0, state = 0;
 
 // Forward declarations
 void callback(char * topic, byte *payload, unsigned int length);
@@ -200,6 +228,8 @@ void setup() {
 
   pinMode(valve_pin, OUTPUT);
 
+  water = new Water(watering_schedule_string);
+
   Serial.println("Ready");
 }
 
@@ -213,8 +243,28 @@ void loop() {
   if (!client.loop())
     reconnect();
 
+  // Save old state
+  oldstate = state;
+
+  // Get the current time
+  tsnow = sntp_get_current_timestamp();
+  now = localtime(&tsnow);
+  state = water->loop(now->tm_hour, now->tm_min);
+
+  if (state != oldstate) {
+    // Report change
+    Serial.printf("Changed from %d to %d at %2d:%2d\n", oldstate, state, now->tm_hour, now->tm_min);
+  }
+
   delay(100);
 
+#if 1
+  if (state == 0) {
+    ValveReset();
+  } else {
+    ValveOpen();
+  }
+#else
   count++;
   if (count > 10) {
     ValveReset();
@@ -230,6 +280,7 @@ void loop() {
   }
   if (count == 20)
     count = 0;
+#endif
 }
 
 void ValveOpen() {
@@ -271,6 +322,9 @@ void reconnect(void) {
       client.subscribe(mqtt_topic_serre);
       client.subscribe(mqtt_topic_valve);
       client.subscribe(mqtt_topic_bmp180);
+      client.subscribe(mqtt_topic_verbose);
+      client.subscribe(mqtt_topic_schedule);
+      client.subscribe(mqtt_topic_schedule_set);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());

@@ -17,7 +17,9 @@ const char *mqtt_topic_report_freq =	"Serre/Report/Frequency";
 const char *mqtt_topic_restart =	"Serre/System/Reboot";
 const char *mqtt_topic_reconnects =	"Serre/System/Reconnects";
 const char *mqtt_topic_boot_time =	"Serre/System/Boot";
+const char *mqtt_topic_schedule_set =	"Serre/Schedule/Set";
 const char *mqtt_topic_schedule =	"Serre/Schedule";
+const char *mqtt_topic_verbose =	"Serre/System/Verbose";
 
 // Pin definitions
 const int	valve_pin = 0;
@@ -32,4 +34,5 @@ int verbose = 0;
  *	format is CSV
  *	hour,onoff
  */
-char *watering_schedule_string = "2100,1,2115,0";
+// char *watering_schedule_string = "21:00,1,21:15,0";
+char *watering_schedule_string = "16:27,1,16:28,0";
