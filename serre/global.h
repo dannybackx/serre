@@ -46,6 +46,7 @@ extern const char *mqtt_topic_report_freq;
 extern const char *mqtt_topic_reconnects;
 extern const char *mqtt_topic_restart;
 extern const char *mqtt_topic_boot_time;
+extern const char *mqtt_topic_current_time;
 extern const char *mqtt_topic_schedule;
 extern const char *mqtt_topic_schedule_set;
 extern const char *mqtt_topic_verbose;
@@ -79,3 +80,5 @@ extern SFE_BMP180	*bmp;
 extern void BMPQuery();
 extern Water *water;
 #endif
+
+void ValveReset(), ValveOpen();

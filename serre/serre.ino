@@ -148,8 +148,8 @@ void setup() {
   // Set up real time clock
   Serial.println("Initialize SNTP ...");
   sntp_init();
-  sntp_setservername(0, "ntp.scarlet.be");
-  sntp_setservername(1, "ntp.belnet.be");
+  sntp_setservername(0, (char *)"ntp.scarlet.be");
+  sntp_setservername(1, (char *)"ntp.belnet.be");
 
   // FIXME
   // This is a bad idea : fixed time zone, no DST processing, .. but it works for now.

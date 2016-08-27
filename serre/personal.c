@@ -17,6 +17,7 @@ const char *mqtt_topic_report_freq =	"Serre/Report/Frequency";
 const char *mqtt_topic_restart =	"Serre/System/Reboot";
 const char *mqtt_topic_reconnects =	"Serre/System/Reconnects";
 const char *mqtt_topic_boot_time =	"Serre/System/Boot";
+const char *mqtt_topic_current_time =	"Serre/System/Time";
 const char *mqtt_topic_schedule_set =	"Serre/Schedule/Set";
 const char *mqtt_topic_schedule =	"Serre/Schedule";
 const char *mqtt_topic_verbose =	"Serre/System/Verbose";

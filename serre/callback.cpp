@@ -59,7 +59,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
     Serial.printf(",%d}\n", length);
   }
 
-  /* */
+  /* 
   Serial.printf("Comparing strcmp(%s, %s) -> %d\n",
     topic, mqtt_topic_serre, strcmp(topic, mqtt_topic_serre));
   Serial.printf("Comparing strncmp(%s, %s, %d) -> %d\n",
@@ -110,11 +110,23 @@ void callback(char *topic, byte *payload, unsigned int length) {
       client.publish(mqtt_topic_valve, valve ? "Open" : "Closed");
     } else if (strncmp(pl, mqtt_topic_valve_start, length) == 0) {
       if (verbose & VERBOSE_VALVE) Serial.println("Topic valve start");
+      ValveOpen();
     } else if (strncmp(pl, mqtt_topic_valve_stop, length) == 0) {
       if (verbose & VERBOSE_VALVE) Serial.println("Topic valve stop");
+      ValveReset();
     } else if (strncmp(pl, mqtt_topic_restart, length) == 0) {
+      ValveReset();
       // Reboot the ESP without a software update.
       ESP.restart();
+    } else if (strncmp(pl, mqtt_topic_current_time, length) == 0) {
+      if (verbose & VERBOSE_SYSTEM) Serial.println("Topic current time");
+
+      time_t tsnow = sntp_get_current_timestamp();
+      now = localtime(&tsnow);
+      strftime(reply, sizeof(reply), "Current time %F %T", now);
+      client.publish(mqtt_topic_current_time, reply);
+
+      if (verbose & VERBOSE_SYSTEM) Serial.printf("Reply {%s} {%s}\n", mqtt_topic_current_time, reply);
     } else if (strncmp(pl, mqtt_topic_boot_time, length) == 0) {
       if (verbose & VERBOSE_SYSTEM) Serial.println("Topic boot time");
 
@@ -122,6 +134,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
       strftime(reply, sizeof(reply), "Last booted on %F at %T", now);
       client.publish(mqtt_topic_boot_time, reply);
 
+      ValveReset();
       if (verbose & VERBOSE_SYSTEM) Serial.printf("Reply {%s} {%s}\n", mqtt_topic_boot_time, reply);
     } else if (strncmp(pl, mqtt_topic_reconnects, length) == 0) {
       // Report the number of MQTT reconnects to our broker
