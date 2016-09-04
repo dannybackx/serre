@@ -95,6 +95,7 @@ struct tm	*now;
 char		buffer[64];
 
 Water		*water = NULL;
+char		SystemInfo1[80], SystemInfo2[256];
 
 int oldstate = 0, state = 0;
 
@@ -112,8 +113,9 @@ void setup() {
   delay(3000);    // Allow you to plug in the console
   
   Serial.println(startup_text);
-  Serial.printf("Boot version %d, flash chip size %d, SDK version %s\n",
+  sprintf(SystemInfo1, "Boot version %d, flash chip size %d, SDK version %s",
     ESP.getBootVersion(), ESP.getFlashChipSize(), ESP.getSdkVersion());
+  Serial.println(SystemInfo1);
 
   Serial.printf("Free sketch space %d\n", ESP.getFreeSketchSpace());
   Serial.print("Starting WiFi ");
@@ -142,8 +144,10 @@ void setup() {
   String ips = ip.toString();
   IPAddress gw = WiFi.gatewayIP();
   String gws = gw.toString();
-  Serial.print("MAC "); Serial.print(WiFi.macAddress());
-  Serial.printf(", SSID {%s}, IP %s, GW %s\n", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
+  sprintf(SystemInfo2, "MAC %s SSID {%s}, IP %s, GW %s",
+    WiFi.macAddress().c_str(),
+    WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
+  Serial.println(SystemInfo2);
 
   // Set up real time clock
   Serial.println("Initialize SNTP ...");
@@ -159,6 +163,7 @@ void setup() {
   // OTA : allow for software upgrades
   Serial.printf("Starting OTA listener ...\n");
   ArduinoOTA.onStart([]() {
+    // Always stop water flow before OTA Software update
     ValveReset();
     Serial.print("OTA Start : ");
 
@@ -395,4 +400,9 @@ void BMPQuery() {
 #endif
     return;
   }
+}
+
+void SetState(int s) {
+  state = s;
+  water->set(s);
 }

@@ -35,6 +35,7 @@ public:
   int loop(int, int);
   void setSchedule(char *);
   char *getSchedule();		// Caller must free result
+  void set(int);
 
 private:
   int nitems;

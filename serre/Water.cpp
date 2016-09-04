@@ -22,6 +22,7 @@
  */
 #include <Arduino.h>
 #include "Water.h"
+#include "global.h"
 
 Water::Water() {
   items = NULL;
@@ -48,13 +49,19 @@ int Water::loop(int hr, int mn) {
   for (int i=0; i<nitems; i++) {
     if (items[i].hour == hr && items[i].minute == mn) {
       state = items[i].state;
-      if (state != 0 && state != 1) {
-	char t[80];
-        sprintf(t, "## State %d, i %d, hr %d min %d\n", state, i, hr, mn);
-	Serial.print(t);
+      if (verbose & VERBOSE_WATER) {
+        if (state != 0 && state != 1) {
+	  char t[80];
+          sprintf(t, "## State %d, i %d, hr %d min %d\n", state, i, hr, mn);
+	  Serial.print(t);
+        }
+      }
+      if (verbose & VERBOSE_WATER) {
+        Serial.printf("Water(%d,%d) : change ix %d (%d,%d) %d -> %d\n",
+	  hr, mn, i, items[i].hour, items[i].minute, state, items[i].state);
       }
       state = items[i].state;
-      return items[i].state;
+      return state;
     }
   }
   return state;
@@ -129,4 +136,8 @@ char *Water::getSchedule() {
     strcat(r, s);
   }
   return r;
+}
+
+void Water::set(int s) {
+  state = s;
 }

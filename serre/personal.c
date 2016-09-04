@@ -21,6 +21,8 @@ const char *mqtt_topic_current_time =	"Serre/System/Time";
 const char *mqtt_topic_schedule_set =	"Serre/Schedule/Set";
 const char *mqtt_topic_schedule =	"Serre/Schedule";
 const char *mqtt_topic_verbose =	"Serre/System/Verbose";
+const char *mqtt_topic_version =	"Serre/System/Version";
+const char *mqtt_topic_info =		"Serre/System/Info";
 
 // Pin definitions
 const int	valve_pin = 0;

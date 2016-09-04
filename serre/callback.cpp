@@ -37,6 +37,7 @@
 extern "C" {
 #include <sntp.h>
 #include <time.h>
+#include "buildinfo.h"
 }
 
 extern PubSubClient	client;
@@ -110,11 +111,15 @@ void callback(char *topic, byte *payload, unsigned int length) {
       client.publish(mqtt_topic_valve, valve ? "Open" : "Closed");
     } else if (strncmp(pl, mqtt_topic_valve_start, length) == 0) {
       if (verbose & VERBOSE_VALVE) Serial.println("Topic valve start");
+      SetState(1);
       ValveOpen();
     } else if (strncmp(pl, mqtt_topic_valve_stop, length) == 0) {
       if (verbose & VERBOSE_VALVE) Serial.println("Topic valve stop");
+      SetState(0);
       ValveReset();
     } else if (strncmp(pl, mqtt_topic_restart, length) == 0) {
+      // Always stop water flow before reboot
+      SetState(0);
       ValveReset();
       // Reboot the ESP without a software update.
       ESP.restart();
@@ -134,17 +139,30 @@ void callback(char *topic, byte *payload, unsigned int length) {
       strftime(reply, sizeof(reply), "Last booted on %F at %T", now);
       client.publish(mqtt_topic_boot_time, reply);
 
-      ValveReset();
       if (verbose & VERBOSE_SYSTEM) Serial.printf("Reply {%s} {%s}\n", mqtt_topic_boot_time, reply);
     } else if (strncmp(pl, mqtt_topic_reconnects, length) == 0) {
       // Report the number of MQTT reconnects to our broker
       sprintf(reply, "Reconnect count %d", nreconnects);
       client.publish(mqtt_topic_reconnects, reply);
+    } else if (strncmp(pl, mqtt_topic_version, length) == 0) {
+      // Report the build version
+      sprintf(reply, "Build version %s %s", _BuildInfo.date, _BuildInfo.time);
+      client.publish(mqtt_topic_version, reply);
+    } else if (strncmp(pl, mqtt_topic_info, length) == 0) {
+      // Report the build version
+      sprintf(reply, "System Info %s", SystemInfo1);
+      client.publish(mqtt_topic_info, reply);
+      sprintf(reply, "System Info %s", SystemInfo2);
+      client.publish(mqtt_topic_info, reply);
     } else if (strncmp(pl, mqtt_topic_schedule, length) == 0) {
       char *sched = water->getSchedule();
       client.publish(mqtt_topic_schedule, sched);
       Serial.printf("Schedule %s -> %s\n", mqtt_topic_schedule, sched);
       free(sched);
+
+      // Always stop water flow when schedule is manipulated
+      SetState(0);
+      ValveReset();
     }
 
     // End topic == mqtt_topic_serre

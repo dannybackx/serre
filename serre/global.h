@@ -26,6 +26,7 @@ extern int		valve;
 extern time_t		tsboot;
 extern int		nreconnects;
 extern struct tm	*now;
+extern char		SystemInfo1[], SystemInfo2[];
 
 /*
  *
@@ -50,6 +51,9 @@ extern const char *mqtt_topic_current_time;
 extern const char *mqtt_topic_schedule;
 extern const char *mqtt_topic_schedule_set;
 extern const char *mqtt_topic_verbose;
+extern const char *mqtt_topic_version;
+extern const char *mqtt_topic_info;
+
 
 // Pin definitions
 extern const int	valve_pin;
@@ -64,7 +68,7 @@ extern char *watering_schedule_string;
 #define	VERBOSE_BMP		0x04
 #define	VERBOSE_CALLBACK	0x08
 #define	VERBOSE_SYSTEM		0x10
-#define	VERBOSE_6		0x20
+#define	VERBOSE_WATER		0x20
 #define	VERBOSE_7		0x40
 #define	VERBOSE_8		0x80
 
@@ -82,3 +86,4 @@ extern Water *water;
 #endif
 
 void ValveReset(), ValveOpen();
+void SetState(int);
