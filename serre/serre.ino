@@ -23,14 +23,13 @@
 
 // See http://www.bc-robotics.com/tutorials/controlling-a-solenoid-valve-with-arduino/
 
-#define ENABLE_OTA
-#define ENABLE_SNTP
 #define	ENABLE_I2C
 
 #include <ESP8266WiFi.h>
 #include <Wire.h>       // Required to compile UPnP
 #include "PubSubClient.h"
 #include "SFE_BMP180.h"
+#include "esptime.h"
 
 extern "C" {
 #include <sntp.h>
@@ -43,8 +42,7 @@ extern "C" {
 static int OTAprev;
 
 #include "mywifi.h"
-const char *ssid     = MY_SSID;
-const char *password = MY_WIFI_PASSWORD;
+
 const char *mqtt_user = MY_MQTT_USER;
 const char *mqtt_password = MY_MQTT_PASSWORD;
 
@@ -55,6 +53,8 @@ PubSubClient	client(espClient);
 #include "global.h"
 #include "Water.h"
 
+int led_pin = 13;		// D11
+int speed = 255;		// Value to be written to the controller
 int mqtt_initial = 1;
 
 //
@@ -84,7 +84,8 @@ int mqtt_initial = 1;
 int		pin14;
 int		count = 0;
 SFE_BMP180	*bmp = 0;
-// char		temperature[BMP180_STATE_LENGTH], pressure[BMP180_STATE_LENGTH];
+esptime		*et = 0;
+
 double		newPressure, newTemperature, oldPressure, oldTemperature;
 int		percentage;		// How much of a difference before notify
 int		valve = 0;		// Closed = 0
@@ -104,6 +105,7 @@ void callback(char * topic, byte *payload, unsigned int length);
 void reconnect(void);
 void ValveReset(), ValveOpen();
 void BMPInitialize(), BMPQuery();
+void RTCInitialize();
 
 // Arduino setup function
 void setup() {
@@ -122,16 +124,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
 
   // Try to connect to WiFi
-  int wifi_tries = 3;
-  int wcr;
-  while (wifi_tries-- >= 0) {
-    WiFi.begin(ssid, password);
-    Serial.print(". ");
-    wcr = WiFi.waitForConnectResult();
-    if (wcr == WL_CONNECTED)
-      break;
-    Serial.printf(" %d ", wifi_tries + 1);
-  }
+  int wcr = mywifi();
 
   // Reboot if we didn't manage to connect to WiFi
   if (wcr != WL_CONNECTED) {
@@ -149,16 +142,9 @@ void setup() {
     WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
   Serial.println(SystemInfo2);
 
-  // Set up real time clock
-  Serial.println("Initialize SNTP ...");
-  sntp_init();
-  sntp_setservername(0, (char *)"ntp.scarlet.be");
-  sntp_setservername(1, (char *)"ntp.belnet.be");
-
-  // FIXME
-  // This is a bad idea : fixed time zone, no DST processing, .. but it works for now.
-  // (void)sntp_set_timezone(+2);
-  tzset();
+  // This one will not fail to create
+  et = new esptime();
+  et->begin();
 
   // OTA : allow for software upgrades
   Serial.printf("Starting OTA listener ...\n");
@@ -208,14 +194,8 @@ void setup() {
 
   ArduinoOTA.begin();
 
-  // SNTP : wait for a correct time, and report it
   Serial.printf("Time ");
-  tsboot = tsnow = sntp_get_current_timestamp();
-  while (tsnow < 0x1000) {
-    Serial.printf(".");
-    delay(1000);
-    tsboot = tsnow = sntp_get_current_timestamp();
-  }
+  tsboot = tsnow = et->now((char *)".");
   now = localtime(&tsnow);
   strftime(buffer, sizeof(buffer), " %F %T", now);
   Serial.println(buffer);
@@ -232,6 +212,7 @@ void setup() {
   Serial.println(bmp ? "ok" : "failed");
 
   pinMode(valve_pin, OUTPUT);
+  pinMode(led_pin, OUTPUT);
 
   water = new Water(watering_schedule_string);
 
@@ -239,7 +220,11 @@ void setup() {
 }
 
 void loop() {
+  count++;
   ArduinoOTA.handle();
+  et->loop();
+
+  analogWrite(led_pin, count % 256);
 
   // MQTT
   if (!client.connected()) {
@@ -252,7 +237,7 @@ void loop() {
   oldstate = state;
 
   // Get the current time
-  tsnow = sntp_get_current_timestamp();
+  tsnow = et->now(NULL);
   now = localtime(&tsnow);
   state = water->loop(now->tm_hour, now->tm_min);
 
@@ -270,7 +255,6 @@ void loop() {
     ValveOpen();
   }
 #else
-  count++;
   if (count > 10) {
     ValveReset();
 
@@ -290,12 +274,14 @@ void loop() {
 
 void ValveOpen() {
   valve = 1;
-  digitalWrite(valve_pin, 1);
+  // digitalWrite(valve_pin, 1);
+  analogWrite(valve_pin, speed);
 }
 
 void ValveReset() {
   valve = 0;
-  digitalWrite(valve_pin, 0);
+  // digitalWrite(valve_pin, 0);
+  analogWrite(valve_pin, 0);
 }
 
 void reconnect(void) {

@@ -136,7 +136,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
       if (verbose & VERBOSE_SYSTEM) Serial.println("Topic boot time");
 
       now = localtime(&tsboot);
-      strftime(reply, sizeof(reply), "Last booted on %F at %T", now);
+      strftime(reply, sizeof(reply), "Boot %F %T", now);
       client.publish(mqtt_topic_boot_time, reply);
 
       if (verbose & VERBOSE_SYSTEM) Serial.printf("Reply {%s} {%s}\n", mqtt_topic_boot_time, reply);

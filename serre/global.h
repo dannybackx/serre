@@ -69,7 +69,7 @@ extern char *watering_schedule_string;
 #define	VERBOSE_CALLBACK	0x08
 #define	VERBOSE_SYSTEM		0x10
 #define	VERBOSE_WATER		0x20
-#define	VERBOSE_7		0x40
+#define	VERBOSE_DS3231		0x40
 #define	VERBOSE_8		0x80
 
 
@@ -87,3 +87,6 @@ extern Water *water;
 
 void ValveReset(), ValveOpen();
 void SetState(int);
+extern int mywifi();
+
+extern char *ntp_server_1, *ntp_server_2;
