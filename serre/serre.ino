@@ -286,7 +286,7 @@ void reconnect(void) {
       Serial.println("connected");
 
       // Get the current time
-      tsnow = sntp_get_current_timestamp();
+      tsnow = et->now(NULL);
       now = localtime(&tsnow);
 
       // Once connected, publish an announcement...
