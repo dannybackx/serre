@@ -20,6 +20,11 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
+// #include "global.h"
+#include "mywifi.h"
+
+const int personal_timezone = +2;
+
 const char *mqtt_server = "192.168.1.185";
 const int mqtt_port = 1883;
 

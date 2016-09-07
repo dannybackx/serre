@@ -32,7 +32,7 @@ extern char		SystemInfo1[], SystemInfo2[];
  *
  */
 
-extern char *personal_timezone;
+extern int personal_timezone;
 extern const char *mqtt_server;
 extern const int mqtt_port;
 extern char *watering_schedule_string;

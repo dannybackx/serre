@@ -34,6 +34,7 @@
 extern "C" {
 #include <sntp.h>
 #include <time.h>
+#include <espconn.h>
 }
 
 // Prepare for OTA software installation
@@ -49,6 +50,7 @@ const char *mqtt_password = MY_MQTT_PASSWORD;
 // MQTT
 WiFiClient	espClient;
 PubSubClient	client(espClient);
+void ext_mqtt_connect_gethostbyname(const char *server);
 
 #include "global.h"
 #include "Water.h"
@@ -201,10 +203,14 @@ void setup() {
   Serial.println(buffer);
 
   // MQTT
-  Serial.print("Starting MQTT ");
-  client.setServer(mqtt_server, mqtt_port);
+  if (external_network) {
+    Serial.println("Starting MQTT (external network)");
+    ext_mqtt_connect_gethostbyname(MQTT_EXT_SERVER);
+  } else {
+    Serial.println("Starting MQTT");
+    client.setServer(mqtt_server, mqtt_port);
+  }
   client.setCallback(callback);
-  Serial.println("done");
 
   // BMP180 temperature and air pressure sensor
   Serial.print("Initializing BMP180 ... ");
@@ -391,4 +397,44 @@ void BMPQuery() {
 void SetState(int s) {
   state = s;
   water->set(s);
+}
+
+static void _dns_found_cb(const char *name, ip_addr_t *ipaddr, void *arg)
+{
+  // Serial.printf("MQTT connect to %d.%d.%d.%d\n",
+  //   ip4_addr1(ipaddr), ip4_addr2(ipaddr), ip4_addr3(ipaddr), ip4_addr4(ipaddr));
+  client.setServer((uint8_t *)ipaddr, MQTT_EXT_PORT);
+}
+
+void ext_mqtt_connect_gethostbyname(const char *server)
+{
+   ip_addr_t ip_addr;
+   switch (espconn_gethostbyname(NULL, server, &ip_addr, _dns_found_cb))
+   {
+   case ESPCONN_INPROGRESS:
+      Serial.println("Lookup in progress");
+      #ifdef PLATFORM_DEBUG
+      os_printf("SMTP DNS lookup for %s\r\n", server);
+      #endif
+      break;
+
+   case ESPCONN_OK:
+      Serial.println("Lookup ok");
+      _dns_found_cb(server, &ip_addr, NULL);
+      break;
+      
+   case ESPCONN_ARG:
+      Serial.println("Lookup arg error");
+      #ifdef PLATFORM_DEBUG
+      os_printf("SMTP DNS argument error %s\n", server);
+      #endif
+      break;
+      
+   default:   
+      Serial.println("Lookup default");
+      #ifdef PLATFORM_DEBUG
+      os_printf("SMTP DNS lookup error\r\n");
+      #endif
+      break;
+   }
 }

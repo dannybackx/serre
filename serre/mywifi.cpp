@@ -24,28 +24,31 @@
 #include <ESP8266WiFi.h>
 #include "mywifi.h"
 
+int external_network = 0;
+
 struct wifi {
   char *ssid, *password;
+  int external;
 } APs[] = {
 #if defined(MY_SSID) && defined(MY_WIFI_PASSWORD)
-  { (char *)MY_SSID, (char *)MY_WIFI_PASSWORD },
+  { (char *)MY_SSID, (char *)MY_WIFI_PASSWORD, 0},
 #endif
 #if defined(MY_SSID_1) && defined(MY_WIFI_PASS_1)
-  { (char *)MY_SSID_1, (char *)MY_WIFI_PASS_1 },
+  { (char *)MY_SSID_1, (char *)MY_WIFI_PASS_1, MY_WIFI_EXT_1},
 #endif
 #if defined(MY_SSID_2) && defined(MY_WIFI_PASS_2)
-  { (char *)MY_SSID_2, (char *)MY_WIFI_PASS_2 },
+  { (char *)MY_SSID_2, (char *)MY_WIFI_PASS_2, MY_WIFI_EXT_2},
 #endif
 #if defined(MY_SSID_3) && defined(MY_WIFI_PASS_3)
-  { (char *)MY_SSID_3, (char *)MY_WIFI_PASS_3 },
+  { (char *)MY_SSID_3, (char *)MY_WIFI_PASS_3, MY_WIFI_EXT_3},
 #endif
 #if defined(MY_SSID_4) && defined(MY_WIFI_PASS_4)
-  { (char *)MY_SSID_4, (char *)MY_WIFI_PASS_4 },
+  { (char *)MY_SSID_4, (char *)MY_WIFI_PASS_4, MY_WIFI_EXT_4},
 #endif
 #if defined(MY_SSID_5) && defined(MY_WIFI_PASS_5)
-  { (char *)MY_SSID_5, (char *)MY_WIFI_PASS_5 },
+  { (char *)MY_SSID_5, (char *)MY_WIFI_PASS_5, MY_WIFI_EXT_5},
 #endif
-  { (char *)NULL, (char *)NULL }
+  { (char *)NULL, (char *)NULL, 0}
 };
 
 int mywifi() {
@@ -57,8 +60,10 @@ int mywifi() {
       WiFi.begin(APs[i].ssid, APs[i].password);
       Serial.print(".");
       wcr = WiFi.waitForConnectResult();
-      if (wcr == WL_CONNECTED)
+      if (wcr == WL_CONNECTED) {
+        external_network = APs[i].external;
         return wcr;
+      }
     }
   }
 

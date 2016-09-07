@@ -48,7 +48,7 @@ void esptime::begin() {
 
   // FIXME
   // This is a bad idea : fixed time zone, no DST processing, .. but it works for now.
-  (void)sntp_set_timezone(+2);
+  (void)sntp_set_timezone(personal_timezone);
 
   // DS323 Real time clock
   Serial.print("Initializing RTC ... ");
