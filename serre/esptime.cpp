@@ -90,12 +90,15 @@ time_t esptime::now(char *s) {
 
     init_time = t;
     init_system_time = system_get_time();
+
+    // Serial.printf("Initial time %08x\n", init_time);
   } else {
     // Avoid network traffic by calling sntp_*() all the time
     uint32 diff = gt - init_system_time;
-    // Serial.printf("Diff %d\n", diff);
 
-    t += (diff / 1000000);
+    t = init_time + (diff / 1000000);
+
+    // Serial.printf("Init %08x diff %d -> ts %08x\n", init_time, diff, t);
   }
 
   return t;

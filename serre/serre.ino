@@ -247,6 +247,8 @@ void loop() {
   now = localtime(&tsnow);
   state = water->loop(now->tm_hour, now->tm_min);
 
+  // Serial.printf("TS %08x Water(%d,%d) -> %d\n", tsnow, now->tm_hour, now->tm_min, state);
+
   if (state != oldstate) {
     // Report change
     Serial.printf("Changed from %d to %d at %2d:%2d\n", oldstate, state, now->tm_hour, now->tm_min);
@@ -254,28 +256,11 @@ void loop() {
 
   delay(100);
 
-#if 1
   if (state == 0) {
     ValveReset();
   } else {
     ValveOpen();
   }
-#else
-  if (count > 10) {
-    ValveReset();
-
-    if (verbose & VERBOSE_VALVE) {
-      if (count == 11) client.publish(mqtt_topic_valve, "0");
-    }
-  } else {
-    ValveOpen();
-    if (verbose & VERBOSE_VALVE) {
-      if (count == 1) client.publish(mqtt_topic_valve, "1");
-    }
-  }
-  if (count == 20)
-    count = 0;
-#endif
 }
 
 void ValveOpen() {
