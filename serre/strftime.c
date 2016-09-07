@@ -1,3 +1,4 @@
+#define	SIMPLIFY
 /* strftime - formatted time and date to a string */
 /*
  * Modified slightly by Chet Ramey for inclusion in Bash
@@ -84,7 +85,7 @@
 extern char *get_string_value (const char *);
 #endif
 
-extern void tzset(void);
+// extern void tzset(void);
 static int weeknumber(const struct tm *timeptr, int firstweekday);
 static int iso8601wknum(const struct tm *timeptr);
 
@@ -224,9 +225,10 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	if (strchr(format, '%') == NULL && strlen(format) + 1 >= maxsize)
 		return 0;
 
+#ifndef	SIMPLIFY
 #ifndef POSIX_SEMANTICS
 	if (first) {
-		tzset();
+		// tzset();
 		first = 0;
 	}
 #else	/* POSIX_SEMANTICS */
@@ -245,7 +247,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 				strcpy(savetz, tz);
 			}
 		}
-		tzset();
+		// tzset();
 		first = 0;
 	}
 	/* if we have a saved TZ, and it is different, recapture and reset */
@@ -259,9 +261,10 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			}
 		} else
 			strcpy(savetz, tz);
-		tzset();
+		// tzset();
 	}
 #endif	/* POSIX_SEMANTICS */
+#endif	/* SIMPLIFY */
 
 	for (; *format && s < endp - 1; format++) {
 		tbuf[0] = '\0';
@@ -602,6 +605,10 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
  		case 'z':	/* time zone offset east of GMT e.g. -0600 */
  			if (timeptr->tm_isdst < 0)
  				break;
+#ifdef SIMPLIFY
+			gettimeofday(& tv, & zone);
+			off = -zone.tz_minuteswest;
+#else
 #ifdef HAVE_TM_NAME
 			/*
 			 * Systems with tm_name probably have tm_tzadj as
@@ -633,6 +640,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 #endif /* !HAVE_TZNAME */
 #endif /* !HAVE_TM_ZONE */
 #endif /* !HAVE_TM_NAME */
+#endif
 			if (off < 0) {
 				tbuf[0] = '-';
 				off = -off;
@@ -643,6 +651,11 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'Z':	/* time zone name or abbrevation */
+#ifdef SIMPLIFY
+			// gettimeofday(& tv, & zone);
+			// strcpy(tbuf, timezone(zone.tz_minuteswest, timeptr->tm_isdst > 0));
+			strcpy(tbuf, "??");
+#else
 #ifdef HAVE_TZNAME
 			i = (daylight && timeptr->tm_isdst > 0); /* 0 or 1 */
 			strcpy(tbuf, tzname[i]);
@@ -659,6 +672,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 #endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
 #endif /* HAVE_TZNAME */
+#endif
 			break;
 
 #ifdef SUNOS_EXT

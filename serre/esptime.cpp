@@ -48,8 +48,7 @@ void esptime::begin() {
 
   // FIXME
   // This is a bad idea : fixed time zone, no DST processing, .. but it works for now.
-  // (void)sntp_set_timezone(+2);
-  tzset();
+  (void)sntp_set_timezone(+2);
 
   // DS323 Real time clock
   Serial.print("Initializing RTC ... ");
@@ -79,6 +78,7 @@ time_t esptime::now(char *s) {
   time_t t;
   uint32 gt = system_get_time();
 
+  // Query SNTP only when you have to. Threshold value is one query per 22 minutes.
   if (init_time == 0 || gt > 0x50000000) {
     // SNTP : wait for a correct time, and report it
     t = sntp_get_current_timestamp();

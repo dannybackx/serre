@@ -17,7 +17,9 @@
 #====================================================================================
 
 SKETCH = $(HOME)/src/sketchbook/esp8266/serre/serre.ino
-EXTRA_SRC = getenv.c SFE_BMP180.cpp strftime.c tzset.c timezone.c scanf.c bcopy.c strtoq.c strtouq.c personal.c callback.cpp Water.cpp DS3231.cpp mywifi.cpp esptime.cpp
+EXTRA_SRC = SFE_BMP180.cpp personal.c callback.cpp Water.cpp DS3231.cpp mywifi.cpp esptime.cpp \
+	strftime.c \
+	scanf.c bcopy.c strtoq.c strtouq.c
 
 # ESP_ROOT=/home/danny/.arduino15/packages/esp8266/hardware/esp8266/2.3.0
 # ESP_LIBS=$(ESP_ROOT)/libraries
@@ -39,7 +41,6 @@ MYLIBS = $(HOME)/src/sketchbook/esp8266/libraries
 LIBS = $(ESP_LIBS)/Wire \
        $(ESP_LIBS)/ESP8266WiFi \
        $(ESP_LIBS)/ArduinoOTA \
-       $(MYLIBS)/SmtpClient \
        $(ESP_LIBS)/ESP8266mDNS \
        $(ESP_LIBS)/ESP8266WebServer \
        ${MYLIBS}/pubsubclient
@@ -214,5 +215,5 @@ all: $(OBJ_DIR) $(BUILD_INFO_H) $(MAIN_EXE)
 
 ifndef VERBOSE
 # Set silent mode as default
-MAKEFLAGS += --silent
+# MAKEFLAGS += --silent
 endif
