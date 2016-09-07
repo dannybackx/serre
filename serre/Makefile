@@ -31,9 +31,6 @@ ESP_LIBS=$(ESP_ROOT)/libraries
 BUILD_ROOT = buildroot-2.2.0
 LIBCPP=
 
-# EXTRA_SRC = strftime.c getenv.c timezone.c
-# EXTRA_INCLUDE = ${ESP_ROOT}/libraries/GDBStub/src
-
 UPLOAD_AVAHI_NAME = OTA-Serre.local
 
 MYLIBS = $(HOME)/src/sketchbook/esp8266/libraries

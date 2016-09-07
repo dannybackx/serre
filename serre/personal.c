@@ -20,8 +20,6 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
-const char *personal_timezone = "CET+1:00:00CETDST+2:00:00,M3.5.0,M10.5.0";
-
 const char *mqtt_server = "192.168.1.185";
 const int mqtt_port = 1883;
 
