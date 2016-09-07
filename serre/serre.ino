@@ -32,8 +32,7 @@
 #include "esptime.h"
 
 extern "C" {
-#include <sntp.h>
-#include <time.h>
+#include <ip_addr.h>
 #include <espconn.h>
 }
 
