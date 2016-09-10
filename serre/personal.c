@@ -66,3 +66,9 @@ char *watering_schedule_string = "16:27,1,16:28,0";
  */
 char	*ntp_server_1 = "ntp.scarlet.be",
 	*ntp_server_2 = "ntp.belnet.be";
+
+/*
+ * Periodic report to ThingSpeak about sensor info
+ * You'll need to define some values in mywifi.h for this to work.
+ */
+const int report_frequency_seconds = 900;

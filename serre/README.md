@@ -16,3 +16,7 @@ stored in the single file mywifi.h . A sample version of this file is provided,
 I'm not sharing mine as it contains configuration settings of my network.
 
 More customisation can be done by edition personal.c .
+
+Sensor or event data can be sent to ThingSpeak by configuring a channel on that site,
+and copying the channel id and the keys to mywifi.h . The time interval between reports
+is configurable in personal.c (default 900 seconds).

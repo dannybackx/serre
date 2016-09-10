@@ -30,6 +30,7 @@
 #include "PubSubClient.h"
 #include "SFE_BMP180.h"
 #include "esptime.h"
+#include "ThingSpeak.h"
 
 extern "C" {
 #include <ip_addr.h>
@@ -91,7 +92,7 @@ double		newPressure, newTemperature, oldPressure, oldTemperature;
 int		percentage;		// How much of a difference before notify
 int		valve = 0;		// Closed = 0
 
-time_t		tsnow, tsboot;
+time_t		tsnow, tsboot, tsprevious = 0;
 int		nreconnects = 0;
 struct tm	*now;
 char		buffer[64];
@@ -142,6 +143,15 @@ void setup() {
     WiFi.macAddress().c_str(),
     WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
   Serial.println(SystemInfo2);
+
+  // Set allowed TCP sockets to the maximum
+  sint8 rc = espconn_tcp_set_max_con(15);
+  if (rc < 0) {
+    Serial.println("Failed to increase #TCP connections");
+  } else {
+    uint8 mc = espconn_tcp_get_max_con();
+    Serial.printf("TCP connection limit set to %d\n", mc);
+  }
 
   // This one will not fail to create
   et = new esptime();
@@ -221,6 +231,9 @@ void setup() {
 
   water = new Water(watering_schedule_string);
 
+  // Thingspeak
+  ThingSpeak.begin(espClient);
+
   Serial.println("Ready");
 }
 
@@ -251,6 +264,10 @@ void loop() {
   if (state != oldstate) {
     // Report change
     Serial.printf("Changed from %d to %d at %2d:%2d\n", oldstate, state, now->tm_hour, now->tm_min);
+#ifdef THINGSPEAK_CHANNEL
+    ThingSpeak.setField(3, state);
+    ThingSpeak.writeFields(THINGSPEAK_CHANNEL, THINGSPEAK_WRITE);
+#endif
   }
 
   delay(100);
@@ -259,6 +276,24 @@ void loop() {
     ValveReset();
   } else {
     ValveOpen();
+  }
+
+  // Periodic reporting
+  if (tsprevious == 0 || tsnow - tsprevious > report_frequency_seconds) {
+    tsprevious = tsnow;
+
+    // Send stuff
+    if (bmp) {
+      // Query the sensor
+      BMPQuery();
+
+#ifdef THINGSPEAK_CHANNEL
+      // Send the result
+      ThingSpeak.setField(1, (float)newTemperature);
+      ThingSpeak.setField(2, (float)newPressure);
+      ThingSpeak.writeFields(THINGSPEAK_CHANNEL, THINGSPEAK_WRITE);
+#endif
+    }
   }
 }
 

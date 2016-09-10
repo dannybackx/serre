@@ -40,6 +40,7 @@ LIBS = $(ESP_LIBS)/Wire \
        $(ESP_LIBS)/ArduinoOTA \
        $(ESP_LIBS)/ESP8266mDNS \
        $(ESP_LIBS)/ESP8266WebServer \
+       ${MYLIBS}/thingspeak \
        ${MYLIBS}/pubsubclient
 
 #=== Project specific definitions: sketch and list of needed libraries

@@ -47,3 +47,13 @@ extern int external_network;
  */
 #define	MQTT_EXT_SERVER	"my.ddns.org"
 #define MQTT_EXT_PORT	1883
+
+/*
+ * Thingspeak
+ *
+ * Periodic reports of measured values and events to your ThingSpeak channel.
+ * Undefine these macros to disable the functionality.
+ */
+#define	THINGSPEAK_CHANNEL	1
+#define	THINGSPEAK_READ		"abc"
+#define	THINGSPEAK_WRITE	"def"

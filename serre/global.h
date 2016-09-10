@@ -36,6 +36,7 @@ extern int personal_timezone;
 extern const char *mqtt_server;
 extern const int mqtt_port;
 extern char *watering_schedule_string;
+extern int report_frequency_seconds;
 
 extern const char *mqtt_topic_serre;
 extern const char *mqtt_topic_bmp180;
