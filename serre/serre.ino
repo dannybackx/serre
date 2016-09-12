@@ -46,9 +46,9 @@ static int OTAprev;
 const char *mqtt_user = MY_MQTT_USER;
 const char *mqtt_password = MY_MQTT_PASSWORD;
 
-// MQTT
-WiFiClient	espClient;
-PubSubClient	client(espClient);
+// One "client" per application / connection
+WiFiClient	pubSubEspClient, IfTttEspClient, TSEspClient;
+PubSubClient	client(pubSubEspClient);
 void ext_mqtt_connect_gethostbyname(const char *server);
 Ifttt		*ifttt = 0;
 
@@ -214,7 +214,7 @@ void setup() {
 
   // IFTTT
 #ifdef IFTTT_KEY
-  ifttt = new Ifttt(espClient);
+  ifttt = new Ifttt(IfTttEspClient);
 #endif
 
   // MQTT
@@ -249,7 +249,7 @@ void setup() {
   water = new Water(watering_schedule_string);
 
   // Thingspeak
-  ThingSpeak.begin(espClient);
+  ThingSpeak.begin(TSEspClient);
 
   Serial.println("Ready");
 }
