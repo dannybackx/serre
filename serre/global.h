@@ -83,7 +83,7 @@ extern char *watering_schedule_string;
 #include "Ifttt.h"
 
 extern SFE_BMP180	*bmp;
-extern void BMPQuery();
+extern int BMPQuery();
 extern Water *water;
 #endif
 

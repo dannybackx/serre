@@ -38,7 +38,7 @@ public:
 
 private:
   WiFiClient client;
-  static const char *json_template1, *json_template2, *json_template3;
+  static const char *json_template1, *json_template2, *json_template3, *html_template;
   void sendEventJson(char *key, char *event, char *json);
 };
 #endif

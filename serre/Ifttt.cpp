@@ -53,49 +53,61 @@ extern "C" {
   void DebugInt(int);
 }
 
-void Ifttt::sendEvent(char *key, char *event, char *value1) {
-  char json[256];
-  if (value1 == NULL) {
-    json[0] = 0;
-  } else {
-    sprintf(json, json_template1, value1);
-  }
-  sendEvent(key, event, value1, NULL, NULL);
-}
-
 const char *Ifttt::json_template1 = "{\"value1\":\"%s\"}";
 const char *Ifttt::json_template2 = "{\"value1\":\"%s\",\"value2\":\"%s\"}";
 const char *Ifttt::json_template3 = "{\"value1\":\"%s\",\"value2\":\"%s\",\"value3\":\"%s\"}";
-
-void Ifttt::sendEvent(char *key, char *event, char *value1, char *value2) {
-  char json[256];
-  sprintf(json, json_template2, value1, value2);
-  sendEventJson(key, event, json);
-}
+const char *Ifttt::html_template =
+	"POST /trigger/%s/with/key/%s HTTP/1.1\r\n"
+  	"Host: maker.ifttt.com\r\n"
+  	"Content-Type: application/json\r\n"
+	"Content-Length: %d\r\n\r\n";
 
 void Ifttt::sendEvent(char *key, char *event) {
   sendEventJson(key, event, (char *)"");
 }
 
-void Ifttt::sendEvent(char *key, char *event, char *value1, char *value2, char *value3) {
-  char json[256];
-  sprintf(json, json_template2, value1, value2, value3);
+void Ifttt::sendEvent(char *key, char *event, char *value1) {
+  if (value1 == 0)
+    return sendEvent(key, event);
+  char *json = (char *)malloc(strlen(json_template1) + strlen(value1) + 5);
+  sprintf(json, json_template1, value1);
   sendEventJson(key, event, json);
+  free(json);
+}
+
+void Ifttt::sendEvent(char *key, char *event, char *value1, char *value2) {
+  if (value2 == 0)
+    return sendEvent(key, event, value1);
+  char *json = (char *)malloc(strlen(json_template2) + strlen(value1) + strlen(value2) + 5);
+  sprintf(json, json_template2, value1, value2);
+  sendEventJson(key, event, json);
+  free(json);
+}
+
+void Ifttt::sendEvent(char *key, char *event, char *value1, char *value2, char *value3) {
+  if (value3 == 0)
+    return sendEvent(key, event, value1, value2);
+  char *json = (char *)malloc(strlen(json_template3) + strlen(value1) + strlen(value2) + strlen(value3) + 5);
+  sprintf(json, json_template3, value1, value2, value3);
+  sendEventJson(key, event, json);
+  free(json);
 }
 
 void Ifttt::sendEventJson(char *key, char *event, char *json) {
   client.connect("maker.ifttt.com", 80);
-  char post[256];	// big enough ?
 
   int len = strlen(json);
 
-  const char *html_template = "POST /trigger/%s/with/key/%s HTTP/1.1\r\n"
-  	"Host: maker.ifttt.com\r\n"
-  	"Content-Type: application/json\r\n"
-	"Content-Length: %d\r\n\r\n";
+  char *post = (char *)malloc(strlen(html_template) + strlen(key) + strlen(event) + 5);
   sprintf(post, html_template, event, key, len);
 
   client.print(post);
   client.print(json);
+
+  // Debug(post); Debug("\n");
+  // Debug(json); Debug("\n");
+
   // client.stop();
+
+  free(post);
 }
