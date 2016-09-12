@@ -17,7 +17,8 @@
 #====================================================================================
 
 SKETCH = $(HOME)/src/sketchbook/esp8266/serre/serre.ino
-EXTRA_SRC = SFE_BMP180.cpp personal.c callback.cpp Water.cpp DS3231.cpp mywifi.cpp esptime.cpp \
+EXTRA_SRC = SFE_BMP180.cpp personal.c callback.cpp DS3231.cpp mywifi.cpp esptime.cpp \
+	Water.cpp Ifttt.cpp \
 	strftime.c \
 	scanf.c bcopy.c strtoq.c strtouq.c
 

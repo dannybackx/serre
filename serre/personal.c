@@ -58,8 +58,8 @@ int verbose = 0;
  *	format is CSV
  *	hour,onoff
  */
-// char *watering_schedule_string = "21:00,1,21:15,0";
-char *watering_schedule_string = "16:27,1,16:28,0";
+char *watering_schedule_string = "21:20,1,21:30,0";
+// char *watering_schedule_string = "16:27,1,16:28,0";
 
 /*
  * NTP servers

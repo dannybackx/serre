@@ -23,14 +23,13 @@
 
 // See http://www.bc-robotics.com/tutorials/controlling-a-solenoid-valve-with-arduino/
 
-#define	ENABLE_I2C
-
 #include <ESP8266WiFi.h>
 #include <Wire.h>       // Required to compile UPnP
 #include "PubSubClient.h"
 #include "SFE_BMP180.h"
 #include "esptime.h"
 #include "ThingSpeak.h"
+#include "Ifttt.h"
 
 extern "C" {
 #include <ip_addr.h>
@@ -199,8 +198,8 @@ void setup() {
       client.publish(mqtt_topic_serre, "OTA Error");
     }
   });
-  ArduinoOTA.setPort(8266);
-  ArduinoOTA.setHostname("OTA-Serre");
+  ArduinoOTA.setPort(OTA_PORT);
+  ArduinoOTA.setHostname(OTA_HOSTNAME);
   // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.begin();
@@ -225,6 +224,13 @@ void setup() {
   Serial.print("Initializing BMP180 ... ");
   BMPInitialize();
   Serial.println(bmp ? "ok" : "failed");
+
+  // Alert our owner via IFTTT if the sensor didn't initialize well
+  if (bmp == NULL) {
+    Ifttt *ifttt = new Ifttt(espClient);
+    ifttt->sendEvent((char *)IFTTT_KEY, (char *)IFTTT_EVENT,
+      (char *)"test", (char *)"ab", (char *)"cde");
+  }
 
   pinMode(valve_pin, OUTPUT);
   pinMode(led_pin, OUTPUT);
@@ -265,8 +271,11 @@ void loop() {
     // Report change
     Serial.printf("Changed from %d to %d at %2d:%2d\n", oldstate, state, now->tm_hour, now->tm_min);
 #ifdef THINGSPEAK_CHANNEL
+    Serial.printf("Feeding ThingSpeak field 3, %d %d -> %d\n", now->tm_hour, now->tm_min, state);
     ThingSpeak.setField(3, state);
     ThingSpeak.writeFields(THINGSPEAK_CHANNEL, THINGSPEAK_WRITE);
+#else
+#warning no ThingSpeak
 #endif
   }
 
@@ -292,6 +301,7 @@ void loop() {
       ThingSpeak.setField(1, (float)newTemperature);
       ThingSpeak.setField(2, (float)newPressure);
       ThingSpeak.writeFields(THINGSPEAK_CHANNEL, THINGSPEAK_WRITE);
+      Serial.printf("Feeding ThingSpeak channels 1+2\n");
 #endif
     }
   }
@@ -316,7 +326,7 @@ void reconnect(void) {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("ESP8266Client", mqtt_user, mqtt_password)) {
+    if (client.connect(MQTT_HOSTNAME, mqtt_user, mqtt_password)) {
       Serial.println("connected");
 
       // Get the current time
@@ -362,14 +372,12 @@ void DebugInt(int i) {
 }
 
 void BMPInitialize() {
-#ifdef ENABLE_I2C
   bmp = new SFE_BMP180();
   char ok = bmp->begin();	// 0 return value is a problem
   if (ok == 0) {
     delete bmp;
     bmp = 0;
   }
-#endif
 }
 
 void BMPQuery() {

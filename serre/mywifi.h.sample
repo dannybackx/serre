@@ -57,3 +57,13 @@ extern int external_network;
 #define	THINGSPEAK_CHANNEL	1
 #define	THINGSPEAK_READ		"abc"
 #define	THINGSPEAK_WRITE	"def"
+
+/*
+ * IFTTT : trigger events from this device
+ *
+ * You need to make your own key on https://maker.ifttt.com and copy it here.
+ * You'll also need to create your trigger, based on the "Maker" event.
+ * Can be tested with e.g. curl -X POST https://maker.ifttt.com/trigger/{event}/with/key/{key}
+ */
+#define IFTTT_KEY	"abcde"
+#define	IFTTT_EVENT	"fghij"

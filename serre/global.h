@@ -80,6 +80,7 @@ extern char *watering_schedule_string;
 #include <ESP8266WiFi.h>
 #include "SFE_BMP180.h"
 #include "Water.h"
+#include "Ifttt.h"
 
 extern SFE_BMP180	*bmp;
 extern void BMPQuery();
