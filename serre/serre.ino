@@ -50,7 +50,7 @@ const char *mqtt_password = MY_MQTT_PASSWORD;
 WiFiClient	espClient;
 PubSubClient	client(espClient);
 void ext_mqtt_connect_gethostbyname(const char *server);
-Ifttt *ifttt = 0;
+Ifttt		*ifttt = 0;
 
 #include "global.h"
 #include "Water.h"
@@ -213,7 +213,9 @@ void setup() {
   Serial.println(buffer);
 
   // IFTTT
+#ifdef IFTTT_KEY
   ifttt = new Ifttt(espClient);
+#endif
 
   // MQTT
   if (external_network) {
@@ -231,13 +233,15 @@ void setup() {
   Serial.println(bmp ? "ok" : "failed");
 
   // Alert our owner via IFTTT if the sensor didn't initialize well
+#ifdef IFTTT_KEY
   if (bmp == NULL) {
     ifttt->sendEvent((char *)IFTTT_KEY, (char *)IFTTT_EVENT,
       (char *)"BMP180 Initialisation failure", (char *)"ab", (char *)"cde");
   } else {
     ifttt->sendEvent((char *)IFTTT_KEY, (char *)IFTTT_EVENT,
-      (char *)"Boot report", SystemInfo1);
+      (char *)"Boot report", SystemInfo1, SystemInfo2);
   }
+#endif
 
   pinMode(valve_pin, OUTPUT);
   pinMode(led_pin, OUTPUT);
@@ -302,12 +306,24 @@ void loop() {
     if (bmp) {
       int bmperror;
       // Query the sensor
+      bmperror = BMPQuery();
+#if 0
+      Serial.printf("BMPQuery -> %d\n", bmperror);
+      {
+      int a, b, c;
+      a = newTemperature;
+      b = (newTemperature - a) * 100;
+      c = newPressure;
+      Serial.printf("BMPQuery temp %d.%02d pres %d\n", a, b, c);
+      }
+#endif
       if ((bmperror = BMPQuery()) != 0) {
         // Error
 	char e[20];
 	sprintf(e, "%d", bmperror);
-
+#ifdef IFTTT_KEY
 	ifttt->sendEvent((char *)IFTTT_KEY, (char *)IFTTT_EVENT, (char *)"BMP failure", e);
+#endif
       } else {
 	// BMP180 results ok
 
@@ -399,10 +415,12 @@ void BMPInitialize() {
 /*
  * Returns 0 on success, negative values on error
  * -1 not initialized
- * -2 nan
+ * -2xx nan
  * -3 communication error
  */
 int BMPQuery() {
+  bool nan = false;
+
   if (bmp == 0)
     return -1;
 
@@ -414,7 +432,7 @@ int BMPQuery() {
 #ifdef DEBUG
     DEBUG.printf("BMP180 : communication error (temperature)\n");
 #endif
-    return -2;
+    return -201;
   }
 
   char d3 = bmp->startPressure(0);
@@ -424,22 +442,22 @@ int BMPQuery() {
 #ifdef DEBUG
     DEBUG.printf("BMP180 : communication error (pressure)\n");
 #endif
-    return -2;
+    return -202;
   }
 
   if (isnan(newTemperature) || isinf(newTemperature)) {
     newTemperature = oldTemperature;
-    // nan = true;
+    nan = true;
   }
   if (isnan(newPressure) || isinf(newPressure)) {
     newPressure = oldPressure;
-    // nan = true;
+    nan = true;
   }
   if (nan) {
 #ifdef DEBUG
     DEBUG.println("BMP180 nan");
 #endif
-    return -2;
+    return -203;
   }
   return 0;
 }
