@@ -20,25 +20,11 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
-#ifndef _INCLUDE_WATER_H_
-#define _INCLUDE_WATER_H_
+#ifndef _INCLUDE_ITEM_H_
+#define _INCLUDE_ITEM_H_
 
-#include "item.h"
-
-class Water {
-public:
-  Water();
-  Water(char *);
-  ~Water();
-  int loop(int, int);
-  void setSchedule(char *);
-  char *getSchedule();		// Caller must free result
-  void set(int);
-
-private:
-  int nitems;
-  item *items;
-
-  int state;
+struct item {
+  short hour, minute, state;
 };
+
 #endif
