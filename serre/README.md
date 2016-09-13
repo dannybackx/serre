@@ -15,8 +15,14 @@ The WiFi startup code is written such that the parameters of your network can be
 stored in the single file mywifi.h . A sample version of this file is provided,
 I'm not sharing mine as it contains configuration settings of my network.
 
-More customisation can be done by edition personal.c .
+More customisation can be done by editing personal.c .
 
 Sensor or event data can be sent to ThingSpeak by configuring a channel on that site,
 and copying the channel id and the keys to mywifi.h . The time interval between reports
 is configurable in personal.c (default 900 seconds).
+
+It can be queried with the ThingSpeak APIs such as
+  curl -o feed.json -X GET "https://api.thingspeak.com/channels/{channel}/feeds.json?api_key={channel_read_key}&results=500"
+
+Documentation on that is at
+  https://nl.mathworks.com/help/thingspeak/get-a-channel-feed.html

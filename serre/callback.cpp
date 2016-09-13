@@ -70,7 +70,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
   /*
    * Requests for information, or commands for the module
    */
-  if (strcmp(topic, mqtt_topic_serre) == 0) {
+  if (strcmp(topic, mqtt_topic) == 0) {
     /*
      * Note : must always compare just the indicated length when comparing with payload.
      * Also make sure to compare in the right order, e.g.

@@ -35,10 +35,10 @@ extern char		SystemInfo1[], SystemInfo2[];
 extern int personal_timezone;
 extern const char *mqtt_server;
 extern const int mqtt_port;
-extern char *watering_schedule_string;
+extern char *schedule_string;
 extern int report_frequency_seconds;
 
-extern const char *mqtt_topic_serre;
+extern const char *mqtt_topic;
 extern const char *mqtt_topic_bmp180;
 extern const char *mqtt_topic_valve;
 extern const char *mqtt_topic_valve_start;

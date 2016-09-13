@@ -28,22 +28,22 @@ const int personal_timezone = +2;
 const char *mqtt_server = "192.168.1.185";
 const int mqtt_port = 1883;
 
-const char *mqtt_topic_serre =		"Serre";
-const char *mqtt_topic_bmp180 =		"Serre/BMP180";
-const char *mqtt_topic_valve =		"Serre/Valve";
-const char *mqtt_topic_valve_start =	"Serre/Valve/1";
-const char *mqtt_topic_valve_stop =	"Serre/Valve/0";
-const char *mqtt_topic_report =		"Serre/Report";
-const char *mqtt_topic_report_freq =	"Serre/Report/Frequency";
-const char *mqtt_topic_restart =	"Serre/System/Reboot";
-const char *mqtt_topic_reconnects =	"Serre/System/Reconnects";
-const char *mqtt_topic_boot_time =	"Serre/System/Boot";
-const char *mqtt_topic_current_time =	"Serre/System/Time";
-const char *mqtt_topic_schedule_set =	"Serre/Schedule/Set";
-const char *mqtt_topic_schedule =	"Serre/Schedule";
-const char *mqtt_topic_verbose =	"Serre/System/Verbose";
-const char *mqtt_topic_version =	"Serre/System/Version";
-const char *mqtt_topic_info =		"Serre/System/Info";
+const char *mqtt_topic =		SystemId;
+const char *mqtt_topic_bmp180 =		SystemId "/BMP180";
+const char *mqtt_topic_valve =		SystemId "/Valve";
+const char *mqtt_topic_valve_start =	SystemId "/Valve/1";
+const char *mqtt_topic_valve_stop =	SystemId "/Valve/0";
+const char *mqtt_topic_report =		SystemId "/Report";
+const char *mqtt_topic_report_freq =	SystemId "/Report/Frequency";
+const char *mqtt_topic_restart =	SystemId "/System/Reboot";
+const char *mqtt_topic_reconnects =	SystemId "/System/Reconnects";
+const char *mqtt_topic_boot_time =	SystemId "/System/Boot";
+const char *mqtt_topic_current_time =	SystemId "/System/Time";
+const char *mqtt_topic_schedule_set =	SystemId "/Schedule/Set";
+const char *mqtt_topic_schedule =	SystemId "/Schedule";
+const char *mqtt_topic_verbose =	SystemId "/System/Verbose";
+const char *mqtt_topic_version =	SystemId "/System/Version";
+const char *mqtt_topic_info =		SystemId "/System/Info";
 
 // Pin definitions
 const int	valve_pin = 0;
@@ -58,8 +58,8 @@ int verbose = 0;
  *	format is CSV
  *	hour,onoff
  */
-char *watering_schedule_string = "21:20,1,21:30,0";
-// char *watering_schedule_string = "16:27,1,16:28,0";
+char *schedule_string = "21:20,1,21:30,0";
+// char *schedule_string = "16:27,1,16:28,0";
 
 /*
  * NTP servers

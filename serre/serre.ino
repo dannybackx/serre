@@ -53,7 +53,11 @@ void ext_mqtt_connect_gethostbyname(const char *server);
 Ifttt		*ifttt = 0;
 
 #include "global.h"
+#ifdef KIPPEN
+#include "Hatch.h"
+#else
 #include "Water.h"
+#endif
 
 int led_pin = 13;		// D11
 int speed = 255;		// Value to be written to the controller
@@ -97,7 +101,11 @@ int		nreconnects = 0;
 struct tm	*now;
 char		buffer[64];
 
+#ifdef KIPPEN
+Hatch		*hatch = NULL;
+#else
 Water		*water = NULL;
+#endif
 char		SystemInfo1[80], SystemInfo2[256];
 
 int oldstate = 0, state = 0;
@@ -168,7 +176,7 @@ void setup() {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
-      client.publish(mqtt_topic_serre, "OTA start");
+      client.publish(mqtt_topic, "OTA start");
     }
   });
   ArduinoOTA.onEnd([]() {
@@ -176,7 +184,7 @@ void setup() {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
-      client.publish(mqtt_topic_serre, "OTA complete");
+      client.publish(mqtt_topic, "OTA complete");
     }
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
@@ -197,7 +205,7 @@ void setup() {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
-      client.publish(mqtt_topic_serre, "OTA Error");
+      client.publish(mqtt_topic, "OTA Error");
     }
   });
   ArduinoOTA.setPort(OTA_PORT);
@@ -236,17 +244,21 @@ void setup() {
 #ifdef IFTTT_KEY
   if (bmp == NULL) {
     ifttt->sendEvent((char *)IFTTT_KEY, (char *)IFTTT_EVENT,
-      (char *)"BMP180 Initialisation failure", (char *)"ab", (char *)"cde");
+      (char *)MSG_BMPFAIL, SystemInfo1, SystemInfo2);
   } else {
     ifttt->sendEvent((char *)IFTTT_KEY, (char *)IFTTT_EVENT,
-      (char *)"Boot report", SystemInfo1, SystemInfo2);
+      (char *)MSG_BOOT, SystemInfo1, SystemInfo2);
   }
 #endif
 
   pinMode(valve_pin, OUTPUT);
   pinMode(led_pin, OUTPUT);
 
-  water = new Water(watering_schedule_string);
+#ifdef KIPPEN
+  hatch = new Hatch(schedule_string);
+#else
+  water = new Water(schedule_string);
+#endif
 
   // Thingspeak
   ThingSpeak.begin(TSEspClient);
@@ -274,7 +286,11 @@ void loop() {
   // Get the current time
   tsnow = et->now(NULL);
   now = localtime(&tsnow);
+#ifdef KIPPEN
+  state = hatch->loop(now->tm_hour, now->tm_min);
+#else
   state = water->loop(now->tm_hour, now->tm_min);
+#endif
 
   // Serial.printf("TS %08x Water(%d,%d) -> %d\n", tsnow, now->tm_hour, now->tm_min, state);
 
@@ -368,16 +384,16 @@ void reconnect(void) {
       // Once connected, publish an announcement...
       if (mqtt_initial) {
 	strftime(buffer, sizeof(buffer), "boot %F %T", now);
-        client.publish(mqtt_topic_serre, buffer);
+        client.publish(mqtt_topic, buffer);
 
 	mqtt_initial = 0;
       } else {
 	strftime(buffer, sizeof(buffer), "reconnect %F %T", now);
-        client.publish(mqtt_topic_serre, buffer);
+        client.publish(mqtt_topic, buffer);
       }
 
       // ... and (re)subscribe
-      client.subscribe(mqtt_topic_serre);
+      client.subscribe(mqtt_topic);
       client.subscribe(mqtt_topic_valve);
       client.subscribe(mqtt_topic_bmp180);
       client.subscribe(mqtt_topic_verbose);
@@ -464,7 +480,11 @@ int BMPQuery() {
 
 void SetState(int s) {
   state = s;
+#ifdef KIPPEN
+  hatch->set(s);
+#else
   water->set(s);
+#endif
 }
 
 static void _dns_found_cb(const char *name, ip_addr_t *ipaddr, void *arg)
