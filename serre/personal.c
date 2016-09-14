@@ -59,7 +59,6 @@ int verbose = 0;
  *	hour,onoff
  */
 char *schedule_string = "21:20,1,21:30,0";
-// char *schedule_string = "16:27,1,16:28,0";
 
 /*
  * NTP servers

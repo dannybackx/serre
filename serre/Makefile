@@ -21,6 +21,7 @@ EXTRA_SRC = SFE_BMP180.cpp personal.c callback.cpp DS3231.cpp mywifi.cpp esptime
 	Water.cpp Ifttt.cpp \
 	strftime.c \
 	scanf.c bcopy.c strtoq.c strtouq.c
+EXTRA_DEFINES=	-DSERRE
 
 # ESP_ROOT=/home/danny/.arduino15/packages/esp8266/hardware/esp8266/2.3.0
 # ESP_LIBS=$(ESP_ROOT)/libraries
@@ -100,7 +101,7 @@ ESP_TOOL = /home/danny/.arduino15/packages/esp8266/tools/esptool/0.4.6/esptool
 DEBUG=-Os -g
 
 INCLUDE_DIRS += $(SDK_ROOT)/include ${LWIP_SDK_ROOT}/include $(CORE_DIR) $(ESP_ROOT)/variants/generic $(OBJ_DIR) ${EXTRA_INCLUDE}
-C_DEFINES = -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ -DF_CPU=80000000L -DARDUINO=10605 -DARDUINO_ESP8266_ESP01 -DARDUINO_ARCH_ESP8266 -DESP8266
+C_DEFINES = -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ -DF_CPU=80000000L -DARDUINO=10605 -DARDUINO_ESP8266_ESP01 -DARDUINO_ARCH_ESP8266 -DESP8266 ${EXTRA_DEFINES}
 C_INCLUDES = $(foreach dir,$(INCLUDE_DIRS) $(USER_DIRS),-I$(dir))
 C_FLAGS ?= -c ${DEBUG} -Wpointer-arith -Wno-implicit-function-declaration -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -falign-functions=4 -MMD -std=gnu99 -ffunction-sections -fdata-sections
 CPP_FLAGS ?= -c ${DEBUG} -mlongcalls -mtext-section-literals -fno-exceptions -fno-rtti -falign-functions=4 -std=c++11 -MMD -ffunction-sections -fdata-sections

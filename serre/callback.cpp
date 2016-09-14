@@ -111,16 +111,22 @@ void callback(char *topic, byte *payload, unsigned int length) {
       client.publish(mqtt_topic_valve, valve ? "Open" : "Closed");
     } else if (strncmp(pl, mqtt_topic_valve_start, length) == 0) {
       if (verbose & VERBOSE_VALVE) Serial.println("Topic valve start");
+#ifdef SERRE
       SetState(1);
       ValveOpen();
+#endif
     } else if (strncmp(pl, mqtt_topic_valve_stop, length) == 0) {
       if (verbose & VERBOSE_VALVE) Serial.println("Topic valve stop");
+#ifdef SERRE
       SetState(0);
       ValveReset();
+#endif
     } else if (strncmp(pl, mqtt_topic_restart, length) == 0) {
       // Always stop water flow before reboot
+#ifdef SERRE
       SetState(0);
       ValveReset();
+#endif
       // Reboot the ESP without a software update.
       ESP.restart();
     } else if (strncmp(pl, mqtt_topic_current_time, length) == 0) {
@@ -155,14 +161,19 @@ void callback(char *topic, byte *payload, unsigned int length) {
       sprintf(reply, "System Info %s", SystemInfo2);
       client.publish(mqtt_topic_info, reply);
     } else if (strncmp(pl, mqtt_topic_schedule, length) == 0) {
+#ifdef SERRE
       char *sched = water->getSchedule();
+#else
+      char *sched = hatch->getSchedule();
+#endif
       client.publish(mqtt_topic_schedule, sched);
       Serial.printf("Schedule %s -> %s\n", mqtt_topic_schedule, sched);
       free(sched);
-
+#ifdef SERRE
       // Always stop water flow when schedule is manipulated
       SetState(0);
       ValveReset();
+#endif
     }
 
     // End topic == mqtt_topic_serre
@@ -173,7 +184,11 @@ void callback(char *topic, byte *payload, unsigned int length) {
     // Ignore, this is a message we've sent out ourselves
   } else if (strcmp(topic, mqtt_topic_schedule_set) == 0) {
     Serial.printf("Set schedule to %s\n", pl);
+#ifdef SERRE
     water->setSchedule(pl);
+#else
+    hatch->setSchedule(pl);
+#endif
   } else if (strcmp(topic, mqtt_topic_verbose) == 0) {
     sscanf(pl, "%d", &verbose);
     Serial.printf("Verbosity set to %d\n", verbose);

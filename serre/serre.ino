@@ -50,6 +50,7 @@ const char *mqtt_password = MY_MQTT_PASSWORD;
 WiFiClient	pubSubEspClient, IfTttEspClient, TSEspClient;
 PubSubClient	client(pubSubEspClient);
 void ext_mqtt_connect_gethostbyname(const char *server);
+ip_addr_t *mqtt_ext_server;		// IP Address of MQTT server, if on ext network
 Ifttt		*ifttt = 0;
 
 #include "global.h"
@@ -113,10 +114,13 @@ int oldstate = 0, state = 0;
 // Forward declarations
 void callback(char * topic, byte *payload, unsigned int length);
 void reconnect(void);
-void ValveReset(), ValveOpen();
 void BMPInitialize();
 int BMPQuery();
 void RTCInitialize();
+
+#ifdef SERRE
+void ValveReset(), ValveOpen();
+#endif
 
 // Arduino setup function
 void setup() {
@@ -169,8 +173,10 @@ void setup() {
   // OTA : allow for software upgrades
   Serial.printf("Starting OTA listener ...\n");
   ArduinoOTA.onStart([]() {
+#ifdef SERRE
     // Always stop water flow before OTA Software update
     ValveReset();
+#endif
     Serial.print("OTA Start : ");
 
     if (verbose & VERBOSE_OTA) {
@@ -225,6 +231,8 @@ void setup() {
   ifttt = new Ifttt(IfTttEspClient);
 #endif
 
+// Moved to reconnect().
+#if 0
   // MQTT
   if (external_network) {
     Serial.println("Starting MQTT (external network)");
@@ -234,6 +242,7 @@ void setup() {
     client.setServer(mqtt_server, mqtt_port);
   }
   client.setCallback(callback);
+#endif
 
   // BMP180 temperature and air pressure sensor
   Serial.print("Initializing BMP180 ... ");
@@ -251,7 +260,9 @@ void setup() {
   }
 #endif
 
+#ifdef SERRE
   pinMode(valve_pin, OUTPUT);
+#endif
   pinMode(led_pin, OUTPUT);
 
 #ifdef KIPPEN
@@ -308,11 +319,13 @@ void loop() {
 
   delay(100);
 
+#ifdef SERRE
   if (state == 0) {
     ValveReset();
   } else {
     ValveOpen();
   }
+#endif
 
   // Periodic reporting
   if (tsprevious == 0 || tsnow - tsprevious > report_frequency_seconds) {
@@ -355,6 +368,7 @@ void loop() {
   }
 }
 
+#ifdef SERRE
 void ValveOpen() {
   valve = 1;
   // digitalWrite(valve_pin, 1);
@@ -366,16 +380,44 @@ void ValveReset() {
   // digitalWrite(valve_pin, 0);
   analogWrite(valve_pin, 0);
 }
+#endif
 
+/*
+ * Remove the loop here: we're getting called from the standard Arduino loop() anyway.
+ */
 void reconnect(void) {
   nreconnects++;
 
+#if 1
+  // If we lost the connection, then the cause might be an IP address change.
+  // So go through DNS so potentially dynamic dns helps us out.
+  if (external_network) {
+    Serial.println("Starting MQTT (external network)");
+    ext_mqtt_connect_gethostbyname(MQTT_EXT_SERVER);
+  } else {
+    Serial.println("Starting MQTT");
+    client.setServer(mqtt_server, mqtt_port);
+  }
+  client.setCallback(callback);
+#endif
+
   // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
+#if 0
+  while (!client.connected())
+#else
+  if (!client.connected())
+#endif
+  {
+    // Serial.print("Attempting MQTT connection...");
+
     // Attempt to connect
     if (client.connect(MQTT_HOSTNAME, mqtt_user, mqtt_password)) {
-      Serial.println("connected");
+      if (external_network)
+        Serial.printf("connected (%d.%d.%d.%d)\n",
+	  ip4_addr1(mqtt_ext_server), ip4_addr2(mqtt_ext_server),
+	  ip4_addr3(mqtt_ext_server), ip4_addr4(mqtt_ext_server));
+      else
+        Serial.println("connected");
 
       // Get the current time
       tsnow = et->now(NULL);
@@ -399,13 +441,19 @@ void reconnect(void) {
       client.subscribe(mqtt_topic_verbose);
       client.subscribe(mqtt_topic_schedule);
       client.subscribe(mqtt_topic_schedule_set);
-    } else {
+    }
+#if 0
+    else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
       delay(5000);
     }
+#else
+    else
+      Serial.println("");
+#endif
   }
 }
 
@@ -492,6 +540,7 @@ static void _dns_found_cb(const char *name, ip_addr_t *ipaddr, void *arg)
   // Serial.printf("MQTT connect to %d.%d.%d.%d\n",
   //   ip4_addr1(ipaddr), ip4_addr2(ipaddr), ip4_addr3(ipaddr), ip4_addr4(ipaddr));
   client.setServer((uint8_t *)ipaddr, MQTT_EXT_PORT);
+  mqtt_ext_server = ipaddr;
 }
 
 void ext_mqtt_connect_gethostbyname(const char *server)
@@ -500,14 +549,14 @@ void ext_mqtt_connect_gethostbyname(const char *server)
    switch (espconn_gethostbyname(NULL, server, &ip_addr, _dns_found_cb))
    {
    case ESPCONN_INPROGRESS:
-      Serial.println("Lookup in progress");
+      // Serial.println("Lookup in progress");
       #ifdef PLATFORM_DEBUG
       os_printf("SMTP DNS lookup for %s\r\n", server);
       #endif
       break;
 
    case ESPCONN_OK:
-      Serial.println("Lookup ok");
+      // Serial.println("Lookup ok");
       _dns_found_cb(server, &ip_addr, NULL);
       break;
       
