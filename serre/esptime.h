@@ -23,6 +23,9 @@
  *   THE SOFTWARE.
  */
 
+#ifndef	_INCLUDE_ESPTIME_H_
+#define	_INCLUDE_ESPTIME_H_
+
 #include "DS3231.h"
 
 extern "C" {
@@ -47,3 +50,4 @@ public:
   time_t now(char *);
   void loop();
 };
+#endif

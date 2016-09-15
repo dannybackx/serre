@@ -20,6 +20,7 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
+#include "esptime.h"
 
 extern double		newPressure, newTemperature, oldPressure, oldTemperature;
 extern int		valve;
@@ -79,12 +80,17 @@ extern char *watering_schedule_string;
 #ifdef __cplusplus
 #include <ESP8266WiFi.h>
 #include "SFE_BMP180.h"
+#ifdef SERRE
 #include "Water.h"
+extern Water *water;
+#else
+#include "Hatch.h"
+extern Hatch *hatch;
+#endif
 #include "Ifttt.h"
 
 extern SFE_BMP180	*bmp;
 extern int BMPQuery();
-extern Water *water;
 #endif
 
 void ValveReset(), ValveOpen();
@@ -92,3 +98,7 @@ void SetState(int);
 extern int mywifi();
 
 extern char *ntp_server_1, *ntp_server_2;
+extern time_t		tsnow, tsboot, tsprevious;
+extern esptime		*et;
+extern int		mqtt_initial;
+extern char		buffer[64];

@@ -28,23 +28,6 @@ const int personal_timezone = +2;
 const char *mqtt_server = MQTT_INT_SERVER;
 const int mqtt_port = MQTT_INT_PORT;
 
-const char *mqtt_topic =		SystemId;
-const char *mqtt_topic_bmp180 =		SystemId "/BMP180";
-const char *mqtt_topic_valve =		SystemId "/Valve";
-const char *mqtt_topic_valve_start =	SystemId "/Valve/1";
-const char *mqtt_topic_valve_stop =	SystemId "/Valve/0";
-const char *mqtt_topic_report =		SystemId "/Report";
-const char *mqtt_topic_report_freq =	SystemId "/Report/Frequency";
-const char *mqtt_topic_restart =	SystemId "/System/Reboot";
-const char *mqtt_topic_reconnects =	SystemId "/System/Reconnects";
-const char *mqtt_topic_boot_time =	SystemId "/System/Boot";
-const char *mqtt_topic_current_time =	SystemId "/System/Time";
-const char *mqtt_topic_schedule_set =	SystemId "/Schedule/Set";
-const char *mqtt_topic_schedule =	SystemId "/Schedule";
-const char *mqtt_topic_verbose =	SystemId "/System/Verbose";
-const char *mqtt_topic_version =	SystemId "/System/Version";
-const char *mqtt_topic_info =		SystemId "/System/Info";
-
 // Pin definitions
 const int	valve_pin = 0;
 
