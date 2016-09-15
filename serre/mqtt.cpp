@@ -40,7 +40,7 @@ const char *mqtt_user = MY_MQTT_USER;
 const char *mqtt_password = MY_MQTT_PASSWORD;
 
 // One "client" per application / connection
-extern WiFiClient	pubSubEspClient, IfTttEspClient, TSEspClient;
+extern WiFiClient	pubSubEspClient;
 extern PubSubClient	client;
 void ext_mqtt_connect_gethostbyname(const char *server);
 ip_addr_t *mqtt_ext_server;		// IP Address of MQTT server, if on ext network
