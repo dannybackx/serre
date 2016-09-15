@@ -49,11 +49,7 @@ PubSubClient	client(pubSubEspClient);
 Ifttt		*ifttt = 0;
 
 #include "global.h"
-#ifdef KIPPEN
 #include "Hatch.h"
-#else
-#include "Water.h"
-#endif
 
 int led_pin = 13;		// D11
 int speed = 255;		// Value to be written to the controller
@@ -97,11 +93,7 @@ int		nreconnects = 0;
 struct tm	*now;
 char		buffer[64];
 
-#ifdef KIPPEN
 Hatch		*hatch = NULL;
-#else
-Water		*water = NULL;
-#endif
 char		SystemInfo1[80], SystemInfo2[256];
 
 int oldstate = 0, state = 0;
@@ -112,10 +104,6 @@ void mqtt_reconnect(void);
 void BMPInitialize();
 int BMPQuery();
 void RTCInitialize();
-
-#ifdef SERRE
-void ValveReset(), ValveOpen();
-#endif
 
 // Arduino setup function
 void setup() {
@@ -168,10 +156,6 @@ void setup() {
   // OTA : allow for software upgrades
   Serial.printf("Starting OTA listener ...\n");
   ArduinoOTA.onStart([]() {
-#ifdef SERRE
-    // Always stop water flow before OTA Software update
-    ValveReset();
-#endif
     Serial.print("OTA Start : ");
 
     if (verbose & VERBOSE_OTA) {
@@ -242,16 +226,9 @@ void setup() {
   }
 #endif
 
-#ifdef SERRE
-  pinMode(valve_pin, OUTPUT);
-#endif
   pinMode(led_pin, OUTPUT);
 
-#ifdef KIPPEN
   hatch = new Hatch(schedule_string);
-#else
-  water = new Water(schedule_string);
-#endif
 
   // Thingspeak
   ThingSpeak.begin(TSEspClient);
@@ -279,11 +256,7 @@ void loop() {
   // Get the current time
   tsnow = et->now(NULL);
   now = localtime(&tsnow);
-#ifdef KIPPEN
   state = hatch->loop(now->tm_hour, now->tm_min);
-#else
-  state = water->loop(now->tm_hour, now->tm_min);
-#endif
 
   // Serial.printf("TS %08x Water(%d,%d) -> %d\n", tsnow, now->tm_hour, now->tm_min, state);
 
@@ -301,12 +274,7 @@ void loop() {
 
   delay(100);
 
-#ifdef SERRE
-  if (state == 0) {
-    ValveReset();
-  } else {
-    ValveOpen();
-  }
+#ifdef KIPPEN
 #endif
 
   // Periodic reporting
@@ -318,16 +286,7 @@ void loop() {
       int bmperror;
       // Query the sensor
       bmperror = BMPQuery();
-#if 0
-      Serial.printf("BMPQuery -> %d\n", bmperror);
-      {
-      int a, b, c;
-      a = newTemperature;
-      b = (newTemperature - a) * 100;
-      c = newPressure;
-      Serial.printf("BMPQuery temp %d.%02d pres %d\n", a, b, c);
-      }
-#endif
+
       if ((bmperror = BMPQuery()) != 0) {
         // Error
 	char e[20];
@@ -349,20 +308,6 @@ void loop() {
     }
   }
 }
-
-#ifdef SERRE
-void ValveOpen() {
-  valve = 1;
-  // digitalWrite(valve_pin, 1);
-  analogWrite(valve_pin, speed);
-}
-
-void ValveReset() {
-  valve = 0;
-  // digitalWrite(valve_pin, 0);
-  analogWrite(valve_pin, 0);
-}
-#endif
 
 extern "C" {
 void Debug(char *s) {
@@ -435,9 +380,5 @@ int BMPQuery() {
 
 void SetState(int s) {
   state = s;
-#ifdef KIPPEN
   hatch->set(s);
-#else
-  water->set(s);
-#endif
 }

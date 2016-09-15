@@ -213,7 +213,8 @@ all:: ${LINKS}
 
 ${LINKS}::	links
 
-links::
+links::	${LINKS:%=../serre/%}
+	-rm -f ${LINKS}
 	for i in ${LINKS}; do  ln -s ../serre/$$i .; done
 	touch links
 
