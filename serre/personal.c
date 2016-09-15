@@ -25,8 +25,8 @@
 
 const int personal_timezone = +2;
 
-const char *mqtt_server = "192.168.1.185";
-const int mqtt_port = 1883;
+const char *mqtt_server = MQTT_INT_SERVER;
+const int mqtt_port = MQTT_INT_PORT;
 
 const char *mqtt_topic =		SystemId;
 const char *mqtt_topic_bmp180 =		SystemId "/BMP180";

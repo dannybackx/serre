@@ -52,6 +52,7 @@ PubSubClient	client(pubSubEspClient);
 void ext_mqtt_connect_gethostbyname(const char *server);
 ip_addr_t *mqtt_ext_server;		// IP Address of MQTT server, if on ext network
 Ifttt		*ifttt = 0;
+int mqtt_connect_reason = 1;	// espconn.h : 0 is ok, errors are negative
 
 #include "global.h"
 #ifdef KIPPEN
@@ -231,19 +232,6 @@ void setup() {
   ifttt = new Ifttt(IfTttEspClient);
 #endif
 
-// Moved to reconnect().
-#if 0
-  // MQTT
-  if (external_network) {
-    Serial.println("Starting MQTT (external network)");
-    ext_mqtt_connect_gethostbyname(MQTT_EXT_SERVER);
-  } else {
-    Serial.println("Starting MQTT");
-    client.setServer(mqtt_server, mqtt_port);
-  }
-  client.setCallback(callback);
-#endif
-
   // BMP180 temperature and air pressure sensor
   Serial.print("Initializing BMP180 ... ");
   BMPInitialize();
@@ -383,77 +371,56 @@ void ValveReset() {
 #endif
 
 /*
- * Remove the loop here: we're getting called from the standard Arduino loop() anyway.
+ * There used to be a loop inside this function.
+ * Removed that, we're getting called from the standard Arduino loop() anyway.
  */
 void reconnect(void) {
-  nreconnects++;
-
-#if 1
-  // If we lost the connection, then the cause might be an IP address change.
-  // So go through DNS so potentially dynamic dns helps us out.
-  if (external_network) {
-    Serial.println("Starting MQTT (external network)");
-    ext_mqtt_connect_gethostbyname(MQTT_EXT_SERVER);
-  } else {
-    Serial.println("Starting MQTT");
-    client.setServer(mqtt_server, mqtt_port);
+  if (mqtt_connect_reason > 0) {
+    // We're not in a reconnect cycle yet, so talk, and do DNS lookup if required.
+    if (external_network) {
+      // This will asynchronously call client.setServer() as well.
+      ext_mqtt_connect_gethostbyname(MQTT_EXT_SERVER);
+      Serial.println("Starting MQTT (external network)");
+    } else {
+      client.setServer(mqtt_server, mqtt_port);
+      Serial.println("Starting MQTT");
+    }
+    client.setCallback(callback);
   }
-  client.setCallback(callback);
-#endif
 
-  // Loop until we're reconnected
-#if 0
-  while (!client.connected())
-#else
-  if (!client.connected())
-#endif
-  {
-    // Serial.print("Attempting MQTT connection...");
+  // Attempt to connect
+  if (client.connect(MQTT_HOSTNAME, mqtt_user, mqtt_password)) {
+    nreconnects++;
 
-    // Attempt to connect
-    if (client.connect(MQTT_HOSTNAME, mqtt_user, mqtt_password)) {
-      if (external_network)
-        Serial.printf("connected (%d.%d.%d.%d)\n",
-	  ip4_addr1(mqtt_ext_server), ip4_addr2(mqtt_ext_server),
-	  ip4_addr3(mqtt_ext_server), ip4_addr4(mqtt_ext_server));
-      else
-        Serial.println("connected");
-
-      // Get the current time
-      tsnow = et->now(NULL);
-      now = localtime(&tsnow);
-
-      // Once connected, publish an announcement...
-      if (mqtt_initial) {
-	strftime(buffer, sizeof(buffer), "boot %F %T", now);
-        client.publish(mqtt_topic, buffer);
-
-	mqtt_initial = 0;
-      } else {
-	strftime(buffer, sizeof(buffer), "reconnect %F %T", now);
-        client.publish(mqtt_topic, buffer);
-      }
-
-      // ... and (re)subscribe
-      client.subscribe(mqtt_topic);
-      client.subscribe(mqtt_topic_valve);
-      client.subscribe(mqtt_topic_bmp180);
-      client.subscribe(mqtt_topic_verbose);
-      client.subscribe(mqtt_topic_schedule);
-      client.subscribe(mqtt_topic_schedule_set);
-    }
-#if 0
-    else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
-    }
-#else
+    if (external_network)
+      Serial.printf("MQTT Connected (%d.%d.%d.%d)\n",
+	ip4_addr1(mqtt_ext_server), ip4_addr2(mqtt_ext_server),
+	ip4_addr3(mqtt_ext_server), ip4_addr4(mqtt_ext_server));
     else
-      Serial.println("");
-#endif
+      Serial.println("MQTT Connected");
+
+    // Get the current time
+    tsnow = et->now(NULL);
+    now = localtime(&tsnow);
+
+    // Once connected, publish an announcement...
+    if (mqtt_initial) {
+      strftime(buffer, sizeof(buffer), "boot %F %T", now);
+      client.publish(mqtt_topic, buffer);
+
+      mqtt_initial = 0;
+    } else {
+      strftime(buffer, sizeof(buffer), "reconnect %F %T", now);
+      client.publish(mqtt_topic, buffer);
+    }
+
+    // ... and (re)subscribe
+    client.subscribe(mqtt_topic);
+    client.subscribe(mqtt_topic_valve);
+    client.subscribe(mqtt_topic_bmp180);
+    client.subscribe(mqtt_topic_verbose);
+    client.subscribe(mqtt_topic_schedule);
+    client.subscribe(mqtt_topic_schedule_set);
   }
 }
 
@@ -546,13 +513,12 @@ static void _dns_found_cb(const char *name, ip_addr_t *ipaddr, void *arg)
 void ext_mqtt_connect_gethostbyname(const char *server)
 {
    ip_addr_t ip_addr;
-   switch (espconn_gethostbyname(NULL, server, &ip_addr, _dns_found_cb))
-   {
+
+   mqtt_connect_reason = espconn_gethostbyname(NULL, server, &ip_addr, _dns_found_cb);
+
+   switch (mqtt_connect_reason) {
    case ESPCONN_INPROGRESS:
       // Serial.println("Lookup in progress");
-      #ifdef PLATFORM_DEBUG
-      os_printf("SMTP DNS lookup for %s\r\n", server);
-      #endif
       break;
 
    case ESPCONN_OK:
@@ -562,16 +528,10 @@ void ext_mqtt_connect_gethostbyname(const char *server)
       
    case ESPCONN_ARG:
       Serial.println("Lookup arg error");
-      #ifdef PLATFORM_DEBUG
-      os_printf("SMTP DNS argument error %s\n", server);
-      #endif
       break;
       
    default:   
       Serial.println("Lookup default");
-      #ifdef PLATFORM_DEBUG
-      os_printf("SMTP DNS lookup error\r\n");
-      #endif
       break;
    }
 }

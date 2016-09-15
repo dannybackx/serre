@@ -48,6 +48,9 @@ extern int external_network;
 #define	MQTT_EXT_SERVER	"my.ddns.org"
 #define MQTT_EXT_PORT	1883
 
+#define	MQTT_INT_SERVER	"192.168.1.185"
+#define MQTT_INT_PORT	1883
+
 /*
  * Thingspeak
  *

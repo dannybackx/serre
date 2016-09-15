@@ -26,3 +26,16 @@ It can be queried with the ThingSpeak APIs such as
 
 Documentation on that is at
   https://nl.mathworks.com/help/thingspeak/get-a-channel-feed.html
+
+The MQTT server can be specified as an IP address, or as a fully qualified domain name.
+For the latter, it is possible to use a dynamic DNS address, but obviously you'll need
+to do the right port mapping so your MQTT broker is reachable.
+
+So your MQTT server address might be specified via
+  #define MQTT_EXT_SERVER "mqtt.MeMyselfAndI.dyndns.org"
+  #define MQTT_EXT_PORT   1883
+
+The assumption is that you use an IP address for a server on your internal network, and
+a FQDN if you're on an public network (external to your home network).
+Example :
+  #define MQTT_SERVER "192.168.1.100"
