@@ -16,12 +16,16 @@
 # User editable area
 #====================================================================================
 
-SKETCH = $(HOME)/src/sketchbook/esp8266/kippen/serre.ino
-EXTRA_SRC = SFE_BMP180.cpp personal.c callback.cpp Hatch.cpp DS3231.cpp mywifi.cpp esptime.cpp \
-	Ifttt.cpp \
+SKETCH = $(HOME)/src/sketchbook/esp8266/kippen/kippen.ino
+EXTRA_SRC = personal.c SFE_BMP180.cpp callback.cpp DS3231.cpp mywifi.cpp esptime.cpp \
+	Hatch.cpp Ifttt.cpp mqtt.cpp \
 	strftime.c \
 	scanf.c bcopy.c strtoq.c strtouq.c
 EXTRA_DEFINES=	-DKIPPEN
+
+LINKS=	bcopy.c callback.cpp config.h DS3231.cpp DS3231.h esptime.cpp esptime.h \
+	global.h Ifttt.cpp Ifttt.h item.h mqtt.cpp mywifi.cpp scanf.c \
+	SFE_BMP180.cpp SFE_BMP180.h strftime.c strtoq.c strtouq.c
 
 # ESP_ROOT=/home/danny/.arduino15/packages/esp8266/hardware/esp8266/2.3.0
 # ESP_LIBS=$(ESP_ROOT)/libraries
@@ -196,17 +200,28 @@ ota: all showotaip
 showotaip:
 	echo "IP Address for OTA is $(UPLOAD_AVAHI_IP) (symbol $(UPLOAD_AVAHI_NAME))"
 
-clean:
+clean::
 	echo Removing all intermediate build files...
 	rm -f ${VI_TMPFILES} ${BAK_FILES}
 	rm -f $(OBJ_DIR)/*
 	rm -rf ${BUILD_ROOT}
 
+clean::
+	-rm -f ${LINKS} links
+
+all:: ${LINKS}
+
+${LINKS}::	links
+
+links::
+	for i in ${LINKS}; do  ln -s ../serre/$$i .; done
+	touch links
+
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
 .PHONY: all
-all: $(OBJ_DIR) $(BUILD_INFO_H) $(MAIN_EXE)
+all:: $(OBJ_DIR) $(BUILD_INFO_H) $(MAIN_EXE)
 
 # Include all available dependencies
 -include $(wildcard $(OBJ_DIR)/*$(DEP_EXT))
