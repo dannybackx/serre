@@ -24,6 +24,7 @@
 #define _INCLUDE_WATER_H_
 
 #include "item.h"
+#include "AFMotor.h"
 
 class Hatch {
 public:
@@ -34,11 +35,18 @@ public:
   void setSchedule(char *);
   char *getSchedule();		// Caller must free result
   void set(int);
+  void setMotor(int n);
+  int moving();
+
+  void Up();
+  void Down();
+  void reset();
 
 private:
   int nitems;
   item *items;
 
-  int state;
+  int _moving;			// -1 is going down, +1 is going up, 0 is off
+  AF_DCMotor *motor;
 };
 #endif

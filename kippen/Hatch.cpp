@@ -23,17 +23,21 @@
 #include <Arduino.h>
 #include "Hatch.h"
 #include "global.h"
+#include "AFMotor.h"
 
 Hatch::Hatch() {
   items = NULL;
   nitems = 0;
-  state = 0;
+  _moving = 0;
+
+  motor = 0;
 }
 
 Hatch::Hatch(char *desc) {
   items = NULL;
   nitems = 0;
-  state = 0;
+  _moving = 0;
+  motor = 0;
   setSchedule(desc);
 }
 
@@ -43,28 +47,36 @@ Hatch::~Hatch() {
     items = NULL;
     nitems = 0;
   }
+
+  delete motor;
+  motor = 0;
 }
 
 int Hatch::loop(int hr, int mn) {
+  // If we're moving, stop if we hit the right sensor
+  if (_moving < 0) {
+    return _moving;
+  } else if (_moving > 0) {
+    return _moving;
+  }
+
+  // We're not moving. Check against the schedule
   for (int i=0; i<nitems; i++) {
     if (items[i].hour == hr && items[i].minute == mn) {
-      state = items[i].state;
-      if (verbose & VERBOSE_WATER) {
-        if (state != 0 && state != 1) {
-	  char t[80];
-          sprintf(t, "## State %d, i %d, hr %d min %d\n", state, i, hr, mn);
-	  Serial.print(t);
-        }
+      switch (items[i].state) {
+      case -1:
+        HatchDown();
+	return _moving;
+      case +1:
+        HatchUp();
+        return _moving;
+      default:
+        ; // No action
       }
-      if (verbose & VERBOSE_WATER) {
-        Serial.printf("Hatch(%d,%d) : change ix %d (%d,%d) %d -> %d\n",
-	  hr, mn, i, items[i].hour, items[i].minute, state, items[i].state);
-      }
-      state = items[i].state;
-      return state;
+      return _moving;
     }
   }
-  return state;
+  return _moving;
 }
 
 extern "C" {
@@ -139,5 +151,43 @@ char *Hatch::getSchedule() {
 }
 
 void Hatch::set(int s) {
-  state = s;
+  _moving = s;
+}
+
+void Hatch::setMotor(int n) {
+  motor = new AF_DCMotor(n);
+  motor->run(RELEASE);
+}
+
+#if 0
+void SpeedTest() {
+  int speed = ((count % 100) < 50) ? 255 : 128;
+
+  motor->setSpeed(speed);
+  if ((count % 200) < 100)
+    motor->run(FORWARD);
+  else
+    motor->run(BACKWARD);
+}
+#endif
+
+int Hatch::moving() {
+  return _moving;
+}
+
+void Hatch::Up() {
+  if (_moving)
+    return;
+  motor->run(BACKWARD);
+  _moving = +1;
+}
+
+void Hatch::Down() {
+  if (_moving)
+    return;
+  motor->run(FORWARD);
+  _moving = -1;
+}
+
+void Hatch::reset() {
 }

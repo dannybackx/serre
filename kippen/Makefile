@@ -18,10 +18,11 @@
 
 SKETCH = $(HOME)/src/sketchbook/esp8266/kippen/kippen.ino
 EXTRA_SRC = personal.c SFE_BMP180.cpp callback.cpp DS3231.cpp mywifi.cpp esptime.cpp \
-	Hatch.cpp Ifttt.cpp mqtt.cpp \
+	Hatch.cpp Ifttt.cpp mqtt.cpp AFMotor.cpp \
 	strftime.c \
 	scanf.c bcopy.c strtoq.c strtouq.c
-EXTRA_DEFINES=	-DKIPPEN
+EXTRA_DEFINES=	-DKIPPEN -DWEMOSD1
+#	Hatch.cpp Ifttt.cpp mqtt.cpp \
 
 LINKS=	bcopy.c callback.cpp config.h DS3231.cpp DS3231.h esptime.cpp esptime.h \
 	global.h Ifttt.cpp Ifttt.h item.h mqtt.cpp mywifi.cpp scanf.c \

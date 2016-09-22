@@ -51,59 +51,33 @@ Ifttt		*ifttt = 0;
 #include "global.h"
 #include "Hatch.h"
 
-int led_pin = 13;		// D11
+// int led_pin = 13;		// D11
 int speed = 255;		// Value to be written to the controller
 int mqtt_initial = 1;
 
-//
-// Test results from testwemosd1/testwemosd1 :
-// Note this is with an old model Wemos D1 (http://www.wemos.cc/Products/d1.html).
-//	value		pin
-//	16		D2
-//	15		D10 / SS
-//	14		D13 / SCK / D5
-//	13		D11 / MOSI / D7
-//	12		D6 / MISO / D12
-//	11		N/A
-//	10
-//	9
-//	8		crashes ?
-//	7
-//	6
-//	5		D15 / SCL / D3
-//	4		D14 / SDA / D4
-//	3		D0 / RX
-//	2		TX1 / D9
-//	1		TX breaks serial connection
-//	0		D8
-//
-
 // All kinds of variables
-int		pin14;
+char		SystemInfo1[80], SystemInfo2[256];
 int		count = 0;
-SFE_BMP180	*bmp = 0;
-esptime		*et = 0;
 
+SFE_BMP180	*bmp = 0;
 double		newPressure, newTemperature, oldPressure, oldTemperature;
 int		percentage;		// How much of a difference before notify
-int		valve = 0;		// Closed = 0
 
 time_t		tsnow, tsboot, tsprevious = 0;
-int		nreconnects = 0;
 struct tm	*now;
+esptime		*et = 0;
 char		buffer[64];
 
-Hatch		*hatch = NULL;
-char		SystemInfo1[80], SystemInfo2[256];
+int		nreconnects = 0;
 
-int oldstate = 0, state = 0;
+Hatch		*hatch = NULL;
+int		moving = 0;
+
+int oldstate = 0, state = 0;		// FIX ME remove ?
 
 // Forward declarations
-void callback(char * topic, byte *payload, unsigned int length);
-void mqtt_reconnect(void);
 void BMPInitialize();
 int BMPQuery();
-void RTCInitialize();
 
 // Arduino setup function
 void setup() {
@@ -226,7 +200,7 @@ void setup() {
   }
 #endif
 
-  pinMode(led_pin, OUTPUT);
+// pinMode(led_pin, OUTPUT);
 
   hatch = new Hatch(schedule_string);
 
@@ -234,14 +208,15 @@ void setup() {
   ThingSpeak.begin(TSEspClient);
 
   Serial.println("Ready");
+
+  hatch->setMotor(3);
+  hatch->reset();		// get it to move if not in one of the steady states
 }
 
 void loop() {
   count++;
   ArduinoOTA.handle();
   et->loop();
-
-  analogWrite(led_pin, count % 256);
 
   // MQTT
   if (!client.connected()) {
@@ -274,8 +249,11 @@ void loop() {
 
   delay(100);
 
-#ifdef KIPPEN
-#endif
+  if (state == 0) {
+    HatchDown();
+  } else {
+    HatchUp();
+  }
 
   // Periodic reporting
   if (tsprevious == 0 || tsnow - tsprevious > report_frequency_seconds) {
@@ -307,6 +285,16 @@ void loop() {
       }
     }
   }
+}
+
+void HatchUp() {
+  // valve = 1;
+  // analogWrite(valve_pin, speed);
+}
+
+void HatchDown() {
+  // valve = 0;
+  // analogWrite(valve_pin, 0);
 }
 
 extern "C" {
