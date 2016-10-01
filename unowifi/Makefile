@@ -1,9 +1,7 @@
 #====================================================================================
-# makeESPArduino
 #
-# A makefile for ESP8286 Arduino projects.
-# Edit the contents of this file to suit your project
-# or just include it and override the applicable macros.
+# A makefile for Arduino projects.
+# This is based on work by Peter Lerup, but heavily modified.
 #
 # License: GPL 2.1
 # General and full license information is available at:
@@ -16,22 +14,15 @@
 # User editable area
 #====================================================================================
 
-SKETCH = $(HOME)/src/sketchbook/unowifi/kippen/kippen.ino
+SKETCH=		$(HOME)/src/sketchbook/unowifi/kippen/kippen.ino
 EXTRA_DEFINES=
 EXTRA_SRC=	personal.c \
 		AFMotor.cpp Hatch.cpp Ifttt.cpp SFE_BMP180.cpp \
 		callback.cpp
+UPLOAD_HOST=	unowifi
 
-#AVR_ROOT=	/home/danny/.arduino15/packages/arduino/hardware/avr/1.6.11
-#AVR_ROOT=	/home/danny/.arduino15/packages/arduino/hardware/avr/1.7.10
-ARDUINO_ROOT=	/home/danny/src/arduino/arduino-1.7.11-linux64
-AVR_ROOT=	${ARDUINO_ROOT}/hardware/arduino/avr
-AVR_LIBS=	$(AVR_ROOT)/libraries
 BUILD_ROOT=	tmp
 LIBCPP=
-ARCH=		avr
-
-UPLOAD_AVAHI_NAME = OTA-Kippen.local
 
 AVR_MYLIBS = $(HOME)/src/sketchbook/libraries
 
@@ -43,27 +34,17 @@ LIBS =	\
 #       ${AVR_MYLIBS}/Ciao \
 #=== Project specific definitions: sketch and list of needed libraries
 
-# Board definitions
-FLASH_SIZE ?= 4M
-FLASH_MODE ?= dio
-FLASH_SPEED ?= 40
-FLASH_LAYOUT ?= eagle.flash.4m.ld
-
-# Upload parameters
-UPLOAD_SPEED ?= 921600
-UPLOAD_PORT ?= /dev/ttyUSB0
-UPLOAD_VERB ?= -vv
-UPLOAD_HW = nodemcu
-UPLOAD_AVAHI_NAME ?= esp8266
-UPLOAD_AVAHI_IP = $(shell avahi-resolve-host-name $(UPLOAD_AVAHI_NAME) | awk '{print $$2;}')
-UPLOAD_AVAHI_PORT ?= 8266
-UPLOAD_OTA_TOOL = python $(TOOLS_ROOT)/espota.py
-
 #====================================================================================
 # The area below should normally not need to be edited
 #====================================================================================
 
-MKESPARD_VERSION = 1.0.0
+ARDUINO_ROOT=	/home/danny/src/arduino/arduino-1.7.11-linux64
+AVR_ROOT=	${ARDUINO_ROOT}/hardware/arduino/avr
+AVR_LIBS=	$(AVR_ROOT)/libraries
+AVRFLASH=	${ARDUINO_ROOT}/hardware/tools/esp-link-tools/avrflash
+ARCH=		avr
+
+time_string = $(shell perl -e 'use POSIX qw(strftime); print strftime($(1), localtime());')
 
 START_TIME := $(shell perl -e "print time();")
 # Main output definitions
@@ -72,15 +53,13 @@ MAIN_EXE = $(BUILD_ROOT)/$(MAIN_NAME).bin
 MAIN_ELF = $(OBJ_DIR)/$(MAIN_NAME).elf
 MAIN_EEP = $(OBJ_DIR)/$(MAIN_NAME).eep
 MAIN_HEX = $(OBJ_DIR)/$(MAIN_NAME).hex
-SRC_GIT_VERSION = $(call git_description,$(dir $(SKETCH)))
+SRC_GIT_VERSION =
 
 # esp8266 arduino directories
-ESP_GIT_VERSION = $(call git_description,$(ESP_ROOT))
+ESP_GIT_VERSION =
 ESP_LIBS = $(ESP_ROOT)/libraries
 TOOLS_ROOT = $(ESP_ROOT)/tools
 TOOLS_BIN = $(TOOLS_ROOT)/xtensa-lx106-elf/bin
-SDK_ROOT = $(ESP_ROOT)/tools/sdk
-LWIP_SDK_ROOT = $(ESP_ROOT)/tools/sdk/lwip
 
 # Directory for intermedite build files
 OBJ_DIR = $(BUILD_ROOT)/obj
@@ -97,19 +76,22 @@ AVR_TOOL = /home/danny/.arduino15/packages/esp8266/tools/esptool/0.4.6/esptool
 #DEBUG=-g
 DEBUG=-Os -g
 
-# INCLUDE_DIRS += $(SDK_ROOT)/include ${LWIP_SDK_ROOT}/include $(CORE_DIR) $(ESP_ROOT)/variants/generic $(OBJ_DIR) ${EXTRA_INCLUDE}
 INCLUDE_DIRS +=	${CORE_DIR} ${AVR_ROOT}/variants/standard ${OBJ_DIR}
-C_DEFINES = -c -g -Os -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -mmcu=atmega328p -DF_CPU=16000000L -DARDUINO=10600 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR ${EXTRA_DEFINES} 
-C_INCLUDES = $(foreach dir,$(INCLUDE_DIRS) $(USER_DIRS),-I$(dir))
-C_FLAGS ?= -c ${DEBUG} -std=gnu11 -ffunction-sections -fdata-sections -MMD -mmcu=atmega328p
-CPP_FLAGS ?= -c ${DEBUG} -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega328p
-S_FLAGS ?= -c ${DEBUG} -x assembler-with-cpp -MMD
-LD_FLAGS ?= -w ${DEBUG} -Wl,--gc-sections -mmcu=atmega328p
-LD_STD_LIBS ?= -lm
+C_DEFINES=	-c ${DEBUG} -w -MMD \
+		-std=gnu11 -ffunction-sections -fdata-sections -mmcu=atmega328p \
+		-DF_CPU=16000000L -DARDUINO=10600 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR \
+		${EXTRA_DEFINES} 
+C_INCLUDES=	$(foreach dir,$(INCLUDE_DIRS) $(USER_DIRS),-I$(dir))
+C_FLAGS ?=	-c ${DEBUG} -std=gnu11 -ffunction-sections -fdata-sections -MMD -mmcu=atmega328p
+CPP_FLAGS ?=	-c ${DEBUG} -std=gnu++11 \
+		-fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics \
+		-MMD -mmcu=atmega328p
+S_FLAGS ?=	-c ${DEBUG} -x assembler-with-cpp -MMD
+LD_FLAGS ?=	-w ${DEBUG} -Wl,--gc-sections -mmcu=atmega328p
+LD_STD_LIBS ?=	-lm
 
 # Core source files
 CORE_DIR = $(AVR_ROOT)/cores/arduino
-# /home/danny/src/arduino/arduino-1.7.11-linux64/hardware/arduino/avr/cores/arduino/Arduino.h
 CORE_SRC = $(shell find $(CORE_DIR) -name "*.S" -o -name "*.c" -o -name "*.cpp")
 CORE_OBJ = $(patsubst %,$(OBJ_DIR)/%$(OBJ_EXT),$(notdir $(CORE_SRC)))
 CORE_LIB = $(OBJ_DIR)/core.ar
@@ -140,16 +122,6 @@ BAK_FILES=
 $(BUILD_INFO_H): | $(OBJ_DIR)
 	echo "typedef struct { const char *date, *time, *src_filename, *src_version, *env_version;} _tBuildInfo; extern _tBuildInfo _BuildInfo;" >$@
 
-# Utility functions
-git_description = $(shell git -C  $(1) describe --tags --always --dirty 2>/dev/null)
-time_string = $(shell perl -e 'use POSIX qw(strftime); print strftime($(1), localtime());')
-MEM_USAGE = \
-  'while (<>) { \
-      $$r += $$1 if /^\.(?:data|rodata|bss)\s+(\d+)/;\
-		  $$f += $$1 if /^\.(?:irom0\.text|text|data|rodata)\s+(\d+)/;\
-	 }\
-	 print "\nMemory usage\n";\
-	 print sprintf("  %-6s %6d bytes\n" x 2 ."\n", "Ram:", $$r, "Flash:", $$f);'
 
 # Build rules
 $(OBJ_DIR)/%.cpp$(OBJ_EXT): %.cpp $(BUILD_INFO_H)
@@ -185,16 +157,13 @@ $(MAIN_EXE): $(CORE_LIB) $(USER_OBJ)
 	$(LD) $(LD_FLAGS) -Wl,--start-group $^ $(BUILD_INFO_OBJ) $(LD_STD_LIBS) -Wl,--end-group -L$(OBJ_DIR) -o $(MAIN_ELF)
 	${ARCH}-objcopy -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0  ${MAIN_ELF} ${MAIN_EEP}
 	${ARCH}-objcopy -O ihex -R .eeprom ${MAIN_ELF} ${MAIN_HEX}
-	# $(ESP_TOOL) -eo $(ESP_ROOT)/bootloaders/eboot/eboot.elf -bo $@ -bm $(FLASH_MODE) -bf $(FLASH_SPEED) -bz $(FLASH_SIZE) -bs .text -bp 4096 -ec -eo $(MAIN_ELF) -bs .irom0.text -bs .text -bs .data -bs .rodata -bc -ec
-	# xtensa-lx106-elf-size -A $(MAIN_ELF) | perl -e $(MEM_USAGE)
 	perl -e 'print "Build complete. Elapsed time: ", time()-$(START_TIME),  " seconds\n\n"'
 
 upload: all
-	# $(ESP_TOOL) $(UPLOAD_VERB) -cd $(UPLOAD_HW) -cb $(UPLOAD_SPEED) -cp $(UPLOAD_PORT) -ca 0x00000 -cf $(MAIN_EXE)
 	avrdude -C${ARDUINO_ROOT}/hardware/tools/avr/etc/avrdude.conf -v true -patmega328p -carduino -P${UPLOAD_PORT} -b115200 -D -Uflash:w:${MAIN_HEX}:i
 
-ota: all showotaip
-	$(UPLOAD_OTA_TOOL) -i $(UPLOAD_AVAHI_IP) -p $(UPLOAD_AVAHI_PORT) -f $(MAIN_EXE)
+ota: all
+	$(AVRFLASH) $(UPLOAD_HOST) $(MAIN_HEX)
 
 showotaip:
 	echo "IP Address for OTA is $(UPLOAD_AVAHI_IP) (symbol $(UPLOAD_AVAHI_NAME))"
