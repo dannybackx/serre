@@ -12,7 +12,8 @@ The hatch design is assumed to have a magnet and two sensors, so the controller 
 when to stop the motor.
 
 My prototype runs on a Arduino Uno WiFi, a board which combines an ATmega328 (as the main
-processor) and an ESP8266 (although more powerful, only used for WiFi).
+processor) and an ESP8266 (although more powerful, only used for WiFi). More info is
+available at http://www.arduino.org/products/boards/arduino-uno-wifi .
 
 Motor steering is performed via the (old style) Adafruit Motor Shield, which is widely
 available from cheap manufacturers. Converting to the new shield should be simple.
