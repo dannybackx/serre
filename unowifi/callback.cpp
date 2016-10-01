@@ -31,11 +31,21 @@
 #include "SFE_BMP180.h"
 #include "global.h"
 #include "buildinfo.h"
+#include <TimeLib.h>
+#include <DS1307RTC.h>
 
 char reply[80];
 
-void ProcessCallback(WifiData client) {
-  String command = client.readString();
+#if 0
+void ProcessCallback() {
+// void ProcessCallback(String command, WifiData client) {
+  // String command = client.readString();
+  String command = Wifi.readString();
+  const char *p = command.c_str();
+
+  Serial.print(" {");
+  Serial.print(p);
+  Serial.println("}");
 
   if (command == mqtt_topic_bmp180) {
       if (bmp) {
@@ -54,8 +64,21 @@ void ProcessCallback(WifiData client) {
       } else {
         sprintf(reply, "No sensor detected");
       }
-    client.print(reply);
+    Wifi.print(reply);
   // Add cases here
+  } else if (command.startsWith("/arduino/digital/time/set/")) {
+    Serial.println("Yes ! Got RTC time set command");
+  } else if (strncmp(p, "/arduino/digital/time/set/", strlen("/arduino/digital/time/set/")) == 0) {
+    const char *q = p + strlen("/arduino/digital/time/set/");
+    if (q[0] == 'T') {
+      int t = atoi(q+1);
+      RTC.set(t);
+      Serial.println("Got RTC time set command");
+    } else {
+      Serial.print("Invalid time code ");
+      Serial.print(q);
+      Serial.println("");
+    }
   // } else if (command == xx) {
   } else {
     Serial.print("Unknown command {");
@@ -63,8 +86,10 @@ void ProcessCallback(WifiData client) {
     Serial.println("}");
   }
 
-  client.print(EOL);	// terminator
+  Wifi.print(EOL);	// terminator
 }
+#endif
+
 #if 0
 void callback(char *topic, byte *payload, unsigned int length) {
   char *pl = (char *)payload;

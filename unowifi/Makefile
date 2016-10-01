@@ -29,7 +29,7 @@ AVR_MYLIBS = $(HOME)/src/sketchbook/libraries
 LIBS =	\
        ${AVR_MYLIBS}/ArduinoWiFi \
        ${AVR_LIBS}/Wire \
-       ${AVR_MYLIBS}/Time
+       ${AVR_MYLIBS}/Time ${AVR_MYLIBS}/DS1307RTC
 
 #       ${AVR_MYLIBS}/Ciao \
 #=== Project specific definitions: sketch and list of needed libraries
@@ -73,7 +73,7 @@ DEBUG=-Os -g
 INCLUDE_DIRS +=	${CORE_DIR} ${AVR_ROOT}/variants/standard ${OBJ_DIR}
 C_DEFINES=	-c ${DEBUG} -w -MMD \
 		-std=gnu11 -ffunction-sections -fdata-sections -mmcu=atmega328p \
-		-DF_CPU=16000000L -DARDUINO=10600 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR \
+		-DF_CPU=16000000L -DARDUINO=107011 -DARDUINO_AVR_UNO_WIFI -DARDUINO_ARCH_AVR \
 		${EXTRA_DEFINES} 
 C_INCLUDES=	$(foreach dir,$(INCLUDE_DIRS) $(USER_DIRS),-I$(dir))
 C_FLAGS ?=	-c ${DEBUG} -std=gnu11 -ffunction-sections -fdata-sections -MMD -mmcu=atmega328p
@@ -192,5 +192,5 @@ all:: $(OBJ_DIR) $(BUILD_INFO_H) $(MAIN_EXE)
 
 ifndef VERBOSE
 # Set silent mode as default
-# MAKEFLAGS += --silent
+MAKEFLAGS += --silent
 endif

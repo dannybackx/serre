@@ -94,7 +94,14 @@ extern void BMPInitialize();
 extern int BMPQuery();
 extern SFE_BMP180	*bmp;
 
+// extern void ProcessCallback();
 extern void ProcessCallback(WifiData client);
+// extern void ProcessCallback(String command, WifiData client);
 
 // #define SystemId	"Kippen"
 #define SystemId	"/arduino/digital/kippen"
+
+extern char reply[80];
+
+extern int	sensor_up_pin, sensor_down_pin, key_up_pin, key_down_pin;
+extern void ActivatePin(int, char *);

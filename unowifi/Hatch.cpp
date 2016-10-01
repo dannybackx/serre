@@ -157,6 +157,10 @@ void Hatch::set(int s) {
 }
 
 void Hatch::setMotor(int n) {
+  Serial.print("Hatch : use motor ");
+  Serial.print(n);
+  Serial.println(".");
+
   motor = new AF_DCMotor(n);
   motor->run(RELEASE);
 }
@@ -189,6 +193,13 @@ void Hatch::Down() {
     return;
   motor->run(FORWARD);
   _moving = -1;
+}
+
+void Hatch::Stop() {
+  // if (! _moving)
+  //   return;
+  motor->run(RELEASE);
+  _moving = 0;
 }
 
 void Hatch::reset() {

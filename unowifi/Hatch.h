@@ -40,6 +40,7 @@ public:
 
   void Up();
   void Down();
+  void Stop();
   void reset();
 
 private:
