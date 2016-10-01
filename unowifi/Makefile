@@ -55,12 +55,6 @@ MAIN_EEP = $(OBJ_DIR)/$(MAIN_NAME).eep
 MAIN_HEX = $(OBJ_DIR)/$(MAIN_NAME).hex
 SRC_GIT_VERSION =
 
-# esp8266 arduino directories
-ESP_GIT_VERSION =
-ESP_LIBS = $(ESP_ROOT)/libraries
-TOOLS_ROOT = $(ESP_ROOT)/tools
-TOOLS_BIN = $(TOOLS_ROOT)/xtensa-lx106-elf/bin
-
 # Directory for intermedite build files
 OBJ_DIR = $(BUILD_ROOT)/obj
 OBJ_EXT = .o
@@ -150,9 +144,8 @@ BUILD_TIME = $(call time_string,"%H:%M:%S")
 
 $(MAIN_EXE): $(CORE_LIB) $(USER_OBJ)
 	echo Linking $(MAIN_EXE)
-	echo "  Versions: $(SRC_GIT_VERSION), $(ESP_GIT_VERSION)"
 	echo 	'#include <buildinfo.h>' >$(BUILD_INFO_CPP)
-	echo '_tBuildInfo _BuildInfo = {"$(BUILD_DATE)","$(BUILD_TIME)","$(SKETCH)","$(SRC_GIT_VERSION)","$(ESP_GIT_VERSION)"};' >>$(BUILD_INFO_CPP)
+	echo '_tBuildInfo _BuildInfo = {"$(BUILD_DATE)","$(BUILD_TIME)","$(SKETCH)","",""};' >>$(BUILD_INFO_CPP)
 	$(CPP) $(C_DEFINES) $(C_INCLUDES) $(CPP_FLAGS) $(BUILD_INFO_CPP) -o $(BUILD_INFO_OBJ)
 	$(LD) $(LD_FLAGS) -Wl,--start-group $^ $(BUILD_INFO_OBJ) $(LD_STD_LIBS) -Wl,--end-group -L$(OBJ_DIR) -o $(MAIN_ELF)
 	${ARCH}-objcopy -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0  ${MAIN_ELF} ${MAIN_EEP}
