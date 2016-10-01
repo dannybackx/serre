@@ -96,5 +96,5 @@ extern SFE_BMP180	*bmp;
 
 extern void ProcessCallback(WifiData client);
 
-#define SystemId	"Kippen"
-// #define SystemId	"/arduino/digital/kippen"
+// #define SystemId	"Kippen"
+#define SystemId	"/arduino/digital/kippen"

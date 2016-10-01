@@ -389,6 +389,8 @@ void modeCommand(WifiData client) {
 #endif
 #endif
 
+const char *mqtt_topic_bmp180 =		SystemId "/BMP180";
+#if 0
 const char *mqtt_topic =		SystemId;
 const char *mqtt_topic_bmp180 =		SystemId "/BMP180";
 const char *mqtt_topic_hatch =		SystemId "/Hatch";
@@ -405,3 +407,4 @@ const char *mqtt_topic_schedule =	SystemId "/Schedule";
 const char *mqtt_topic_verbose =	SystemId "/System/Verbose";
 const char *mqtt_topic_version =	SystemId "/System/Version";
 const char *mqtt_topic_info =		SystemId "/System/Info";
+#endif
