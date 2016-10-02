@@ -165,7 +165,7 @@ void loop() {
     }
   }
 
-  delay(500);
+  delay(50);
 }
  
 void BMPInitialize() {

@@ -77,10 +77,22 @@ int Hatch::loop(int hr, int mn, int sec) {
 
   // If we're moving, stop if we hit the right sensor
   if (_moving < 0) {
-    // FIXME add code to read a sensor
+    if (sensor_down_pin >= 0) {
+      int state = digitalRead(sensor_down_pin);
+      if (state == 0) {
+	Serial.println("Down sensor : stop hatch");
+	Stop();
+      }
+    }
     return _moving;
   } else if (_moving > 0) {
-    // FIXME add code to read a sensor
+    if (sensor_up_pin >= 0) {
+      int state = digitalRead(sensor_up_pin);
+      if (state == 0) {
+	Serial.println("Up sensor : stop hatch");
+	Stop();
+      }
+    }
     return _moving;
   }
 
