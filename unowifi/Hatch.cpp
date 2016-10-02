@@ -85,7 +85,7 @@ int Hatch::loop(int hr, int mn, int sec) {
   }
 
   // Don't activate the hatch after a couple of seconds
-  if (sec > 5)
+  if (sec > 2)
     return _moving;
 
   // sprintf(reply, "Loop %02d:%02d", hr, mn); Serial.print(reply);
@@ -160,19 +160,7 @@ void Hatch::setSchedule(const char *desc) {
     items[i].state = val;
   }
 
-PrintSchedule();
-#if 0
-  Debug("\nProgram :\n");
-  for (int i=0; i<nitems; i++) {
-    DebugInt(items[i].hour);
-    Debug(":");
-    DebugInt(items[i].minute);
-    Debug(" -> ");
-    DebugInt(items[i].state);
-    Debug("\n");
-  }
-  Debug("\n");
-#endif
+  // PrintSchedule();
 }
 
 char *Hatch::getSchedule() {
