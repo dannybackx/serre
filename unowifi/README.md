@@ -20,3 +20,7 @@ available from cheap manufacturers. Converting to the new shield should be simpl
 
 This is work in progress.
 I'm hoping to hook it up to ThingSpeak, SNTP time service, etc
+
+A significant issue is memory - current implementation already takes 75% both in program and
+variable memory. Note that most of the variable space is in use by the ESP driver for the
+Uno Wifi (more than half of the available memory !).
