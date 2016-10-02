@@ -162,6 +162,7 @@ void Hatch::setMotor(int n) {
   Serial.println(".");
 
   motor = new AF_DCMotor(n);
+  motor->setSpeed(200);
   motor->run(RELEASE);
 }
 
