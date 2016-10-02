@@ -23,8 +23,8 @@
 #include <Wire.h>
 #include <ArduinoWiFi.h>
 #include "SFE_BMP180.h"
-#include "global.h"
 #include "Hatch.h"
+#include "global.h"
 
 #ifdef BUILT_BY_MAKE
 #include "buildinfo.h"
@@ -226,62 +226,4 @@ int BMPQuery() {
     return -203;
   }
   return 0;
-}
-
-void ProcessCallback(WifiData client) {
-  String command = client.readString();
- 
-  Serial.print(F("ProcessCallback {"));
-  Serial.print(command);
-  Serial.println(F("}"));
-
-  if (command == mqtt_topic_bmp180) {
-      if (bmp) {
-        BMPQuery();
-
-        int a, b, c;
-        // Temperature
-        a = (int) newTemperature;
-        double td = newTemperature - a;
-        b = 100 * td;
-        c = newPressure;
-
-        // Format the result
-        sprintf(reply, gpm(bmp_fmt), a, b, c);
-  
-      } else {
-        sprintf(reply, gpm(no_sensor_string));
-      }
-    Wifi.print(reply);
-  } else if (command.startsWith(gpm(rcmd_time_set))) {
-    const char *p = command.c_str(),
-         *q = p + strlen(progmem_bfr);
-    if (q[0] == 'T') {
-      long t = atol(q+1);
-      RTC.set(t);
-      Serial.print(gpm(setting_rtc));
-      Serial.print(q);
-      Serial.print(" ");
-      Serial.print(t);
-      Serial.print(" ");
-      sprintf(buffer, gpm(timedate_fmt),
-        hour() + personal_timezone, minute(), second(), day(), month(), year());
-      Serial.println(buffer);
-    }
-  } else if (command.startsWith(gpm(rcmd_timezone_set))) {
-    const char	*p = command.c_str(),
-		*q = p + strlen(progmem_bfr);
-    int t = atoi(q);
-    personal_timezone = t;
-  // Add cases here like
-  // } else if (command.startsWith("/arduino/digital/time/set/")) {
-  // } else if (command == "/arduino/digital/time/set/") {
-  } else {
-    Serial.print(gpm(unmatched_command));
-    Serial.print(command);
-    Serial.println("}");
-  }
-
-  // This is needed to close the communication
-  client.print(EOL);
 }

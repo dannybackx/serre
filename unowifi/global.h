@@ -85,6 +85,7 @@ extern struct tm	*tmnow;
 extern void BMPInitialize();
 extern int BMPQuery();
 extern SFE_BMP180	*bmp;
+extern Hatch		*hatch;
 
 // extern void ProcessCallback();
 extern void ProcessCallback(WifiData client);
@@ -114,6 +115,18 @@ extern const char unmatched_command[];
 
 extern const char rcmd_time_set[];
 extern const char rcmd_timezone_set[];
+extern const char query_bmp180[];
+extern const char hatch_query[];
+extern const char hatch_up[];
+extern const char hatch_down[];
+extern const char hatch_stop[];
+
+extern const char set_schedule_to[];
+extern const char schedule_query[];
+extern const char schedule_update[];
+
+extern const char version_query[];
+extern const char no_info[];
 
 extern char progmem_bfr[];
 extern "C" {

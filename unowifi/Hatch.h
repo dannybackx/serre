@@ -32,7 +32,7 @@ public:
   Hatch(char *);
   ~Hatch();
   int loop(int, int);
-  void setSchedule(char *);
+  void setSchedule(const char *);
   char *getSchedule();		// Caller must free result
   void set(int);
   void setMotor(int n);

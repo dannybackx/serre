@@ -37,6 +37,7 @@
 #include <Arduino.h>
 #include <ArduinoWiFi.h>
 #include "SFE_BMP180.h"
+#include "Hatch.h"
 #include "global.h"
 #include "Ifttt.h"
 

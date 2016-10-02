@@ -24,9 +24,9 @@
  */
 #include <avr/pgmspace.h>
 
-char		progmem_bfr[32];
-// Length limit (31 chars)      		"..............................."
+char		progmem_bfr[40];
 
+// Length limit (39 chars)      		"......................................."
 const char timedate_fmt[] PROGMEM =		"%02d:%02d:%02d %02d/%02d/%04d";
 const char sensor_up_string[] PROGMEM =		"Sensor UP";
 const char sensor_down_string[] PROGMEM =	"Sensor DOWN";
@@ -44,6 +44,19 @@ const char unmatched_command[] PROGMEM =	"Unmatched command {";
 
 const char rcmd_time_set[] PROGMEM =		"/arduino/digital/time/set/";
 const char rcmd_timezone_set[] PROGMEM =	"/arduino/digital/timezone/set/";
+const char query_bmp180[] PROGMEM =		"/arduino/digital/bmp180";
+const char hatch_query[] PROGMEM =		"/arduino/digital/hatch/query";
+const char hatch_up[] PROGMEM =			"/arduino/digital/hatch/up";
+const char hatch_down[] PROGMEM =		"/arduino/digital/hatch/down";
+const char hatch_stop[] PROGMEM =		"/arduino/digital/hatch/stop";
+
+const char set_schedule_to[] PROGMEM =		"Schedule set to : ";
+const char schedule_query[] PROGMEM =		"/arduino/digital/schedule/query";
+const char schedule_update[] PROGMEM =		"/arduino/digital/schedule/set/";
+
+const char version_query[] PROGMEM =		"/arduino/digital/version/query";
+const char no_info[] PROGMEM =			"No version info available";
+// Length limit (39 chars)      		"......................................."
 
 const char *gpm(const char *p)
 {

@@ -86,8 +86,8 @@ extern "C" {
   void DebugInt(int);
 }
 
-void Hatch::setSchedule(char *desc) {
-  char *p;
+void Hatch::setSchedule(const char *desc) {
+  const char *p;
   int count;
 
   // Debug("setSchedule("); Debug(desc); Debug(")\n");
@@ -182,15 +182,15 @@ int Hatch::moving() {
 }
 
 void Hatch::Up() {
-  if (_moving)
-    return;
+  // if (_moving)
+  //   return;
   motor->run(BACKWARD);
   _moving = +1;
 }
 
 void Hatch::Down() {
-  if (_moving)
-    return;
+  // if (_moving)
+  //   return;
   motor->run(FORWARD);
   _moving = -1;
 }
