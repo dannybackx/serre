@@ -22,10 +22,13 @@
  */
 #include <Wire.h>
 #include <ArduinoWiFi.h>
-//#include "buildinfo.h"
 #include "SFE_BMP180.h"
 #include "global.h"
 #include "Hatch.h"
+
+#ifdef BUILT_BY_MAKE
+#include "buildinfo.h"
+#endif
 
 #include <TimeLib.h>
 #include <DS1307RTC.h>
@@ -41,14 +44,19 @@ int		sensor_up, sensor_down, button_up, button_down;
 void setup() {
   delay(2000);
   Serial.begin(9600);
-  Serial.println(gpm(starting_wifi));
-  Wifi.begin();
 
+  // Display startup text
   Serial.println(gpm(startup_text1));
   Serial.println(gpm(startup_text2));
   Wifi.println(gpm(startup_text1));
   Wifi.println(gpm(startup_text2));
-#if 0
+
+  // Start WiFi
+  Serial.println(gpm(starting_wifi));
+  Wifi.begin();
+
+  // If built by make, talk about specifics
+#ifdef BUILT_BY_MAKE
   Serial.print("Server build ");
   Serial.print(_BuildInfo.src_filename);
   Serial.print(" ");
@@ -56,19 +64,20 @@ void setup() {
   Serial.print(" ");
   Serial.println(_BuildInfo.time);
 #endif
-#if 1
+
   // BMP180 temperature and air pressure sensor
   Serial.print(gpm(initializing_bmp180));
   BMPInitialize();
   Serial.println(bmp ? "ok" : "failed");
-#endif
+
   // Time
   setSyncProvider(RTC.get);	// Set the function to get time from RTC
   if (timeStatus() != timeSet)
     Serial.println(F("Unable to sync with the RTC"));
   else {
     Serial.print("RTC ok, ");      
-    sprintf(buffer, gpm(timedate_fmt), hour(), minute(), second(), day(), month(), year());
+    sprintf(buffer, gpm(timedate_fmt),
+      hour() + personal_timezone, minute(), second(), day(), month(), year());
     Serial.println(buffer); 
   }
 
@@ -79,6 +88,7 @@ void setup() {
 
   state = oldstate = 0;
 
+  // Sensors and buttons
   ActivatePin(sensor_up_pin, gpm(sensor_up_string));
   ActivatePin(sensor_down_pin, gpm(sensor_down_string));
   ActivatePin(button_up_pin, gpm(button_up_string));
@@ -86,6 +96,7 @@ void setup() {
 
   sensor_up = sensor_down = button_up = button_down = 0;
 
+  // Yeah !
   Serial.println("Ready");
 }
  
@@ -253,18 +264,24 @@ void ProcessCallback(WifiData client) {
       Serial.print(" ");
       Serial.print(t);
       Serial.print(" ");
-      sprintf(buffer, gpm(timedate_fmt), hour(), minute(), second(), day(), month(), year());
+      sprintf(buffer, gpm(timedate_fmt),
+        hour() + personal_timezone, minute(), second(), day(), month(), year());
       Serial.println(buffer);
-      Serial.print(EOL);
     }
+  } else if (command.startsWith(gpm(rcmd_timezone_set))) {
+    const char	*p = command.c_str(),
+		*q = p + strlen(progmem_bfr);
+    int t = atoi(q);
+    personal_timezone = t;
   // Add cases here like
   // } else if (command.startsWith("/arduino/digital/time/set/")) {
   // } else if (command == "/arduino/digital/time/set/") {
   } else {
-    Serial.print("Unmatched {");
+    Serial.print(gpm(unmatched_command));
     Serial.print(command);
     Serial.println("}");
   }
+
+  // This is needed to close the communication
   client.print(EOL);
 }
-

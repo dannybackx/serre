@@ -20,14 +20,7 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
-// #include "mywifi.h"
-
-const int personal_timezone = +2;
-
-const char *startup_text =
-	"\n\nArduino Uno WiFi\n"
-	"Automatic Chicken House Door\n"
-	"(c) 2016 by Danny Backx\n\n";
+int personal_timezone = +2;
 
 int verbose = 0;
 

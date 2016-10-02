@@ -105,12 +105,15 @@ extern const char button_up_string[];
 extern const char button_down_string[];
 extern const char bmp_fmt[];
 extern const char no_sensor_string[];
-extern const char rcmd_time_set[];
 extern const char setting_rtc[];
 extern const char initializing_bmp180[];
 extern const char starting_wifi[];
 extern const char startup_text1[];
 extern const char startup_text2[];
+extern const char unmatched_command[];
+
+extern const char rcmd_time_set[];
+extern const char rcmd_timezone_set[];
 
 extern char progmem_bfr[];
 extern "C" {

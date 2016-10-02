@@ -37,10 +37,8 @@
 char reply[20];
 
 #if 0
-void ProcessCallback() {
-// void ProcessCallback(String command, WifiData client) {
-  // String command = client.readString();
-  String command = Wifi.readString();
+void ProcessCallback(WifiData client) {
+  String command = client.readString();
   const char *p = command.c_str();
 
   Serial.print(" {");
