@@ -30,11 +30,11 @@
 #include <Wire.h>
 #include "SFE_BMP180.h"
 #include "global.h"
-#include "buildinfo.h"
+//#include "buildinfo.h"
 #include <TimeLib.h>
 #include <DS1307RTC.h>
 
-char reply[80];
+char reply[20];
 
 #if 0
 void ProcessCallback() {

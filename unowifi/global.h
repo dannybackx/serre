@@ -1,9 +1,3 @@
-#undef	DO_WIFI
-#define DO_CIAO
-#define	DO_THINGSPEAK
-#define	DO_BMP
-#undef	DO_BMP_DISPLAY
-
 /*
  * Copyright (c) 2016 Danny Backx
  *
@@ -66,8 +60,6 @@ extern const int	valve_pin;
 extern const int	sda_pin, scl_pin;
 extern const int	button_up_pin, button_down_pin;
 
-extern const char *startup_text;
-
 extern int verbose;
 
 #define	VERBOSE_OTA		0x01
@@ -87,7 +79,7 @@ extern char *ntp_server_1, *ntp_server_2;
 // extern time_t		tsnow, tsboot, tsprevious;
 // extern esptime		*et;
 extern int		mqtt_initial;
-extern char		buffer[64];
+extern char		buffer[];
 extern struct tm	*tmnow;
 
 extern void BMPInitialize();
@@ -101,7 +93,26 @@ extern void ProcessCallback(WifiData client);
 // #define SystemId	"Kippen"
 #define SystemId	"/arduino/digital/kippen"
 
-extern char reply[80];
+extern char reply[];
 
 extern int	sensor_up_pin, sensor_down_pin, key_up_pin, key_down_pin;
-extern void ActivatePin(int, char *);
+extern void ActivatePin(int, const char *);
+
+extern const char timedate_fmt[];
+extern const char sensor_up_string[];
+extern const char sensor_down_string[];
+extern const char button_up_string[];
+extern const char button_down_string[];
+extern const char bmp_fmt[];
+extern const char no_sensor_string[];
+extern const char rcmd_time_set[];
+extern const char setting_rtc[];
+extern const char initializing_bmp180[];
+extern const char starting_wifi[];
+extern const char startup_text1[];
+extern const char startup_text2[];
+
+extern char progmem_bfr[];
+extern "C" {
+  const char *gpm(const char *p);
+}
