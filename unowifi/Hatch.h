@@ -31,7 +31,7 @@ public:
   Hatch();
   Hatch(char *);
   ~Hatch();
-  int loop(int, int);
+  int loop(int, int, int);
   void setSchedule(const char *);
   char *getSchedule();		// Caller must free result
   void set(int);
@@ -46,6 +46,7 @@ public:
 private:
   int nitems;
   item *items;
+  void PrintSchedule();
 
   int _moving;			// -1 is going down, +1 is going up, 0 is off
   AF_DCMotor *motor;

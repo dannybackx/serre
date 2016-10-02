@@ -85,6 +85,10 @@ void ProcessCallback(WifiData client) {
         hour() + personal_timezone, minute(), second(), day(), month(), year());
       Serial.println(buffer);
     }
+  } else if (command.startsWith(gpm(time_query))) {
+      sprintf(buffer, gpm(timedate_fmt),
+        hour() + personal_timezone, minute(), second(), day(), month(), year());
+      client.println(buffer);
   } else if (command.startsWith(gpm(rcmd_timezone_set))) {
     const char	*p = command.c_str(),
 		*q = p + strlen(progmem_bfr);
@@ -96,7 +100,7 @@ void ProcessCallback(WifiData client) {
    *                                                                              *
    ********************************************************************************/
   } else if (command == gpm(hatch_query)) {
-    sprintf(reply, "Hatch state %d", hatch->moving());
+    sprintf(reply, gpm(hatch_state_fmt), hatch->moving());
     client.print(reply);
   } else if (command == gpm(hatch_up)) {
     hatch->Up();
@@ -110,29 +114,29 @@ void ProcessCallback(WifiData client) {
    * Schedule                                                                     *
    *                                                                              *
    ********************************************************************************/
-  } else if (command == gpm(schedule_update)) {
+  } else if (command.startsWith(gpm(schedule_update))) {
     const char *p = command.c_str(),
          *q = p + strlen(progmem_bfr);
     hatch->setSchedule(q);
     Serial.print(gpm(set_schedule_to));
     Serial.println(q);
+
   } else if (command == gpm(schedule_query)) {
+    Serial.print(gpm(schedule));
     char *sched = hatch->getSchedule();
     client.print(sched);
-    Serial.print("Schedule : ");
     Serial.println(sched);
     free(sched);
 
   } else if (command == gpm(version_query)) {
 #ifdef BUILT_BY_MAKE
-    // client.print("Server build ");
+    client.print(gpm(server_build));
     client.println(_BuildInfo.src_filename);
-    delay(100);
     client.print(_BuildInfo.date);
     client.print(" ");
     client.println(_BuildInfo.time);
 
-    Serial.print("Server build ");
+    Serial.print(gpm(server_build));
     Serial.println(_BuildInfo.src_filename);
     Serial.print(_BuildInfo.date);
     Serial.print(" ");
@@ -153,6 +157,7 @@ void ProcessCallback(WifiData client) {
     Serial.print(command);
     Serial.println("}");
   }
+
 
   // This is needed to close the communication
   client.print(EOL);

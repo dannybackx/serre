@@ -22,63 +22,14 @@
  */
 
 extern double		newPressure, newTemperature, oldPressure, oldTemperature;
-extern int		valve;
-extern int		nreconnects;
-
-/*
- *
- */
 
 extern int personal_timezone;
 extern char *schedule_string;
 extern int report_frequency_seconds;
 
-extern const char *mqtt_topic;
-extern const char *mqtt_topic_bmp180;
-
-extern const char *mqtt_topic_hatch;
-extern const char *mqtt_topic_hatch_start;
-extern const char *mqtt_topic_hatch_stop;
-
-extern const char *mqtt_topic_report;
-extern const char *mqtt_topic_report_freq;
-extern const char *mqtt_topic_reconnects;
-extern const char *mqtt_topic_restart;
-extern const char *mqtt_topic_boot_time;
-extern const char *mqtt_topic_current_time;
-extern const char *mqtt_topic_schedule;
-extern const char *mqtt_topic_schedule_set;
-extern const char *mqtt_topic_verbose;
-extern const char *mqtt_topic_version;
-extern const char *mqtt_topic_info;
-
-
-extern void mqtt_reconnect(void);
-
-// Pin definitions
-extern const int	valve_pin;
-extern const int	sda_pin, scl_pin;
-extern const int	button_up_pin, button_down_pin;
-
-extern int verbose;
-
-#define	VERBOSE_OTA		0x01
-#define	VERBOSE_VALVE		0x02
-#define	VERBOSE_BMP		0x04
-#define	VERBOSE_CALLBACK	0x08
-#define	VERBOSE_SYSTEM		0x10
-#define	VERBOSE_WATER		0x20
-#define	VERBOSE_DS3231		0x40
-#define	VERBOSE_8		0x80
-
-
 /*
  * Time
  */
-extern char *ntp_server_1, *ntp_server_2;
-// extern time_t		tsnow, tsboot, tsprevious;
-// extern esptime		*et;
-extern int		mqtt_initial;
 extern char		buffer[];
 extern struct tm	*tmnow;
 
@@ -87,16 +38,12 @@ extern int BMPQuery();
 extern SFE_BMP180	*bmp;
 extern Hatch		*hatch;
 
-// extern void ProcessCallback();
 extern void ProcessCallback(WifiData client);
-// extern void ProcessCallback(String command, WifiData client);
-
-// #define SystemId	"Kippen"
-#define SystemId	"/arduino/digital/kippen"
 
 extern char reply[];
 
-extern int	sensor_up_pin, sensor_down_pin, key_up_pin, key_down_pin;
+// Pin definitions
+extern int	sensor_up_pin, sensor_down_pin, button_up_pin, button_down_pin;
 extern void ActivatePin(int, const char *);
 
 extern const char timedate_fmt[];
@@ -113,20 +60,27 @@ extern const char startup_text1[];
 extern const char startup_text2[];
 extern const char unmatched_command[];
 
+extern const char time_query[];
 extern const char rcmd_time_set[];
 extern const char rcmd_timezone_set[];
+
 extern const char query_bmp180[];
 extern const char hatch_query[];
 extern const char hatch_up[];
 extern const char hatch_down[];
 extern const char hatch_stop[];
+extern const char hatch_use_motor[];
+extern const char hatch_state_fmt[];
 
 extern const char set_schedule_to[];
 extern const char schedule_query[];
 extern const char schedule_update[];
+extern const char schedule[];
 
 extern const char version_query[];
 extern const char no_info[];
+extern const char server_build[];
+extern const char rtc_failure[];
 
 extern char progmem_bfr[];
 extern "C" {

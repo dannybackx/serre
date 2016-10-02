@@ -54,17 +54,53 @@ Hatch::~Hatch() {
   motor = 0;
 }
 
-int Hatch::loop(int hr, int mn) {
+int count = 0;
+
+void Hatch::PrintSchedule() {
+    int i;
+    Serial.print("Nitems "); Serial.println(nitems);
+    for (i=0; i<nitems; i++) {
+      Serial.print("   "); Serial.print(i); Serial.print("  - ");
+      Serial.print(items[i].hour);
+      Serial.print(":");
+      Serial.print(items[i].minute);
+      Serial.print(" -> ");
+      Serial.println(items[i].state);
+    }
+}
+
+int Hatch::loop(int hr, int mn, int sec) {
+  // if (count < 1) {
+  //   PrintSchedule();
+  // }
+  count++;
+
   // If we're moving, stop if we hit the right sensor
   if (_moving < 0) {
+    // FIXME add code to read a sensor
     return _moving;
   } else if (_moving > 0) {
+    // FIXME add code to read a sensor
     return _moving;
   }
 
+  // Don't activate the hatch after a couple of seconds
+  if (sec > 5)
+    return _moving;
+
+  // sprintf(reply, "Loop %02d:%02d", hr, mn); Serial.print(reply);
+  // Serial.print(" "); Serial.print(nitems);
+  // for (int i=0; i<10; i++) Serial.print('');
+
   // We're not moving. Check against the schedule
   for (int i=0; i<nitems; i++) {
+    // if (count % 10 == 0) {
+    //   sprintf(reply, "Check %02d:%02d - %02d:%02d", hr, mn, items[i].hour, items[i].minute);
+    //   Serial.println(reply);
+    // }
     if (items[i].hour == hr && items[i].minute == mn) {
+      // sprintf(reply, "Hatch match %02d:%02d", hr, mn); Serial.println(reply);
+
       switch (items[i].state) {
       case -1:
         Down();
@@ -124,6 +160,7 @@ void Hatch::setSchedule(const char *desc) {
     items[i].state = val;
   }
 
+PrintSchedule();
 #if 0
   Debug("\nProgram :\n");
   for (int i=0; i<nitems; i++) {
@@ -139,7 +176,7 @@ void Hatch::setSchedule(const char *desc) {
 }
 
 char *Hatch::getSchedule() {
-  char *r = (char *)malloc(256), s[16];
+  char *r = (char *)malloc(48), s[16];
   int len = 0;
   r[0] = '\0';
   for (int i=0; i<nitems; i++) {
@@ -157,7 +194,7 @@ void Hatch::set(int s) {
 }
 
 void Hatch::setMotor(int n) {
-  Serial.print("Hatch : use motor ");
+  Serial.print(gpm(hatch_use_motor));
   Serial.print(n);
   Serial.println(".");
 

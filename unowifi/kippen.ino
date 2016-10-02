@@ -57,7 +57,7 @@ void setup() {
 
   // If built by make, talk about specifics
 #ifdef BUILT_BY_MAKE
-  Serial.print("Server build ");
+  Serial.print(gpm(server_build));
   Serial.print(_BuildInfo.src_filename);
   Serial.print(" ");
   Serial.print(_BuildInfo.date);
@@ -73,7 +73,7 @@ void setup() {
   // Time
   setSyncProvider(RTC.get);	// Set the function to get time from RTC
   if (timeStatus() != timeSet)
-    Serial.println(F("Unable to sync with the RTC"));
+    Serial.println(gpm(rtc_failure));
   else {
     Serial.print("RTC ok, ");      
     sprintf(buffer, gpm(timedate_fmt),
@@ -125,7 +125,7 @@ void loop() {
   // Note the hatch->loop code will also trigger the motor
   if (hatch) {
     oldstate = state;
-    state = hatch->loop(hour(), minute());
+    state = hatch->loop(hour() + personal_timezone, minute(), second());
   }
 
   // Sensors stop motion
@@ -165,7 +165,7 @@ void loop() {
     }
   }
 
-  delay(50);
+  delay(500);
 }
  
 void BMPInitialize() {
