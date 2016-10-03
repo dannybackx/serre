@@ -54,8 +54,6 @@ Hatch::~Hatch() {
   motor = 0;
 }
 
-int count = 0;
-
 void Hatch::PrintSchedule() {
     int i;
     Serial.print("Nitems "); Serial.println(nitems);
@@ -70,11 +68,6 @@ void Hatch::PrintSchedule() {
 }
 
 int Hatch::loop(int hr, int mn, int sec) {
-  // if (count < 1) {
-  //   PrintSchedule();
-  // }
-  count++;
-
   // If we're moving, stop if we hit the right sensor
   if (_moving < 0) {
     if (sensor_down_pin >= 0) {
@@ -106,13 +99,7 @@ int Hatch::loop(int hr, int mn, int sec) {
 
   // We're not moving. Check against the schedule
   for (int i=0; i<nitems; i++) {
-    // if (count % 10 == 0) {
-    //   sprintf(reply, "Check %02d:%02d - %02d:%02d", hr, mn, items[i].hour, items[i].minute);
-    //   Serial.println(reply);
-    // }
     if (items[i].hour == hr && items[i].minute == mn) {
-      // sprintf(reply, "Hatch match %02d:%02d", hr, mn); Serial.println(reply);
-
       switch (items[i].state) {
       case -1:
         Down();
@@ -176,15 +163,29 @@ void Hatch::setSchedule(const char *desc) {
 }
 
 char *Hatch::getSchedule() {
-  char *r = (char *)malloc(48), s[16];
-  int len = 0;
+  int len = 0,
+      max = 24;	// initial size, good for 2 entries, increases if necessary
+  char *r = (char *)malloc(max), s[10];
+
   r[0] = '\0';
   for (int i=0; i<nitems; i++) {
     if (i != 0)
       r[len++] = ',';
     r[len] = '\0';
     sprintf(s, "%02d:%02d,%d", items[i].hour, items[i].minute, items[i].state);
+    int ms = strlen(s);
+
+    // increase allocation size ?
+    if (len + ms > max) {
+      max += 10;
+      // Note doing this the hard way, realloc() gave strange results
+      char *r2 = (char *)malloc(max);
+      strcpy(r2, r);
+      free(r);
+      r = r2;
+    }
     strcat(r, s);
+    len = strlen(r);
   }
   return r;
 }
@@ -202,18 +203,6 @@ void Hatch::setMotor(int n) {
   motor->setSpeed(200);
   motor->run(RELEASE);
 }
-
-#if 0
-void SpeedTest() {
-  int speed = ((count % 100) < 50) ? 255 : 128;
-
-  motor->setSpeed(speed);
-  if ((count % 200) < 100)
-    motor->run(FORWARD);
-  else
-    motor->run(BACKWARD);
-}
-#endif
 
 int Hatch::moving() {
   return _moving;
