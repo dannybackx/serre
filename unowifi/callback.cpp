@@ -25,6 +25,7 @@
 #include <Wire.h>
 #include "SFE_BMP180.h"
 #include "Hatch.h"
+#include "TimeLib.h"
 #include "global.h"
 #include <TimeLib.h>
 #include <DS1307RTC.h>
@@ -88,6 +89,12 @@ void ProcessCallback(WifiData client) {
   } else if (command.startsWith(gpm(time_query))) {
       sprintf(buffer, gpm(timedate_fmt),
         hour() + personal_timezone, minute(), second(), day(), month(), year());
+      client.println(buffer);
+
+  } else if (command.startsWith(gpm(boot_time_query))) {
+      sprintf(buffer, gpm(timedate_fmt),
+        hour(boot_time) + personal_timezone, minute(boot_time), second(boot_time),
+	day(boot_time), month(boot_time), year(boot_time));
       client.println(buffer);
 
   } else if (command.startsWith(gpm(rcmd_timezone_set))) {

@@ -33,6 +33,7 @@ extern int report_frequency_seconds;
 const int		buffer_size = 48;
 extern char		buffer[];
 extern struct tm	*tmnow;
+extern time_t		boot_time;
 
 extern void BMPInitialize();
 extern int BMPQuery();
@@ -62,6 +63,7 @@ extern const char startup_text2[];
 extern const char unmatched_command[];
 
 extern const char time_query[];
+extern const char boot_time_query[];
 extern const char rcmd_time_set[];
 extern const char rcmd_timezone_set[];
 

@@ -42,6 +42,7 @@ const char startup_text2[] PROGMEM =		"(c) 2016 by Danny Backx\n";
 const char unmatched_command[] PROGMEM =	"Unmatched command {";
 
 const char time_query[] PROGMEM =		"/arduino/digital/time/query";
+const char boot_time_query[] PROGMEM =		"/arduino/digital/boot/query";
 const char rcmd_time_set[] PROGMEM =		"/arduino/digital/time/set/";
 const char rcmd_timezone_set[] PROGMEM =	"/arduino/digital/timezone/set/";
 

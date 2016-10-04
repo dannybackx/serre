@@ -25,15 +25,16 @@
 #include "SFE_BMP180.h"
 #include "ThingSpeak.h"
 #include "Hatch.h"
+#include <TimeLib.h>
+#include <DS1307RTC.h>
 #include "global.h"
 
 #ifdef BUILT_BY_MAKE
 #include "buildinfo.h"
 #endif
 
-#include <TimeLib.h>
-#include <DS1307RTC.h>
- 
+time_t		boot_time = 0;
+
 SFE_BMP180	*bmp = 0;
 double		newPressure, newTemperature, oldPressure, oldTemperature;
 char		buffer[buffer_size];
@@ -81,6 +82,7 @@ void setup() {
     Serial.println(gpm(rtc_failure));
   else {
     Serial.print("RTC ok, ");      
+    boot_time = now();
     sprintf(buffer, gpm(timedate_fmt),
       hour() + personal_timezone, minute(), second(), day(), month(), year());
     Serial.println(buffer); 
