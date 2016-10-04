@@ -31,6 +31,7 @@ Hatch::Hatch() {
   items = NULL;
   nitems = 0;
   _moving = 0;
+  maxtime = starttime = 0;
 
   motor = 0;
 }
@@ -39,6 +40,7 @@ Hatch::Hatch(char *desc) {
   items = NULL;
   nitems = 0;
   _moving = 0;
+  maxtime = starttime = 0;
   motor = 0;
   setSchedule(desc);
 }
@@ -67,7 +69,32 @@ void Hatch::PrintSchedule() {
     }
 }
 
+void Hatch::setMaxTime(int m) {
+  maxtime = m;
+}
+
+int Hatch::getMaxTime() {
+  return maxtime;
+}
+
+void Hatch::SetStartTime(int hr, int mn, int sec) {
+  starttime = hr * 3600 + mn * 60 + sec;
+}
+
+bool Hatch::RunTooLong(int hr, int mn, int sec) {
+  int n = hr * 3600 + mn * 60 + sec;
+  if (n - starttime > maxtime)
+    return true;
+  return false;
+}
+
 int Hatch::loop(int hr, int mn, int sec) {
+  // Stop if running for too long
+  if (_moving && RunTooLong(hr, mn, sec)) {
+    Stop();
+    return _moving;
+  }
+
   // If we're moving, stop if we hit the right sensor
   if (_moving < 0) {
     if (sensor_down_pin >= 0) {
@@ -103,9 +130,11 @@ int Hatch::loop(int hr, int mn, int sec) {
       switch (items[i].state) {
       case -1:
         Down();
+	SetStartTime(hr, mn, sec);
 	return _moving;
       case +1:
         Up();
+	SetStartTime(hr, mn, sec);
         return _moving;
       default:
         ; // No action

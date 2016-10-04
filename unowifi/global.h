@@ -82,6 +82,11 @@ extern const char no_info[];
 extern const char server_build[];
 extern const char rtc_failure[];
 
+extern const char answer_ok[];
+
+extern const char maxtime_query[];
+extern const char maxtime_set[];
+
 extern char progmem_bfr[];
 extern "C" {
   const char *gpm(const char *p);

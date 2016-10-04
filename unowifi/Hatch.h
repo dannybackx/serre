@@ -38,6 +38,9 @@ public:
   void setMotor(int n);
   int moving();
 
+  void setMaxTime(int m);
+  int getMaxTime();
+
   void Up();
   void Down();
   void Stop();
@@ -45,10 +48,15 @@ public:
 
 private:
   int nitems;
+  int maxtime;			// Don't run any longer than this amount of seconds
   item *items;
   void PrintSchedule();
 
   int _moving;			// -1 is going down, +1 is going up, 0 is off
   AF_DCMotor *motor;
+
+  int starttime;
+  void SetStartTime(int hr, int mn, int sec);
+  bool RunTooLong(int hr, int mn, int sec);
 };
 #endif

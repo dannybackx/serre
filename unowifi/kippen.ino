@@ -85,6 +85,7 @@ void setup() {
   Serial.println(F("Set up hatch ..."));
   hatch = new Hatch(schedule_string);
   hatch->setMotor(3);
+  hatch->setMaxTime(6);
 
   state = oldstate = 0;
 

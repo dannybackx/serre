@@ -63,6 +63,11 @@ const char no_info[] PROGMEM =			"No version info available";
 const char server_build[] PROGMEM =		"Server build ";
 const char rtc_failure[] PROGMEM =		"Unable to sync with the RTC";
 
+const char answer_ok[] PROGMEM =		"Ok";
+
+const char maxtime_query[] PROGMEM =		"/arduino/digital/maxtime/query";
+const char maxtime_set[] PROGMEM =		"/arduino/digital/maxtime/set/";
+
 // Length limit (39 chars)      		"......................................."
 
 const char *gpm(const char *p)

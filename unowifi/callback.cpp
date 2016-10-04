@@ -89,11 +89,24 @@ void ProcessCallback(WifiData client) {
       sprintf(buffer, gpm(timedate_fmt),
         hour() + personal_timezone, minute(), second(), day(), month(), year());
       client.println(buffer);
+
   } else if (command.startsWith(gpm(rcmd_timezone_set))) {
     const char	*p = command.c_str(),
 		*q = p + strlen(progmem_bfr);
     int t = atoi(q);
     personal_timezone = t;
+    client.println(answer_ok);
+
+  } else if (command.startsWith(gpm(maxtime_set))) {
+    const char	*p = command.c_str(),
+		*q = p + strlen(progmem_bfr);
+    hatch->setMaxTime(atoi(q));
+    client.println(answer_ok);
+
+  } else if (command == gpm(maxtime_query)) {
+    sprintf(buffer, "%d", hatch->getMaxTime());
+    client.println(buffer);
+
   /********************************************************************************
    *                                                                              *
    * Hatch                                                                        *
@@ -101,13 +114,16 @@ void ProcessCallback(WifiData client) {
    ********************************************************************************/
   } else if (command == gpm(hatch_query)) {
     sprintf(reply, gpm(hatch_state_fmt), hatch->moving());
-    client.print(reply);
+    client.println(reply);
   } else if (command == gpm(hatch_up)) {
     hatch->Up();
+    client.println(answer_ok);
   } else if (command == gpm(hatch_down)) {
     hatch->Down();
+    client.println(answer_ok);
   } else if (command == gpm(hatch_stop)) {
     hatch->Stop();
+    client.println(answer_ok);
 
   /********************************************************************************
    *                                                                              *
@@ -118,14 +134,15 @@ void ProcessCallback(WifiData client) {
     const char *p = command.c_str(),
          *q = p + strlen(progmem_bfr);
     hatch->setSchedule(q);
-    Serial.print(gpm(set_schedule_to));
-    Serial.println(q);
+    // Serial.print(gpm(set_schedule_to));
+    // Serial.println(q);
+    client.println(answer_ok);
 
   } else if (command == gpm(schedule_query)) {
     Serial.print(gpm(schedule));
     char *sched = hatch->getSchedule();
     client.print(sched);
-    Serial.println(sched);
+    // Serial.println(sched);
     free(sched);
 
   } else if (command == gpm(version_query)) {
