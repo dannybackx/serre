@@ -30,6 +30,7 @@ extern int report_frequency_seconds;
 /*
  * Time
  */
+const int		buffer_size = 48;
 extern char		buffer[];
 extern struct tm	*tmnow;
 
@@ -86,6 +87,12 @@ extern const char answer_ok[];
 
 extern const char maxtime_query[];
 extern const char maxtime_set[];
+
+extern const char ts_url[];
+extern const char ts_read_key[];
+extern const char ts_write_key[];
+extern const char ifttt_key[];
+extern const char ifttt_event[];
 
 extern char progmem_bfr[];
 extern "C" {

@@ -23,6 +23,7 @@
 #include <Wire.h>
 #include <ArduinoWiFi.h>
 #include "SFE_BMP180.h"
+#include "ThingSpeak.h"
 #include "Hatch.h"
 #include "global.h"
 
@@ -35,11 +36,15 @@
  
 SFE_BMP180	*bmp = 0;
 double		newPressure, newTemperature, oldPressure, oldTemperature;
-char		buffer[32];
+char		buffer[buffer_size];
 
 Hatch		*hatch = 0;
 int		state, oldstate;
 int		sensor_up, sensor_down, button_up, button_down;
+
+ThingSpeak	*ts = 0;
+
+void tryts();
  
 void setup() {
   delay(2000);
@@ -99,6 +104,8 @@ void setup() {
 
   // Yeah !
   Serial.println("Ready");
+
+  ts = new ThingSpeak();
 }
  
 void ActivatePin(int pin, const char *name) {
@@ -165,6 +172,8 @@ void loop() {
       hatch->Down();
     }
   }
+
+  ts->loop(hour() + personal_timezone, minute());
 
   delay(50);
 }

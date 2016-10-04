@@ -68,6 +68,8 @@ const char answer_ok[] PROGMEM =		"Ok";
 const char maxtime_query[] PROGMEM =		"/arduino/digital/maxtime/query";
 const char maxtime_set[] PROGMEM =		"/arduino/digital/maxtime/set/";
 
+const char ts_url[] PROGMEM =			"api.thingspeak.com";
+
 // Length limit (39 chars)      		"......................................."
 
 const char *gpm(const char *p)
