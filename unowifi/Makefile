@@ -15,9 +15,9 @@
 #====================================================================================
 
 SKETCH=		$(HOME)/src/sketchbook/unowifi/kippen/kippen.ino
-EXTRA_DEFINES=	-DBUILT_BY_MAKE
+#EXTRA_DEFINES=	-DBUILT_BY_MAKE
 EXTRA_SRC=	personal.c AFMotor.cpp Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
-		callback.cpp strings.c secrets.c
+		callback.cpp strings.c secrets.c Ifttt.cpp
 UPLOAD_HOST=	unowifi
 
 BUILD_ROOT=	tmp
@@ -149,6 +149,7 @@ $(MAIN_EXE): $(CORE_LIB) $(USER_OBJ)
 	$(LD) $(LD_FLAGS) -Wl,--start-group $^ $(BUILD_INFO_OBJ) $(LD_STD_LIBS) -Wl,--end-group -L$(OBJ_DIR) -o $(MAIN_ELF)
 	${ARCH}-objcopy -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0  ${MAIN_ELF} ${MAIN_EEP}
 	${ARCH}-objcopy -O ihex -R .eeprom ${MAIN_ELF} ${MAIN_HEX}
+	${ARCH}-size ${MAIN_ELF}
 	perl -e 'print "Build complete. Elapsed time: ", time()-$(START_TIME),  " seconds\n\n"'
 
 upload: all
@@ -160,11 +161,15 @@ ota: all
 showotaip:
 	echo "IP Address for OTA is $(UPLOAD_AVAHI_IP) (symbol $(UPLOAD_AVAHI_NAME))"
 
+objdump:	${MAIN_ELF}
+	${ARCH}-objdump -xSsd ${MAIN_ELF} >$@
+
 clean::
 	echo Removing all intermediate build files...
-	rm -f ${VI_TMPFILES} ${BAK_FILES}
-	rm -f $(OBJ_DIR)/*
-	rm -rf ${BUILD_ROOT}
+	-rm -f ${VI_TMPFILES} ${BAK_FILES}
+	-rm -f $(OBJ_DIR)/*
+	-rm -rf ${BUILD_ROOT}
+	-rm -f objdump
 
 clean::
 	-rm -f ${LINKS} links

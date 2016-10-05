@@ -30,13 +30,14 @@
 #include "SFE_BMP180.h"
 #include "Hatch.h"
 #include "TimeLib.h"
-#include "global.h"
 #include "ThingSpeak.h"
+#include "global.h"
 
 extern ESP esp;
 
 ThingSpeak::ThingSpeak() {
   lasttime = -1;
+  delta = 600;				// FIXME 10 minutes
   rest = new REST(&esp);
   if (! rest->begin(gpm(ts_url))) {
     delete rest;
@@ -49,12 +50,14 @@ ThingSpeak::~ThingSpeak() {
   rest = 0;
 }
 
-#define DELTA	600	// FIXME 10 minutes
+/*
+ * Report environmental information periodically
+ */
+void ThingSpeak::loop(time_t nowts) {
+  if (lasttime < 0 || (nowts - lasttime > delta)) {
+      lasttime = nowts;
 
-void ThingSpeak::loop(int hr, int min) {
-  if (lasttime < 0 || (hr * 60 + min - lasttime > DELTA)) {
-      lasttime = hr * 60 + min;
-
+      Serial.print("ThingSpeak feed at "); Serial.print(hour(nowts)+personal_timezone); Serial.print(':'); Serial.println(minute(nowts)); 
       if (bmp) {
         BMPQuery();
 
@@ -80,4 +83,22 @@ void ThingSpeak::loop(int hr, int min) {
       }
     
   }
+}
+
+/*
+ * Report motor stop/start
+ */
+void ThingSpeak::changeState(int state) {
+      Serial.print("ThingSpeak state change to "); Serial.println(state);
+      sprintf(buffer, "/update?api_key=%s&field3=%d", gpm(ts_write_key), state);
+      rest->get(buffer);
+      int err = rest->getResponse(buffer, buffer_size);
+      if (err == HTTP_STATUS_OK) {
+	// Serial.print("TS success "); Serial.println(buffer);
+      } else if (err == 0) {
+	// timeout
+	Serial.print("TS timeout "); Serial.println(buffer);
+      } else {
+	Serial.print("TS GET fail "); Serial.println(err);
+      }
 }

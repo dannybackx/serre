@@ -21,6 +21,8 @@
  *   THE SOFTWARE.
  */
 
+#define	USE_IFTTT
+
 extern double		newPressure, newTemperature, oldPressure, oldTemperature;
 
 extern int personal_timezone;
@@ -39,6 +41,9 @@ extern void BMPInitialize();
 extern int BMPQuery();
 extern SFE_BMP180	*bmp;
 extern Hatch		*hatch;
+
+// ThingSpeak
+extern ThingSpeak	*ts;
 
 extern void ProcessCallback(WifiData client);
 

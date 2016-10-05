@@ -29,16 +29,12 @@ class ThingSpeak {
 public:
   ThingSpeak();
   ~ThingSpeak();
-  void loop(int hr, int min);
-  void sendEvent(char *key, char *event, char *value1);
-  void sendEvent(char *key, char *event, char *value1, char *value2);
-  void sendEvent(char *key, char *event, char *value1, char *value2, char *value3);
-  void sendEvent(char *key, char *event);
+  void loop(time_t);
+  void changeState(int);
 
 private:
-  int lasttime;
+  time_t lasttime;
+  time_t delta;
   REST *rest;
-  static const char *json_template1, *json_template2, *json_template3, *html_template;
-  void sendEventJson(char *key, char *event, char *json);
 };
 #endif

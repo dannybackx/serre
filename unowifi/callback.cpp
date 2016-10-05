@@ -26,6 +26,7 @@
 #include "SFE_BMP180.h"
 #include "Hatch.h"
 #include "TimeLib.h"
+#include "ThingSpeak.h"
 #include "global.h"
 #include <TimeLib.h>
 #include <DS1307RTC.h>
@@ -146,7 +147,7 @@ void ProcessCallback(WifiData client) {
     client.println(answer_ok);
 
   } else if (command == gpm(schedule_query)) {
-    Serial.print(gpm(schedule));
+    // Serial.print(gpm(schedule));
     char *sched = hatch->getSchedule();
     client.print(sched);
     // Serial.println(sched);

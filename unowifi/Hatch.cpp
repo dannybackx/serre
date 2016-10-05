@@ -25,6 +25,7 @@
 #include "Hatch.h"
 #include "SFE_BMP180.h"
 #include "TimeLib.h"
+#include "ThingSpeak.h"
 #include "global.h"
 #include "AFMotor.h"
 
@@ -101,7 +102,7 @@ int Hatch::loop(int hr, int mn, int sec) {
     if (sensor_down_pin >= 0) {
       int state = digitalRead(sensor_down_pin);
       if (state == 0) {
-	Serial.println("Down sensor : stop hatch");
+	// Serial.println("Down sensor : stop hatch");
 	Stop();
       }
     }
@@ -110,7 +111,7 @@ int Hatch::loop(int hr, int mn, int sec) {
     if (sensor_up_pin >= 0) {
       int state = digitalRead(sensor_up_pin);
       if (state == 0) {
-	Serial.println("Up sensor : stop hatch");
+	// Serial.println("Up sensor : stop hatch");
 	Stop();
       }
     }
@@ -243,6 +244,7 @@ void Hatch::Up() {
   //   return;
   motor->run(BACKWARD);
   _moving = +1;
+  ts->changeState(_moving);
 }
 
 void Hatch::Down() {
@@ -250,6 +252,7 @@ void Hatch::Down() {
   //   return;
   motor->run(FORWARD);
   _moving = -1;
+  ts->changeState(_moving);
 }
 
 void Hatch::Stop() {
@@ -257,6 +260,7 @@ void Hatch::Stop() {
   //   return;
   motor->run(RELEASE);
   _moving = 0;
+  ts->changeState(_moving);
 }
 
 void Hatch::reset() {

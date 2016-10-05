@@ -23,11 +23,13 @@
 #include <Wire.h>
 #include <ArduinoWiFi.h>
 #include "SFE_BMP180.h"
-#include "ThingSpeak.h"
 #include "Hatch.h"
 #include <TimeLib.h>
+#include "ThingSpeak.h"
 #include <DS1307RTC.h>
 #include "global.h"
+
+#include "Ifttt.h"
 
 #ifdef BUILT_BY_MAKE
 #include "buildinfo.h"
@@ -45,8 +47,6 @@ int		sensor_up, sensor_down, button_up, button_down;
 
 ThingSpeak	*ts = 0;
 
-void tryts();
- 
 void setup() {
   delay(2000);
   Serial.begin(9600);
@@ -63,6 +63,7 @@ void setup() {
 
   // If built by make, talk about specifics
 #ifdef BUILT_BY_MAKE
+#warning "This takes a lot of memory, especially due to the file name"
   Serial.print(gpm(server_build));
   Serial.print(_BuildInfo.src_filename);
   Serial.print(" ");
@@ -108,6 +109,9 @@ void setup() {
   Serial.println("Ready");
 
   ts = new ThingSpeak();
+#ifdef USE_IFTTT
+  Ifttt *ifttt = new Ifttt();
+#endif
 }
  
 void ActivatePin(int pin, const char *name) {
@@ -132,10 +136,12 @@ void loop() {
     ProcessCallback(Wifi);
   }
 
+  time_t nowts = now();
+
   // Note the hatch->loop code will also trigger the motor
   if (hatch) {
     oldstate = state;
-    state = hatch->loop(hour() + personal_timezone, minute(), second());
+    state = hatch->loop(hour(nowts) + personal_timezone, minute(nowts), second(nowts));
   }
 
   // Sensors stop motion
@@ -175,7 +181,7 @@ void loop() {
     }
   }
 
-  ts->loop(hour() + personal_timezone, minute());
+  ts->loop(nowts);
 
   delay(50);
 }
