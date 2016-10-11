@@ -20,43 +20,42 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
-#ifndef _INCLUDE_HATCH_H_
-#define _INCLUDE_HATCH_H_
+#ifndef _INCLUDE_LIGHT_H_
+#define _INCLUDE_LIGHT_H_
 
-#include "item.h"
-#include "AFMotor.h"
+enum lightState {
+  LIGHT_NONE,		// unknown
+  LIGHT_NIGHT,
+  LIGHT_MORNING,	// open the door
+  LIGHT_DAY,
+  LIGHT_EVENING		// close the door
+};
 
-class Hatch {
+class Light {
 public:
-  Hatch();
-  Hatch(char *);
-  ~Hatch();
-  int loop(int, int, int);
-  void setSchedule(const char *);
-  char *getSchedule();		// Caller must free result
-  void set(int);
-  void setMotor(int n);
-  int moving();
-
-  void setMaxTime(int m);
-  int getMaxTime();
-
-  void Up();
-  void Down();
-  void Stop();
-  void reset();
+  Light();
+  ~Light();
+  enum lightState loop(time_t);
+  void setSensorPin(int pin);
+  int getSensorPin();
+  void setLowTreshold(int);
+  int getLowTreshold();
+  void setHighTreshold(int);
+  int getHighTreshold();
+  void setDuration(int);
+  int getDuration();
+  int query();
 
 private:
-  int nitems;
-  int maxtime;			// Don't run any longer than this amount of seconds
-  item *items;
-  void PrintSchedule();
+  // Configuration items
+  int sensorPin;
+  int lowTreshold, highTreshold;
+  int duration;
 
-  int _moving;			// -1 is going down, +1 is going up, 0 is off
-  AF_DCMotor *motor;
-
-  int starttime;
-  void SetStartTime(int hr, int mn, int sec);
-  bool RunTooLong(int hr, int mn, int sec);
+  // Track state
+  time_t		lastChange,
+  			stableTime;
+  enum lightState	stableValue,
+  			currentValue;
 };
 #endif

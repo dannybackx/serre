@@ -22,9 +22,10 @@
  */
 #include <Arduino.h>
 #include <ArduinoWiFi.h>
-#include "Hatch.h"
-#include "SFE_BMP180.h"
 #include "TimeLib.h"
+#include "Hatch.h"
+#include "Light.h"
+#include "SFE_BMP180.h"
 #include "ThingSpeak.h"
 #include "global.h"
 #include "AFMotor.h"

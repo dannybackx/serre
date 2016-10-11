@@ -24,27 +24,19 @@
 #define _INCLUDE_IFTTT_H_
 
 #include "item.h"
-#ifdef ESP8266
-#include <ESP8266WiFi.h>
-#endif
 
 class Ifttt {
 public:
   Ifttt();
-#ifdef ESP8266
-  Ifttt(WiFiClient client);
-#endif
   ~Ifttt();
-  void sendEvent(char *key, char *event, char *value1);
-  void sendEvent(char *key, char *event, char *value1, char *value2);
-  void sendEvent(char *key, char *event, char *value1, char *value2, char *value3);
-  void sendEvent(char *key, char *event);
+  void sendEvent(const char *key, const char *event, const char *value1);
+  void sendEvent(const char *key, const char *event, const char *value1, const char *value2);
+  void sendEvent(const char *key, const char *event, const char *value1, const char *value2, const char *value3);
+  void sendEvent(const char *key, const char *event);
 
 private:
-#ifdef ESP8266
-  WiFiClient client;
-#endif
+  REST *rest;
   static const char *json_template1, *json_template2, *json_template3, *html_template;
-  void sendEventJson(char *key, char *event, char *json);
+  void sendEventJson(const char *key, const char *event, const char *json);
 };
 #endif

@@ -17,7 +17,7 @@
 SKETCH=		$(HOME)/src/sketchbook/unowifi/kippen/kippen.ino
 #EXTRA_DEFINES=	-DBUILT_BY_MAKE
 EXTRA_SRC=	personal.c AFMotor.cpp Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
-		callback.cpp strings.c secrets.c Ifttt.cpp
+		callback.cpp strings.c secrets.c Ifttt.cpp Light.cpp
 UPLOAD_HOST=	unowifi
 
 BUILD_ROOT=	tmp

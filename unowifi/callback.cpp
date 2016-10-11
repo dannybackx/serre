@@ -24,8 +24,9 @@
 #include <ArduinoWiFi.h>
 #include <Wire.h>
 #include "SFE_BMP180.h"
-#include "Hatch.h"
 #include "TimeLib.h"
+#include "Hatch.h"
+#include "Light.h"
 #include "ThingSpeak.h"
 #include "global.h"
 #include <TimeLib.h>
@@ -169,6 +170,14 @@ void ProcessCallback(WifiData client) {
 #else
     client.print(gpm(no_info));
 #endif
+  /********************************************************************************
+   *                                                                              *
+   * Light sensor                                                                 *
+   *                                                                              *
+   ********************************************************************************/
+  } else if (command == gpm(light_sensor_query)) {
+    sprintf(reply, "Light %d", light->query());
+    client.println(reply);
   /********************************************************************************
    *                                                                              *
    * Add more cases here                                                          *

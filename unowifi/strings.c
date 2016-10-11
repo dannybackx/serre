@@ -24,14 +24,15 @@
  */
 #include <avr/pgmspace.h>
 
-char		progmem_bfr[40];
+char		progmem_bfr[57];
 
-// Length limit (39 chars)      		"......................................."
+// Length limit (56 chars)      		"........................................................"
 const char timedate_fmt[] PROGMEM =		"%02d:%02d:%02d %02d/%02d/%04d";
 const char sensor_up_string[] PROGMEM =		"Sensor UP";
 const char sensor_down_string[] PROGMEM =	"Sensor DOWN";
 const char button_up_string[] PROGMEM =		"Button UP";
 const char button_down_string[] PROGMEM =	"Button DOWN";
+const char light_sensor_string[] PROGMEM =	"Light sensor";
 const char bmp_fmt[] PROGMEM =			"bmp (%2d.%02d, %d)";
 const char no_sensor_string[] PROGMEM =		"No sensor detected";
 const char setting_rtc[] PROGMEM =		"Setting RTC ";
@@ -59,19 +60,36 @@ const char schedule_query[] PROGMEM =		"/arduino/digital/schedule/query";
 const char schedule_update[] PROGMEM =		"/arduino/digital/schedule/set/";
 const char schedule[] PROGMEM =			"Schedule : ";
 
+const char light_sensor_query[] PROGMEM =	"/arduino/digital/light/query";
+
 const char version_query[] PROGMEM =		"/arduino/digital/version/query";
 const char no_info[] PROGMEM =			"No version info available";
 const char server_build[] PROGMEM =		"Server build ";
 const char rtc_failure[] PROGMEM =		"Unable to sync with the RTC";
 
 const char answer_ok[] PROGMEM =		"Ok";
+const char ready[] PROGMEM =			"Ready";
+const char boot[] PROGMEM =			"Boot";
 
 const char maxtime_query[] PROGMEM =		"/arduino/digital/maxtime/query";
 const char maxtime_set[] PROGMEM =		"/arduino/digital/maxtime/set/";
 
 const char ts_url[] PROGMEM =			"api.thingspeak.com";
 
-// Length limit (39 chars)      		"......................................."
+const char ts_1[] PROGMEM =			"/update?api_key=%s&field1=%d.%02d";
+const char ts_2[] PROGMEM =			"/update?api_key=%s&field2=%d";
+const char ts_3[] PROGMEM =			"/update?api_key=%s&field4=%d";
+const char ts_4[] PROGMEM =			"/update?api_key=%s&field3=%d";
+const char ts_123[] PROGMEM =			"/update?api_key=%s&field1=%d.%02d&field2=%d&field4=%d";
+const char ts_timeout[] PROGMEM =		"TS timeout ";
+const char ts_get_fail[] PROGMEM =		"TS GET fail ";
+const char ts_feed[] PROGMEM =			"ThingSpeak feed at ";
+const char ts_state_change[] PROGMEM =		"ThingSpeak state change to ";
+const char ts_colon[] PROGMEM =			"ThingSpeak : ";
+
+const char out_of_memory[] PROGMEM =		"Out of memory";
+
+// Length limit (56 chars)      		"........................................................"
 
 const char *gpm(const char *p)
 {

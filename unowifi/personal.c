@@ -20,6 +20,8 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
+#include <Arduino.h>
+
 int personal_timezone = +2;
 
 int verbose = 0;
@@ -36,6 +38,10 @@ char *schedule_string = "21:00,-1,07:35,1";
  * You'll need to define some values in mywifi.h for this to work.
  */
 const int report_frequency_seconds = 900;
+
+int light_treshold_high =	700,	// Depends on components used.
+    light_treshold_low =	400,
+    light_min_duration =	500;	// 5 minutes
 
 /*
  * Old style motor shield pin use :
@@ -55,10 +61,12 @@ const int report_frequency_seconds = 900;
  * If the definition is < 0 then assume it's not hooked up.
  */
 // Sensors that indicate when the hatch is at the up or down position
-const int	sensor_up_pin =		2;
-const int	sensor_down_pin =	-3;
+const int	sensor_up_pin =		2;	// Digital
+const int	sensor_down_pin =	-3;	// Digital
 
-const int	button_up_pin =		-11;
-const int	button_down_pin =	-13;
+const int	button_up_pin =		-11;	// Digital
+const int	button_down_pin =	-13;	// Digital
 
-// Still available : D6, A0 .. A3
+const int	light_sensor_pin =	17;	// Analog, A3 translates to 17
+
+// Still available : D6, A0 .. A2

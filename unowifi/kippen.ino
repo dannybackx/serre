@@ -23,13 +23,13 @@
 #include <Wire.h>
 #include <ArduinoWiFi.h>
 #include "SFE_BMP180.h"
-#include "Hatch.h"
 #include <TimeLib.h>
+#include "Hatch.h"
+#include "Light.h"
 #include "ThingSpeak.h"
 #include <DS1307RTC.h>
-#include "global.h"
-
 #include "Ifttt.h"
+#include "global.h"
 
 #ifdef BUILT_BY_MAKE
 #include "buildinfo.h"
@@ -42,7 +42,9 @@ double		newPressure, newTemperature, oldPressure, oldTemperature;
 char		buffer[buffer_size];
 
 Hatch		*hatch = 0;
-int		state, oldstate;
+Light		*light = 0;
+int		newhatch, oldhatch;
+enum lightState	newlight, oldlight;
 int		sensor_up, sensor_down, button_up, button_down;
 
 ThingSpeak	*ts = 0;
@@ -95,7 +97,7 @@ void setup() {
   hatch->setMotor(3);
   hatch->setMaxTime(6);
 
-  state = oldstate = 0;
+  newhatch = oldhatch = 0;
 
   // Sensors and buttons
   ActivatePin(sensor_up_pin, gpm(sensor_up_string));
@@ -103,14 +105,19 @@ void setup() {
   ActivatePin(button_up_pin, gpm(button_up_string));
   ActivatePin(button_up_pin, gpm(button_down_string));
 
+  light = new Light();
+  light->setSensorPin(light_sensor_pin);
+  ActivatePin(light_sensor_pin, gpm(light_sensor_string));
+
   sensor_up = sensor_down = button_up = button_down = 0;
 
   // Yeah !
-  Serial.println("Ready");
+  Serial.println(gpm(ready));
 
   ts = new ThingSpeak();
 #ifdef USE_IFTTT
   Ifttt *ifttt = new Ifttt();
+  ifttt->sendEvent(gpm(ifttt_key), (char *)ifttt_event, "Boot");
 #endif
 }
  
@@ -131,17 +138,33 @@ void ActivatePin(int pin, const char *name) {
  * Loop                                                                          *
  *                                                                               *
  *********************************************************************************/
+// static int xx = 0;
 void loop() {
   while(Wifi.available()){
     ProcessCallback(Wifi);
   }
 
   time_t nowts = now();
+  
+  oldlight = newlight;
+  newlight = light->loop(nowts);
+  if (oldlight != newlight) {
+    if (newlight == LIGHT_MORNING)
+      hatch->Up();
+    else if (newlight == LIGHT_EVENING)
+      hatch->Down();
+  }
+
+  // xx++;
+  // if ((xx % 20) == 0) {
+  //   sprintf(buffer, "Analog %d (pin %d)", analogRead(A3), A3);
+  //   Serial.println(buffer);
+  // }
 
   // Note the hatch->loop code will also trigger the motor
   if (hatch) {
-    oldstate = state;
-    state = hatch->loop(hour(nowts) + personal_timezone, minute(nowts), second(nowts));
+    oldhatch = newhatch;
+    newhatch = hatch->loop(hour(nowts) + personal_timezone, minute(nowts), second(nowts));
   }
 
   // Sensors stop motion

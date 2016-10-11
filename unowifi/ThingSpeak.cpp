@@ -28,8 +28,9 @@
 #include <Arduino.h>
 #include <ArduinoWiFi.h>
 #include "SFE_BMP180.h"
-#include "Hatch.h"
 #include "TimeLib.h"
+#include "Light.h"
+#include "Hatch.h"
 #include "ThingSpeak.h"
 #include "global.h"
 
@@ -54,10 +55,12 @@ ThingSpeak::~ThingSpeak() {
  * Report environmental information periodically
  */
 void ThingSpeak::loop(time_t nowts) {
+  int err;
+
   if (lasttime < 0 || (nowts - lasttime > delta)) {
       lasttime = nowts;
 
-      Serial.print("ThingSpeak feed at "); Serial.print(hour(nowts)+personal_timezone); Serial.print(':'); Serial.println(minute(nowts)); 
+      Serial.print(gpm(ts_feed)); Serial.print(hour(nowts)+personal_timezone); Serial.print(':'); Serial.println(minute(nowts)); 
       if (bmp) {
         BMPQuery();
 
@@ -68,17 +71,27 @@ void ThingSpeak::loop(time_t nowts) {
         b = 100 * td;
         c = newPressure;
 
-        // Format the result
-        sprintf(buffer, "/update?api_key=%s&field1=%d.%02d&field2=%d", gpm(ts_write_key), a, b, c);
-	rest->get(buffer);
-        int err = rest->getResponse(buffer, buffer_size);
-	if (err == HTTP_STATUS_OK) {
-	  // Serial.print("TS success "); Serial.println(buffer);
-	} else if (err == 0) {
-	  // timeout
-	  Serial.print("TS timeout "); Serial.println(buffer);
+	int l = light->query();
+
+	char *sb = (char *)malloc(96);
+        if (sb != NULL) {
+	  // Format the result
+          sprintf(sb, gpm(ts_123), ts_write_key, a, b, c, l);
+	  Serial.print(gpm(ts_colon)); Serial.println(sb);
+
+	  rest->get(sb);
+          err = rest->getResponse(sb, 96);
+	  if (err == HTTP_STATUS_OK) {
+	    // Serial.print("TS success "); Serial.println(buffer);
+	  } else if (err == 0) {
+	    // timeout
+	    Serial.print(gpm(ts_timeout)); Serial.println(sb);
+	  } else {
+	    Serial.print(gpm(ts_get_fail)); Serial.println(err);
+	  }
+	  free(sb);
 	} else {
-	  Serial.print("TS GET fail "); Serial.println(err);
+	  Serial.println(gpm(out_of_memory));
 	}
       }
     
@@ -89,16 +102,16 @@ void ThingSpeak::loop(time_t nowts) {
  * Report motor stop/start
  */
 void ThingSpeak::changeState(int state) {
-      Serial.print("ThingSpeak state change to "); Serial.println(state);
-      sprintf(buffer, "/update?api_key=%s&field3=%d", gpm(ts_write_key), state);
+      Serial.print(gpm(ts_state_change)); Serial.println(state);
+      sprintf(buffer, gpm(ts_4), ts_write_key, state);
       rest->get(buffer);
       int err = rest->getResponse(buffer, buffer_size);
       if (err == HTTP_STATUS_OK) {
 	// Serial.print("TS success "); Serial.println(buffer);
       } else if (err == 0) {
 	// timeout
-	Serial.print("TS timeout "); Serial.println(buffer);
+	Serial.print(gpm(ts_timeout)); Serial.println(buffer);
       } else {
-	Serial.print("TS GET fail "); Serial.println(err);
+	Serial.print(gpm(ts_get_fail)); Serial.println(err);
       }
 }

@@ -37,36 +37,47 @@
 #include <Arduino.h>
 #include <ArduinoWiFi.h>
 #include "SFE_BMP180.h"
+#include "TimeLib.h"
 #include "Hatch.h"
+#include "Light.h"
+#include "ThingSpeak.h"
 #include "global.h"
 #include "Ifttt.h"
 
-Ifttt::Ifttt() {
-}
+#ifdef USE_IFTTT
 
-#ifdef ESP8266
-Ifttt::Ifttt(WiFiClient client) {
-  this->client = client;
+extern ESP esp;
+
+Ifttt::Ifttt() {
+  rest = new REST(&esp);
+  if (! rest->begin(gpm(ts_url))) {
+    delete rest;
+    rest = 0;
+  }
 }
-#endif
 
 Ifttt::~Ifttt() {
+  if (rest) {
+    delete rest;
+    rest = 0;
+  }
 }
 
 const char *Ifttt::json_template1 = "{\"value1\":\"%s\"}";
 const char *Ifttt::json_template2 = "{\"value1\":\"%s\",\"value2\":\"%s\"}";
 const char *Ifttt::json_template3 = "{\"value1\":\"%s\",\"value2\":\"%s\",\"value3\":\"%s\"}";
 const char *Ifttt::html_template =
-	"POST /trigger/%s/with/key/%s HTTP/1.1\r\n"
+	"POST /trigger/%s/with/key/%s HTTP/1.1\r\n"	// event, key
   	"Host: maker.ifttt.com\r\n"
   	"Content-Type: application/json\r\n"
-	"Content-Length: %d\r\n\r\n";
+	"Content-Length: %d\r\n\r\n"			// len
+	"%s";						// json
 
-void Ifttt::sendEvent(char *key, char *event) {
-  sendEventJson(key, event, (char *)"");
+void Ifttt::sendEvent(const char *key, const char *event) {
+  sendEventJson(key, event, (const char *)"");
 }
 
-void Ifttt::sendEvent(char *key, char *event, char *value1) {
+void Ifttt::sendEvent(const char *key, const char *event, const char *value1) {
   if (value1 == 0)
     return sendEvent(key, event);
   char *json = (char *)malloc(strlen(json_template1) + strlen(value1) + 5);
@@ -75,7 +86,7 @@ void Ifttt::sendEvent(char *key, char *event, char *value1) {
   free(json);
 }
 
-void Ifttt::sendEvent(char *key, char *event, char *value1, char *value2) {
+void Ifttt::sendEvent(const char *key, const char *event, const char *value1, const char *value2) {
   if (value2 == 0)
     return sendEvent(key, event, value1);
   char *json = (char *)malloc(strlen(json_template2) + strlen(value1) + strlen(value2) + 5);
@@ -84,7 +95,7 @@ void Ifttt::sendEvent(char *key, char *event, char *value1, char *value2) {
   free(json);
 }
 
-void Ifttt::sendEvent(char *key, char *event, char *value1, char *value2, char *value3) {
+void Ifttt::sendEvent(const char *key, const char *event, const char *value1, const char *value2, const char *value3) {
   if (value3 == 0)
     return sendEvent(key, event, value1, value2);
   char *json = (char *)malloc(strlen(json_template3) + strlen(value1) + strlen(value2) + strlen(value3) + 5);
@@ -93,23 +104,14 @@ void Ifttt::sendEvent(char *key, char *event, char *value1, char *value2, char *
   free(json);
 }
 
-void Ifttt::sendEventJson(char *key, char *event, char *json) {
-#ifdef ESP8266
-  client.connect("maker.ifttt.com", 80);
-
+void Ifttt::sendEventJson(const char *key, const char *event, const char *json) {
   int len = strlen(json);
 
-  char *post = (char *)malloc(strlen(html_template) + strlen(key) + strlen(event) + 5);
-  sprintf(post, html_template, event, key, len);
+  char *post = (char *)malloc(strlen(html_template) + strlen(key) + strlen(event) + 5 + strlen(json));
+  sprintf(post, html_template, event, key, len, json);
 
-  client.print(post);
-  client.print(json);
-
-  // Debug(post); Debug("\n");
-  // Debug(json); Debug("\n");
-
-  // client.stop();
+  rest->get(post);
 
   free(post);
-#endif
 }
+#endif
