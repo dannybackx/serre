@@ -31,3 +31,8 @@ offset (in hours) to the hours returned by the RTC. As I live in a place where t
 is not a large number, this doesn't conflict with anything. (It offsets possible values
 of hr from 0..23 to 2..25 in my case. There's no problem as long as your scheduled
 hours don't conflict with that, morning schedules for Western US might be at risk.)
+
+
+Note : I'm not using the Arduino IDE, I've supplied a Makefile. Using the sources
+from the Arduino IDE should be possible too, it's been tested several times during
+the development.
