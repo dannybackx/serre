@@ -109,7 +109,16 @@ void setup() {
   light->setSensorPin(light_sensor_pin);
   ActivatePin(light_sensor_pin, gpm(light_sensor_string));
 
-  sensor_up = sensor_down = button_up = button_down = 0;
+  // Initialize sensor states
+  sensor_up = sensor_down = button_up = button_down = -1;
+  if (sensor_up_pin >= 0) 
+    sensor_up = digitalRead(sensor_up_pin);
+  if (sensor_down_pin >= 0)
+    sensor_down = digitalRead(sensor_down_pin);
+  if (button_up_pin >= 0)
+    button_up = digitalRead(button_up_pin);
+  if (button_down_pin >= 0)
+    button_down = digitalRead(button_down_pin);
 
   // Yeah !
   Serial.println(gpm(ready));
@@ -138,7 +147,6 @@ void ActivatePin(int pin, const char *name) {
  * Loop                                                                          *
  *                                                                               *
  *********************************************************************************/
-// static int xx = 0;
 void loop() {
   while(Wifi.available()){
     ProcessCallback(Wifi);
@@ -155,12 +163,6 @@ void loop() {
       hatch->Down();
   }
 
-  // xx++;
-  // if ((xx % 20) == 0) {
-  //   sprintf(buffer, "Analog %d (pin %d)", analogRead(A3), A3);
-  //   Serial.println(buffer);
-  // }
-
   // Note the hatch->loop code will also trigger the motor
   if (hatch) {
     oldhatch = newhatch;
@@ -174,7 +176,6 @@ void loop() {
     if (oldvalue != sensor_up && sensor_up == 1) {
       // Stop moving the hatch
       hatch->Stop();
-      Serial.println("Stop");
     }
   }
   if (sensor_down_pin >= 0) {
@@ -191,7 +192,7 @@ void loop() {
     int oldvalue = button_up;
     button_up = digitalRead(button_up_pin);
     if (oldvalue != button_up && button_up == 1) {
-      // Stop moving the hatch
+      // Move the hatch up
       hatch->Up();
     }
   }
@@ -199,7 +200,7 @@ void loop() {
     int oldvalue = button_up;
     button_down = digitalRead(button_down_pin);
     if (oldvalue != button_down && button_down == 1) {
-      // Stop moving the hatch
+      // Move the hatch down
       hatch->Down();
     }
   }
