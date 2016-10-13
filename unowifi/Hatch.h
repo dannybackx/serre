@@ -42,7 +42,9 @@ public:
   int getMaxTime();
 
   void Up();
+  void Up(int hr, int mn, int sec);
   void Down();
+  void Down(int hr, int mn, int sec);
   void Stop();
   void reset();
 

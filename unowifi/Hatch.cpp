@@ -240,12 +240,22 @@ int Hatch::moving() {
   return _moving;
 }
 
+void Hatch::Up(int hr, int mn, int sec) {
+  SetStartTime(hr, mn, sec);
+  Up();
+}
+
 void Hatch::Up() {
   // if (_moving)
   //   return;
   motor->run(BACKWARD);
   _moving = +1;
   ts->changeState(_moving);
+}
+
+void Hatch::Down(int hr, int mn, int sec) {
+  SetStartTime(hr, mn, sec);
+  Down();
 }
 
 void Hatch::Down() {

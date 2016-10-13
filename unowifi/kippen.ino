@@ -158,9 +158,9 @@ void loop() {
   newlight = light->loop(nowts);
   if (oldlight != newlight) {
     if (newlight == LIGHT_MORNING)
-      hatch->Up();
+      hatch->Up(hour(nowts) + personal_timezone, minute(nowts), second(nowts));
     else if (newlight == LIGHT_EVENING)
-      hatch->Down();
+      hatch->Down(hour(nowts) + personal_timezone, minute(nowts), second(nowts));
   }
 
   // Note the hatch->loop code will also trigger the motor
@@ -207,7 +207,7 @@ void loop() {
 
   ts->loop(nowts);
 
-  delay(50);
+  delay(loop_delay);
 }
  
 void BMPInitialize() {

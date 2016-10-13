@@ -61,6 +61,8 @@ const char schedule_update[] PROGMEM =		"/arduino/digital/schedule/set/";
 const char schedule[] PROGMEM =			"Schedule : ";
 
 const char light_sensor_query[] PROGMEM =	"/arduino/digital/light/query";
+const char light_duration_query[] PROGMEM =	"/arduino/digital/light/time/query";
+const char light_duration_set[] PROGMEM =	"/arduino/digital/light/time/set";
 
 const char version_query[] PROGMEM =		"/arduino/digital/version/query";
 const char no_info[] PROGMEM =			"No version info available";

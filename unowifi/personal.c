@@ -43,6 +43,8 @@ int light_treshold_high =	700,	// Depends on components used.
     light_treshold_low =	400,
     light_min_duration =	500;	// 5 minutes
 
+const int	loop_delay =	50;
+
 /*
  * Old style motor shield pin use :
  * D2, D13 not used

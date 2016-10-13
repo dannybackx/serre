@@ -38,9 +38,9 @@
 
 Light::Light() {
   sensorPin = -1;
-  lowTreshold = 1000;
-  highTreshold = 0;
-  duration = 600;
+  lowTreshold = light_treshold_low;
+  highTreshold = light_treshold_high;
+  duration = light_min_duration;
 
   lastChange = stableTime = 0;
   stableValue = currentValue = LIGHT_NONE;
@@ -69,22 +69,26 @@ enum lightState Light::loop(time_t t) {
      */
     if (sensorValue < lowTreshold) {
       // reset counter
+        lastChange = t;
     } else if (sensorValue > highTreshold) {
       if (lastChange < 0) {
         lastChange = t;
       } else if (t - lastChange > duration) {
         // This is a real change !
+        stableValue = LIGHT_DAY;
 	return LIGHT_MORNING;
       }
     } else {
     }
   } else if (stableValue == LIGHT_DAY) {
     if (sensorValue > highTreshold) {
+        lastChange = t;
     } else if (sensorValue < lowTreshold) {
       if (lastChange < 0) {
         lastChange = t;
       } else if (t - lastChange > duration) {
         // This is a real change !
+        stableValue = LIGHT_NIGHT;
 	return LIGHT_EVENING;
       }
     } else {

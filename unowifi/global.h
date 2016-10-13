@@ -36,6 +36,7 @@ const int		buffer_size = 32;
 extern char		buffer[];
 extern struct tm	*tmnow;
 extern time_t		boot_time;
+extern const int	loop_delay;
 
 extern void BMPInitialize();
 extern int BMPQuery();
@@ -43,6 +44,10 @@ extern SFE_BMP180	*bmp;
 extern Hatch		*hatch;
 extern Light		*light;
 
+// Light
+extern const int light_treshold_high,
+		 light_treshold_low,
+		 light_min_duration;
 // ThingSpeak
 extern ThingSpeak	*ts;
 
@@ -89,6 +94,8 @@ extern const char schedule_update[];
 extern const char schedule[];
 
 extern const char light_sensor_query[];
+extern const char light_duration_query[];
+extern const char light_duration_set[];
 
 extern const char version_query[];
 extern const char no_info[];

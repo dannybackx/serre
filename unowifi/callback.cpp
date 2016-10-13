@@ -136,6 +136,21 @@ void ProcessCallback(WifiData client) {
 
   /********************************************************************************
    *                                                                              *
+   * Light                                                                        *
+   *                                                                              *
+   ********************************************************************************/
+  } else if (command.startsWith(gpm(light_duration_set))) {
+    const char	*p = command.c_str(),
+		*q = p + strlen(progmem_bfr);
+    light->setDuration(atoi(q));
+    client.println(answer_ok);
+
+  } else if (command == gpm(light_duration_query)) {
+    sprintf(buffer, "%d", light->getDuration());
+    client.println(buffer);
+
+  /********************************************************************************
+   *                                                                              *
    * Schedule                                                                     *
    *                                                                              *
    ********************************************************************************/
