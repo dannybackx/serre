@@ -34,5 +34,5 @@ hours don't conflict with that, morning schedules for Western US might be at ris
 
 
 Note : I'm not using the Arduino IDE, I've supplied a Makefile. Using the sources
-from the Arduino IDE should be possible too, it's been tested several times during
+with the Arduino IDE should be possible too, it's been tested several times during
 the development.
