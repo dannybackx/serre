@@ -122,14 +122,9 @@ void setup() {
 
   ts = new ThingSpeak();
 
-  Serial.print("kippen.ino "); Serial.println(__LINE__);
 #ifdef USE_IFTTT
   Ifttt *ifttt = new Ifttt();
-  Serial.print("kippen.ino "); Serial.println(__LINE__);
-  //ifttt->sendEvent(gpm(ifttt_key), (char *)ifttt_event, "Boot");
-  //ifttt->sendEvent(gpm(ifttt_key), (char *)ifttt_event, "Boot");
-  // ifttt->sendEvent("bQInxS0axYupsN1nPqdzM7", "ESP8266-danny", "Boot");
-
+  ifttt->sendEvent(gpm(ifttt_key), (char *)ifttt_event, "Boot");
 #endif
 
   // Yeah !
