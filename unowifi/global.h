@@ -21,6 +21,7 @@
  *   THE SOFTWARE.
  */
 
+// Disabled this due to memory restriction on the Uno Wifi
 #undef	USE_IFTTT
 
 extern double		newPressure, newTemperature, oldPressure, oldTemperature;

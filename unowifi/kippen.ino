@@ -87,7 +87,7 @@ void setup() {
     Serial.print("RTC ok, ");      
     boot_time = now();
     sprintf(buffer, gpm(timedate_fmt),
-      hour() + personal_timezone, minute(), second(), day(), month(), year());
+      hour(), minute(), second(), day(), month(), year());
     Serial.println(buffer); 
   }
 
@@ -120,14 +120,20 @@ void setup() {
   if (button_down_pin >= 0)
     button_down = digitalRead(button_down_pin);
 
-  // Yeah !
-  Serial.println(gpm(ready));
-
   ts = new ThingSpeak();
+
+  Serial.print("kippen.ino "); Serial.println(__LINE__);
 #ifdef USE_IFTTT
   Ifttt *ifttt = new Ifttt();
-  ifttt->sendEvent(gpm(ifttt_key), (char *)ifttt_event, "Boot");
+  Serial.print("kippen.ino "); Serial.println(__LINE__);
+  //ifttt->sendEvent(gpm(ifttt_key), (char *)ifttt_event, "Boot");
+  //ifttt->sendEvent(gpm(ifttt_key), (char *)ifttt_event, "Boot");
+  // ifttt->sendEvent("bQInxS0axYupsN1nPqdzM7", "ESP8266-danny", "Boot");
+
 #endif
+
+  // Yeah !
+  Serial.println(gpm(ready));
 }
  
 void ActivatePin(int pin, const char *name) {
@@ -158,15 +164,15 @@ void loop() {
   newlight = light->loop(nowts);
   if (oldlight != newlight) {
     if (newlight == LIGHT_MORNING)
-      hatch->Up(hour(nowts) + personal_timezone, minute(nowts), second(nowts));
+      hatch->Up(hour(nowts), minute(nowts), second(nowts));
     else if (newlight == LIGHT_EVENING)
-      hatch->Down(hour(nowts) + personal_timezone, minute(nowts), second(nowts));
+      hatch->Down(hour(nowts), minute(nowts), second(nowts));
   }
 
   // Note the hatch->loop code will also trigger the motor
   if (hatch) {
     oldhatch = newhatch;
-    newhatch = hatch->loop(hour(nowts) + personal_timezone, minute(nowts), second(nowts));
+    newhatch = hatch->loop(hour(nowts), minute(nowts), second(nowts));
   }
 
   // Sensors stop motion

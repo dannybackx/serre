@@ -64,7 +64,7 @@ const int	loop_delay =	50;
  */
 // Sensors that indicate when the hatch is at the up or down position
 const int	sensor_up_pin =		2;	// Digital
-const int	sensor_down_pin =	-3;	// Digital
+const int	sensor_down_pin =	3;	// Digital
 
 const int	button_up_pin =		-11;	// Digital
 const int	button_down_pin =	-13;	// Digital

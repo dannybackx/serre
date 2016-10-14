@@ -60,7 +60,7 @@ void ThingSpeak::loop(time_t nowts) {
   if (lasttime < 0 || (nowts - lasttime > delta)) {
       lasttime = nowts;
 
-      Serial.print(gpm(ts_feed)); Serial.print(hour(nowts)+personal_timezone); Serial.print(':'); Serial.println(minute(nowts)); 
+      // Serial.print(gpm(ts_feed)); Serial.print(hour(nowts)); Serial.print(':'); Serial.println(minute(nowts)); 
       if (bmp) {
         BMPQuery();
 
@@ -77,7 +77,7 @@ void ThingSpeak::loop(time_t nowts) {
         if (sb != NULL) {
 	  // Format the result
           sprintf(sb, gpm(ts_123), ts_write_key, a, b, c, l);
-	  Serial.print(gpm(ts_colon)); Serial.println(sb);
+	  // Serial.print(gpm(ts_colon)); Serial.println(sb);
 
 	  rest->get(sb);
           err = rest->getResponse(sb, 96);
@@ -102,7 +102,7 @@ void ThingSpeak::loop(time_t nowts) {
  * Report motor stop/start
  */
 void ThingSpeak::changeState(int state) {
-      Serial.print(gpm(ts_state_change)); Serial.println(state);
+      // Serial.print(gpm(ts_state_change)); Serial.println(state);
       sprintf(buffer, gpm(ts_4), ts_write_key, state);
       rest->get(buffer);
       int err = rest->getResponse(buffer, buffer_size);

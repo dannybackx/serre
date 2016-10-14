@@ -26,12 +26,8 @@ A significant issue is memory - current implementation already takes 75% both in
 variable memory. Note that most of the variable space is in use by the ESP driver for the
 Uno Wifi (more than half of the available memory !).
 
-A minor issue is timezone management. That's done in a simplistic way, by adding a timezone
-offset (in hours) to the hours returned by the RTC. As I live in a place where this
-is not a large number, this doesn't conflict with anything. (It offsets possible values
-of hr from 0..23 to 2..25 in my case. There's no problem as long as your scheduled
-hours don't conflict with that, morning schedules for Western US might be at risk.)
-
+Timezone management is done in a simplistic way : the RTC needs to be in local time.
+The time set code adds timezone offset, but nothing else manages timezones.
 
 Note : I'm not using the Arduino IDE, I've supplied a Makefile. Using the sources
 with the Arduino IDE should be possible too, it's been tested several times during

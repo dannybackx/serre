@@ -74,10 +74,17 @@ void ProcessCallback(WifiData client) {
    *                                                                              *
    ********************************************************************************/
   } else if (command.startsWith(gpm(rcmd_time_set))) {
+    //
+    // Get input for this from date +T%s
+    //
+    // We're setting the RTC to local time here by subtracting personal_timezone
+    // so the timezone related bugs are worked around.
+    //
     const char *p = command.c_str(),
          *q = p + strlen(progmem_bfr);
     if (q[0] == 'T') {
       long t = atol(q+1);
+      t += 3600 * personal_timezone;	// This is it
       RTC.set(t);
       Serial.print(gpm(setting_rtc));
       Serial.print(q);
@@ -85,17 +92,18 @@ void ProcessCallback(WifiData client) {
       Serial.print(t);
       Serial.print(" ");
       sprintf(buffer, gpm(timedate_fmt),
-        hour() + personal_timezone, minute(), second(), day(), month(), year());
+        hour(), minute(), second(), day(), month(), year());
       Serial.println(buffer);
+      client.println(answer_ok);
     }
   } else if (command.startsWith(gpm(time_query))) {
       sprintf(buffer, gpm(timedate_fmt),
-        hour() + personal_timezone, minute(), second(), day(), month(), year());
+        hour(), minute(), second(), day(), month(), year());
       client.println(buffer);
 
   } else if (command.startsWith(gpm(boot_time_query))) {
       sprintf(buffer, gpm(timedate_fmt),
-        hour(boot_time) + personal_timezone, minute(boot_time), second(boot_time),
+        hour(boot_time), minute(boot_time), second(boot_time),
 	day(boot_time), month(boot_time), year(boot_time));
       client.println(buffer);
 
