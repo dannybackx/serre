@@ -127,9 +127,15 @@ extern const char ts_feed[];
 extern const char ts_state_change[];
 extern const char ts_colon[];
 
+extern const char mqtt_123[];
+extern const char mqtt_topic[];
+extern const char mqtt_4[];
+
 extern const char out_of_memory[];
 
 extern char progmem_bfr[];
 extern "C" {
   const char *gpm(const char *p);
 }
+
+extern void mqtt(const char *);

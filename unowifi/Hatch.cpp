@@ -34,6 +34,7 @@ Hatch::Hatch() {
   items = NULL;
   nitems = 0;
   _moving = 0;
+  _position = 0;
   maxtime = starttime = 0;
 
   motor = 0;
@@ -43,6 +44,7 @@ Hatch::Hatch(char *desc) {
   items = NULL;
   nitems = 0;
   _moving = 0;
+  _position = 0;
   maxtime = starttime = 0;
   motor = 0;
   setSchedule(desc);
@@ -246,8 +248,10 @@ void Hatch::Up(int hr, int mn, int sec) {
 }
 
 void Hatch::Up() {
-  // if (_moving)
-  //   return;
+  if (_position == 1)
+    return;
+  if (_moving)
+    return;
   motor->run(BACKWARD);
   _moving = +1;
   ts->changeState(_moving);
@@ -259,20 +263,31 @@ void Hatch::Down(int hr, int mn, int sec) {
 }
 
 void Hatch::Down() {
-  // if (_moving)
-  //   return;
+  if (_position == -1)
+    return;
+  if (_moving)
+    return;
   motor->run(FORWARD);
   _moving = -1;
   ts->changeState(_moving);
 }
 
 void Hatch::Stop() {
-  // if (! _moving)
-  //   return;
+  if (! _moving)
+    return;
   motor->run(RELEASE);
   _moving = 0;
   ts->changeState(_moving);
 }
 
 void Hatch::reset() {
+  _position = 0;
+}
+
+void Hatch::IsUp() {
+  _position = 1;
+}
+
+void Hatch::IsDown() {
+  _position = -1;
 }

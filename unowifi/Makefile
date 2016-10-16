@@ -17,7 +17,7 @@
 SKETCH=		$(HOME)/src/sketchbook/unowifi/kippen/kippen.ino
 #EXTRA_DEFINES=	-DBUILT_BY_MAKE
 EXTRA_SRC=	personal.c AFMotor.cpp Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
-		callback.cpp strings.c secrets.c Ifttt.cpp Light.cpp
+		callback.cpp strings.c secrets.c Ifttt.cpp Light.cpp mqtt.cpp
 UPLOAD_HOST=	unowifi
 
 BUILD_ROOT=	tmp
@@ -28,9 +28,9 @@ AVR_MYLIBS = $(HOME)/src/sketchbook/libraries
 LIBS =	\
        ${AVR_MYLIBS}/ArduinoWiFi \
        ${AVR_LIBS}/Wire \
-       ${AVR_MYLIBS}/Time ${AVR_MYLIBS}/DS1307RTC
+       ${AVR_MYLIBS}/Time \
+       ${AVR_MYLIBS}/DS1307RTC
 
-#       ${AVR_MYLIBS}/Ciao \
 #=== Project specific definitions: sketch and list of needed libraries
 
 #====================================================================================

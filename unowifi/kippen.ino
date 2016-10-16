@@ -56,8 +56,6 @@ void setup() {
   // Display startup text
   Serial.println(gpm(startup_text1));
   Serial.println(gpm(startup_text2));
-  Wifi.println(gpm(startup_text1));
-  Wifi.println(gpm(startup_text2));
 
   // Start WiFi
   Serial.println(gpm(starting_wifi));
@@ -111,10 +109,18 @@ void setup() {
 
   // Initialize sensor states
   sensor_up = sensor_down = button_up = button_down = -1;
-  if (sensor_up_pin >= 0) 
+  if (sensor_up_pin >= 0)  {
     sensor_up = digitalRead(sensor_up_pin);
-  if (sensor_down_pin >= 0)
+
+    if (sensor_up == 1)
+      hatch->IsUp();
+  }
+  if (sensor_down_pin >= 0) {
     sensor_down = digitalRead(sensor_down_pin);
+
+    if (sensor_down == 1)
+      hatch->IsDown();
+  }
   if (button_up_pin >= 0)
     button_up = digitalRead(button_up_pin);
   if (button_down_pin >= 0)
@@ -129,6 +135,7 @@ void setup() {
 
   // Yeah !
   Serial.println(gpm(ready));
+  mqtt(gpm(ready));
 }
  
 void ActivatePin(int pin, const char *name) {
@@ -177,6 +184,7 @@ void loop() {
     if (oldvalue != sensor_up && sensor_up == 1) {
       // Stop moving the hatch
       hatch->Stop();
+      hatch->IsUp();
     }
   }
   if (sensor_down_pin >= 0) {
@@ -185,6 +193,7 @@ void loop() {
     if (oldvalue != sensor_down && sensor_down == 1) {
       // Stop moving the hatch
       hatch->Stop();
+      hatch->IsDown();
     }
   }
 
@@ -269,4 +278,13 @@ int BMPQuery() {
     return -203;
   }
   return 0;
+}
+
+#include "mqtt.h"
+
+extern ESP esp;
+MQTT _mqtt(&esp);
+
+void mqtt(const char *msg) {
+  _mqtt.publish(mqtt_topic, (char *)msg);
 }

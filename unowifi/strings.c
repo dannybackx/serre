@@ -89,6 +89,10 @@ const char ts_feed[] PROGMEM =			"ThingSpeak feed at ";
 const char ts_state_change[] PROGMEM =		"ThingSpeak state change to ";
 const char ts_colon[] PROGMEM =			"ThingSpeak : ";
 
+const char mqtt_123[] PROGMEM =			"%d.%02d,%d,%d";
+const char mqtt_topic[] =			"kippen";
+const char mqtt_4[] PROGMEM =			"state %d";
+
 const char out_of_memory[] PROGMEM =		"Out of memory";
 
 // Length limit (56 chars)      		"........................................................"

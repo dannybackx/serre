@@ -48,6 +48,9 @@ public:
   void Stop();
   void reset();
 
+  void IsUp();
+  void IsDown();
+
 private:
   int nitems;
   int maxtime;			// Don't run any longer than this amount of seconds
@@ -55,6 +58,7 @@ private:
   void PrintSchedule();
 
   int _moving;			// -1 is going down, +1 is going up, 0 is off
+  int _position;		// -1 is down, 0 is moving or unknown, 1 is up
   AF_DCMotor *motor;
 
   int starttime;
