@@ -29,6 +29,7 @@
 #include <Arduino.h>
 
 #include <ELClient.h>
+#include <ELClientMqtt.h>
 
 #include "TimeLib.h"
 #include "Light.h"

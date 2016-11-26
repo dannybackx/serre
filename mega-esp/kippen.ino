@@ -55,7 +55,7 @@ int		sensor_up, sensor_down, button_up, button_down;
 ThingSpeak	*ts = 0;
 
 ELClient	esp(&Serial, &Serial);
-ELClientMqtt	_mqtt(&esp);
+ELClientMqtt	mqtt(&esp);
 ELClientCmd	cmd(&esp);
 
 /*
@@ -170,8 +170,14 @@ void setup() {
   sprintf(buffer, "IP address %d.%d.%d.%d", ip1, ip2, ip3, ip4);
   Serial.println(buffer);
 
+  // Set up MQTT
+  mqtt.connectedCb.attach(mqConnected);
+  mqtt.disconnectedCb.attach(mqDisconnected);
+  mqtt.dataCb.attach(mqData);
+  mqtt.setup();
+
   // On MQTT, say not only that we're ready but specify IP address also
-  mqtt(buffer);
+  mqttSend(buffer);
 
   // Yeah !
   Serial.print("Ready ... ");
@@ -320,6 +326,6 @@ int BMPQuery() {
   return 0;
 }
 
-void mqtt(const char *msg) {
-  _mqtt.publish(mqtt_topic, (char *)msg);
+void mqttSend(const char *msg) {
+  mqtt.publish(mqtt_topic, (char *)msg);
 }

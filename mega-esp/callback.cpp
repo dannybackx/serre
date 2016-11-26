@@ -41,10 +41,83 @@
 
 char reply[20];
 
+typedef void (*handler)(char *, char *);
+
+void ProcessCallback(char *, char *);
+void BMP180Query(char *topic, char *message);
+
+struct mqtt_callback_table {
+  char		*token;
+  handler	f;
+} mqtt_callback_table [] = {
+  { "/esp-link/kippen/1",	ProcessCallback },
+  { "/esp-link/kippen/2",	ProcessCallback },
+  { "/BMP180/query",		BMP180Query },
+  { NULL, NULL}
+};
+
+void mqConnected(void *response) {
+  Serial.println("MQTT connect");
+
+  for (int i=0; mqtt_callback_table[i].token; i++)
+    mqtt.subscribe(mqtt_callback_table[i].token);
+}
+
+void mqDisconnected(void *response) {
+  Serial.println("MQTT disconnect");
+}
+
+void mqData(void *response) {
+  ELClientResponse *res = (ELClientResponse *)response;
+  String topic = res->popString();
+  String data = res->popString();
+
+#if 0
+  Serial.print("MQTT query(");
+  Serial.print(topic);
+  Serial.print(") data (");
+  Serial.print(data);
+  Serial.println(")");
+#endif
+
+  for (int i=0; mqtt_callback_table[i].token; i++)
+    if (strcmp(topic.c_str(), mqtt_callback_table[i].token) == 0) {
+      mqtt_callback_table[i].f((char *)topic.c_str(), (char *)data.c_str());
+    }
+}
+
 void WifiStatusCallback(void *response) {
 }
 
-void ProcessCallback(void *client) {
+void BMP180Query(char *topic, char *message) {
+  if (bmp) {
+    BMPQuery();
+
+    int a, b, c;
+    // Temperature
+    a = (int) newTemperature;
+    double td = newTemperature - a;
+    b = 100 * td;
+    c = newPressure;
+
+    // Format the result
+    sprintf(reply, gpm(bmp_fmt), a, b, c);
+ 
+  } else {
+    sprintf(reply, gpm(no_sensor_string));
+  }
+
+  Serial.print("BMP180: "); Serial.println(reply);
+
+  mqtt.publish(topic, reply);
+}
+
+void ProcessCallback(char *topic, char *message) {
+  Serial.print("MQTT ProcessCallback(");
+  Serial.print(topic);
+  Serial.print(") message (");
+  Serial.print(message);
+  Serial.println(")");
 #if 0
   String command = client.readString();
  

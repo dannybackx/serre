@@ -29,6 +29,7 @@
 
 #include <ELClient.h>
 #include <ELClientRest.h>
+#include <ELClientMqtt.h>
 
 #include "SFE_BMP180.h"
 #include "TimeLib.h"
@@ -43,8 +44,7 @@ ThingSpeak::ThingSpeak() {
   lasttime = -1;
   delta = 600;				// FIXME 10 minutes
   rest = new ELClientRest(&esp);
-  int err = rest->begin("api.thingspeak.com");
-//  int err = rest->begin(gpm(ts_url));
+  int err = rest->begin(gpm(ts_url));
   if (err != 0) {
     delete rest;
     rest = 0;
@@ -106,7 +106,7 @@ void ThingSpeak::loop(time_t nowts) {
 
 	  // Similar stuff via MQTT, formatted as CSV
           sprintf(sb, gpm(mqtt_123), a, b, c, l);
-	  mqtt(sb);
+	  mqttSend(sb);
 
 	  // Free the buffer
 	  free(sb);
@@ -117,7 +117,7 @@ void ThingSpeak::loop(time_t nowts) {
         // No BMP but dial home anyway
 	char *sb = (char *)malloc(40);
         sprintf(sb, gpm(mqtt_123b));
-	mqtt(sb);
+	mqttSend(sb);
 	free(sb);
       }
     
@@ -144,5 +144,5 @@ void ThingSpeak::changeState(int state) {
   }
 
   sprintf(buffer, gpm(mqtt_4), state);
-  mqtt(buffer);
+  mqttSend(buffer);
 }

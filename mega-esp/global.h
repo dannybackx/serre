@@ -141,4 +141,9 @@ extern "C" {
   const char *gpm(const char *p);
 }
 
-extern void mqtt(const char *);
+extern void mqttSend(const char *);
+
+extern ELClientMqtt mqtt;
+extern void mqConnected(void *response);
+extern void mqDisconnected(void *response);
+extern void mqData(void *response);

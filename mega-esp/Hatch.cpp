@@ -24,6 +24,7 @@
 
 #include <ELClient.h>
 #include <ELClientRest.h>
+#include <ELClientMqtt.h>
 
 #include "TimeLib.h"
 #include "Hatch.h"

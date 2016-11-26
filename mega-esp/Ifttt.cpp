@@ -37,6 +37,7 @@
 #include <Arduino.h>
 
 #include <ELClient.h>
+#include <ELClientMqtt.h>
 
 #include "SFE_BMP180.h"
 #include "TimeLib.h"
