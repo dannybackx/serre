@@ -45,22 +45,63 @@ typedef void (*handler)(char *, char *);
 
 void ProcessCallback(char *, char *);
 void BMP180Query(char *topic, char *message);
+void DateTimeSet(char *topic, char *message);
+void DateTimeQuery(char *topic, char *message);
+void BootTimeQuery(char *topic, char *message);
+void TimezoneSet(char *topic, char *message);
+void MaxTimeSet(char *topic, char *message);
+void MaxTimeQuery(char *topic, char *message);
+void HatchQuery(char *topic, char *message);
+void HatchUp(char *topic, char *message);
+void HatchDown(char *topic, char *message);
+void HatchStop(char *topic, char *message);
+void LightDurationSet(char *topic, char *message);
+void LightDurationQuery(char *topic, char *message);
+void ScheduleSet(char *topic, char *message);
+void ScheduleQuery(char *topic, char *message);
+void VersionQuery(char *topic, char *message);
+void LightSensorQuery(char *topic, char *message);
 
+int ix;
 struct mqtt_callback_table {
   char		*token;
   handler	f;
+  int		len;
 } mqtt_callback_table [] = {
-  { "/esp-link/kippen/1",	ProcessCallback },
-  { "/esp-link/kippen/2",	ProcessCallback },
-  { "/BMP180/query",		BMP180Query },
+  { "/BMP180/query",		BMP180Query,		0},
+  { "/date/query",		DateTimeQuery,		0},
+  { "/date/set/",		DateTimeSet,		0},
+  { "/boot/query",		BootTimeQuery,		0},
+  { "/timezone/set/",		TimezoneSet,		0},
+  { "/maxtime/query",		MaxTimeQuery,		0},
+  { "/maxtime/set/",		MaxTimeSet,		0},
+  { "/hatch/query",		HatchQuery,		0},
+  { "/hatch/up",		HatchUp,		0},
+  { "/hatch/down",		HatchDown,		0},
+  { "/hatch/stop",		HatchStop,		0},
+  { "/light/duration/set/",	LightDurationSet,	0},
+  { "/light/duration/query",	LightDurationQuery,	0},
+  { "/light/query",		LightSensorQuery,	0},
+  { "/schedule/set/",		ScheduleSet,		0},
+  { "/schedule/query",		ScheduleQuery,		0},
+  { "/version/query",		VersionQuery,		0},
+  { "/esp-link/kippen/1",	ProcessCallback,	0},	// test
   { NULL, NULL}
 };
 
 void mqConnected(void *response) {
   Serial.println("MQTT connect");
 
-  for (int i=0; mqtt_callback_table[i].token; i++)
+  for (int i=0; mqtt_callback_table[i].token != NULL; i++) {
+#if 0
+    Serial.print("MQTT : register ");
+    Serial.println(mqtt_callback_table[i].token); delay(200);
+#endif
+    if (mqtt_callback_table[i].len == 0)
+      mqtt_callback_table[i].len = strlen(mqtt_callback_table[i].token);
+
     mqtt.subscribe(mqtt_callback_table[i].token);
+  }
 }
 
 void mqDisconnected(void *response) {
@@ -80,9 +121,10 @@ void mqData(void *response) {
   Serial.println(")");
 #endif
 
-  for (int i=0; mqtt_callback_table[i].token; i++)
-    if (strcmp(topic.c_str(), mqtt_callback_table[i].token) == 0) {
-      mqtt_callback_table[i].f((char *)topic.c_str(), (char *)data.c_str());
+  for (ix=0; mqtt_callback_table[ix].token; ix++)
+    if (strncasecmp(topic.c_str(), mqtt_callback_table[ix].token,
+          mqtt_callback_table[ix].len) == 0) {
+      mqtt_callback_table[ix].f((char *)topic.c_str(), (char *)data.c_str());
     }
 }
 
@@ -90,6 +132,9 @@ void WifiStatusCallback(void *response) {
 }
 
 void BMP180Query(char *topic, char *message) {
+  if (bmp == 0)
+    BMPInitialize();
+
   if (bmp) {
     BMPQuery();
 
@@ -109,59 +154,18 @@ void BMP180Query(char *topic, char *message) {
 
   Serial.print("BMP180: "); Serial.println(reply);
 
-  mqtt.publish(topic, reply);
+  mqtt.publish("/BMP180", reply);
 }
 
-void ProcessCallback(char *topic, char *message) {
-  Serial.print("MQTT ProcessCallback(");
-  Serial.print(topic);
-  Serial.print(") message (");
-  Serial.print(message);
-  Serial.println(")");
-#if 0
-  String command = client.readString();
- 
-  Serial.print(F("ProcessCallback {"));
-  Serial.print(command);
-  Serial.println(F("}"));
-
-  /********************************************************************************
-   *                                                                              *
-   * Environmental sensor (BMP180)                                                *
-   *                                                                              *
-   ********************************************************************************/
-  if (command == gpm(query_bmp180)) {
-      if (bmp) {
-        BMPQuery();
-
-        int a, b, c;
-        // Temperature
-        a = (int) newTemperature;
-        double td = newTemperature - a;
-        b = 100 * td;
-        c = newPressure;
-
-        // Format the result
-        sprintf(reply, gpm(bmp_fmt), a, b, c);
-  
-      } else {
-        sprintf(reply, gpm(no_sensor_string));
-      }
-    client.print(reply);
-  /********************************************************************************
-   *                                                                              *
-   * Manage time                                                                  *
-   *                                                                              *
-   ********************************************************************************/
-  } else if (command.startsWith(gpm(rcmd_time_set))) {
+void DateTimeSet(char *topic, char *message) {
     //
     // Get input for this from date +T%s
     //
     // We're setting the RTC to local time here by subtracting personal_timezone
     // so the timezone related bugs are worked around.
     //
-    const char *p = command.c_str(),
-         *q = p + strlen(progmem_bfr);
+    const char *p = message,
+         *q = p + mqtt_callback_table[ix].len;
     if (q[0] == 'T') {
       long t = atol(q+1);
       t += 3600 * personal_timezone;	// This is it
@@ -174,129 +178,136 @@ void ProcessCallback(char *topic, char *message) {
       sprintf(buffer, gpm(timedate_fmt),
         hour(), minute(), second(), day(), month(), year());
       Serial.println(buffer);
-      client.println(answer_ok);
+      mqtt.publish("/date", answer_ok);
     }
-  } else if (command.startsWith(gpm(time_query))) {
-      sprintf(buffer, gpm(timedate_fmt),
-        hour(), minute(), second(), day(), month(), year());
-      client.println(buffer);
+}
 
-  } else if (command.startsWith(gpm(boot_time_query))) {
-      sprintf(buffer, gpm(timedate_fmt),
-        hour(boot_time), minute(boot_time), second(boot_time),
-	day(boot_time), month(boot_time), year(boot_time));
-      client.println(buffer);
+void DateTimeQuery(char *topic, char *message) {
+  sprintf(buffer, gpm(timedate_fmt),
+    hour(), minute(), second(), day(), month(), year());
+  mqtt.publish("/date", buffer);
+}
 
-  } else if (command.startsWith(gpm(rcmd_timezone_set))) {
-    const char	*p = command.c_str(),
-		*q = p + strlen(progmem_bfr);
+void BootTimeQuery(char *topic, char *message) {
+  sprintf(buffer, gpm(timedate_fmt),
+    hour(boot_time), minute(boot_time), second(boot_time),
+    day(boot_time), month(boot_time), year(boot_time));
+  mqtt.publish("/boot", buffer);
+}
+
+void TimezoneSet(char *topic, char *message) {
+  const char	*p = message,
+		*q = p + mqtt_callback_table[ix].len;
     int t = atoi(q);
     personal_timezone = t;
-    client.println(answer_ok);
+    mqtt.publish("/timezone", answer_ok);
+}
 
-  } else if (command.startsWith(gpm(maxtime_set))) {
-    const char	*p = command.c_str(),
-		*q = p + strlen(progmem_bfr);
+void MaxTimeSet(char *topic, char *message) {
+    const char	*p = message,
+		*q = p + mqtt_callback_table[ix].len;
     hatch->setMaxTime(atoi(q));
-    client.println(answer_ok);
+    mqtt.publish("/maxtime", answer_ok);
+}
 
-  } else if (command == gpm(maxtime_query)) {
+void MaxTimeQuery(char *topic, char *message) {
     sprintf(buffer, "%d", hatch->getMaxTime());
-    client.println(buffer);
+    mqtt.publish("/maxtime", buffer);
+}
 
-  /********************************************************************************
-   *                                                                              *
-   * Hatch                                                                        *
-   *                                                                              *
-   ********************************************************************************/
-  } else if (command == gpm(hatch_query)) {
+/********************************************************************************
+ *                                                                              *
+ * Hatch                                                                        *
+ *                                                                              *
+ ********************************************************************************/
+void HatchQuery(char *topic, char *message) {
     sprintf(reply, gpm(hatch_state_fmt), hatch->moving());
-    client.println(reply);
-  } else if (command == gpm(hatch_up)) {
+    mqtt.publish("/hatch", reply);
+}
+
+void HatchUp(char *topic, char *message) {
     hatch->Up();
-    client.println(answer_ok);
-  } else if (command == gpm(hatch_down)) {
+    mqtt.publish("/hatch", answer_ok);
+}
+
+void HatchDown(char *topic, char *message) {
     hatch->Down();
-    client.println(answer_ok);
-  } else if (command == gpm(hatch_stop)) {
+    mqtt.publish("/hatch", answer_ok);
+}
+
+void HatchStop(char *topic, char *message) {
     hatch->Stop();
-    client.println(answer_ok);
+    mqtt.publish("/hatch", answer_ok);
+}
 
-  /********************************************************************************
-   *                                                                              *
-   * Light                                                                        *
-   *                                                                              *
-   ********************************************************************************/
-  } else if (command.startsWith(gpm(light_duration_set))) {
-    const char	*p = command.c_str(),
-		*q = p + strlen(progmem_bfr);
+/********************************************************************************
+ *                                                                              *
+ * Light                                                                        *
+ *                                                                              *
+ ********************************************************************************/
+void LightDurationSet(char *topic, char *message) {
+    const char	*p = message,
+		*q = p + mqtt_callback_table[ix].len;
     light->setDuration(atoi(q));
-    client.println(answer_ok);
+    mqtt.publish("/light", answer_ok);
+}
 
-  } else if (command == gpm(light_duration_query)) {
+void LightDurationQuery(char *topic, char *message) {
     sprintf(buffer, "%d", light->getDuration());
-    client.println(buffer);
+    mqtt.publish("/light", buffer);
+}
 
-  /********************************************************************************
-   *                                                                              *
-   * Schedule                                                                     *
-   *                                                                              *
-   ********************************************************************************/
-  } else if (command.startsWith(gpm(schedule_update))) {
-    const char *p = command.c_str(),
-         *q = p + strlen(progmem_bfr);
+/********************************************************************************
+ *                                                                              *
+ * Schedule                                                                     *
+ *                                                                              *
+ ********************************************************************************/
+void ScheduleSet(char *topic, char *message) {
+    const char *p = message,
+         *q = p + mqtt_callback_table[ix].len;
     hatch->setSchedule(q);
     // Serial.print(gpm(set_schedule_to));
     // Serial.println(q);
-    client.println(answer_ok);
+    mqtt.publish("/schedule", answer_ok);
+}
 
-  } else if (command == gpm(schedule_query)) {
+void ScheduleQuery(char *topic, char *message) {
     // Serial.print(gpm(schedule));
     char *sched = hatch->getSchedule();
-    client.print(sched);
+    mqtt.publish("/schedule", sched);
     // Serial.println(sched);
     free(sched);
+}
 
-  } else if (command == gpm(version_query)) {
+void VersionQuery(char *topic, char *message) {
 #ifdef BUILT_BY_MAKE
-    client.print(gpm(server_build));
-    client.println(_BuildInfo.src_filename);
-    client.print(_BuildInfo.date);
-    client.print(" ");
-    client.println(_BuildInfo.time);
-
-    Serial.print(gpm(server_build));
-    Serial.println(_BuildInfo.src_filename);
-    Serial.print(_BuildInfo.date);
-    Serial.print(" ");
-    Serial.println(_BuildInfo.time);
+  char *s = (char *)malloc(100);
+  sprintf(s, "%s%s%s %s",
+    gpm(server_build),
+    _BuildInfo.src_filename,
+    _BuildInfo.date,
+    _BuildInfo.time);
+  mqtt.publish("/version", s);
+  Serial.println(s);
+  free(s);
 #else
-    client.print(gpm(no_info));
+  mqtt.publish("/version", gpm(no_info));
 #endif
-  /********************************************************************************
-   *                                                                              *
-   * Light sensor                                                                 *
-   *                                                                              *
-   ********************************************************************************/
-  } else if (command == gpm(light_sensor_query)) {
+}
+/********************************************************************************
+ *                                                                              *
+ * Light sensor                                                                 *
+ *                                                                              *
+ ********************************************************************************/
+void LightSensorQuery(char *topic, char *message) {
     sprintf(reply, "Light %d", light->query());
-    client.println(reply);
-  /********************************************************************************
-   *                                                                              *
-   * Add more cases here                                                          *
-   *                                                                              *
-   ********************************************************************************/
-  // } else if (command.startsWith("/arduino/digital/time/set/")) {
-  // } else if (command == gpm("/arduino/digital/time/set/")) {
+    mqtt.publish("/light", reply);
+}
 
-  } else {
-    Serial.print(gpm(unmatched_command));
-    Serial.print(command);
-    Serial.println("}");
-  }
-
-
-  // This is needed to close the communication
-  client.print(EOL);
-#endif
+void ProcessCallback(char *topic, char *message) {
+  Serial.print("MQTT ProcessCallback(");
+  Serial.print(topic);
+  Serial.print(") message (");
+  Serial.print(message);
+  Serial.println(")");
 }

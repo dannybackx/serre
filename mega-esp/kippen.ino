@@ -176,6 +176,9 @@ void setup() {
   mqtt.dataCb.attach(mqData);
   mqtt.setup();
 
+  // hack
+  mqConnected(0);
+
   // On MQTT, say not only that we're ready but specify IP address also
   mqttSend(buffer);
 
