@@ -93,12 +93,14 @@ void ThingSpeak::loop(time_t nowts) {
 
 	    // Send to ThingSpeak
 	    rest->get(sb);
+
+	    // This almost certainly gets a timeout because we didn't wait
             err = rest->getResponse(sb, 96);
 	    if (err == HTTP_STATUS_OK) {
 	      // Serial.print("TS success "); Serial.println(buffer);
 	    } else if (err == 0) {
-	      // timeout
-	      Serial.print(gpm(ts_timeout)); Serial.println(sb);
+	      // timeout, but it's a phony one so ignore it !
+	      // Serial.print(gpm(ts_timeout)); Serial.println(sb);
 	    } else {
 	      Serial.print(gpm(ts_get_fail)); Serial.println(err);
 	    }
