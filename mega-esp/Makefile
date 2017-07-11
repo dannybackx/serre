@@ -16,10 +16,20 @@
 
 SKETCH=		$(HOME)/src/sketchbook/mega-esp/kippen-mega/kippen.ino
 #EXTRA_DEFINES=	-DBUILT_BY_MAKE
-EXTRA_SRC=	personal.c AFMotor.cpp Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
-		callback.cpp strings.c secrets.c Ifttt.cpp Light.cpp
-UPLOAD_HOST=	unowifi
+EXTRA_SRC=	personal.c Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
+		callback.cpp strings.c secrets.c Ifttt.cpp Light.cpp Dyndns.cpp
+# EXTRA_SRC +=	AFMotor.cpp
+EXTRA_SRC +=	SimpleL298.cpp
+
+#UPLOAD_HOST=	esplink
+UPLOAD_HOST=	testesp
+
 UPLOAD_PORT=	/dev/ttyACM0
+
+UPLOAD_WIRING=	wiring
+#UPLOAD_WIRING=	arduino
+UPLOAD_MCU=	m2560
+UPLOAD_BAUD=	115200
 
 BUILD_ROOT=	tmp
 LIBCPP=
@@ -43,7 +53,8 @@ LIBS =	\
 ARDUINO_ROOT=	/home/danny/src/arduino/arduino-1.7.11-linux64
 AVR_ROOT=	${ARDUINO_ROOT}/hardware/arduino/avr
 AVR_LIBS=	$(AVR_ROOT)/libraries
-AVRFLASH=	${ARDUINO_ROOT}/hardware/tools/esp-link-tools/avrflash
+# AVRFLASH=	${ARDUINO_ROOT}/hardware/tools/esp-link-tools/avrflash
+AVRFLASH=	${HOME}/src/github/jeelabs/mine/esp-link.git/trunk/megaflash
 ARCH=		avr
 
 time_string = $(shell perl -e 'use POSIX qw(strftime); print strftime($(1), localtime());')
@@ -80,7 +91,7 @@ VARIANT=	mega
 INCLUDE_DIRS +=	${CORE_DIR} ${AVR_ROOT}/variants/${VARIANT} ${OBJ_DIR}
 C_DEFINES=	-c ${DEBUG} -w -MMD \
 		-ffunction-sections -fdata-sections -mmcu=${MCU} \
-		-DF_CPU=16000000L -DARDUINO=107011 -DARDUINO_AVR_UNO_WIFI -DARDUINO_ARCH_AVR \
+		-DF_CPU=16000000L -DARDUINO=107011 -DARDUINO_ARCH_AVR \
 		${EXTRA_DEFINES} 
 C_INCLUDES=	$(foreach dir,$(INCLUDE_DIRS) $(USER_DIRS),-I$(dir))
 C_FLAGS ?=	-c ${DEBUG} -std=gnu11 -ffunction-sections -fdata-sections -MMD -mmcu=${MCU}
@@ -161,7 +172,7 @@ $(MAIN_EXE): $(CORE_LIB) $(USER_OBJ)
 	perl -e 'print "Build complete. Elapsed time: ", time()-$(START_TIME),  " seconds\n\n"'
 
 upload: all
-	avrdude -C${ARDUINO_ROOT}/hardware/tools/avr/etc/avrdude.conf -v true -pm2560 -cwiring -P${UPLOAD_PORT} -b115200 -D -Uflash:w:${MAIN_HEX}:i
+	avrdude -C${ARDUINO_ROOT}/hardware/tools/avr/etc/avrdude.conf -v true -p${UPLOAD_MCU} -c${UPLOAD_WIRING} -P${UPLOAD_PORT} -b${UPLOAD_BAUD} -D -Uflash:w:${MAIN_HEX}:i
 
 ota: all
 	$(AVRFLASH) $(UPLOAD_HOST) $(MAIN_HEX)
