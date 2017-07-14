@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Danny Backx
+ * Copyright (c) 2016, 2017 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -61,6 +61,8 @@ void ScheduleSet(char *topic, char *message);
 void ScheduleQuery(char *topic, char *message);
 void VersionQuery(char *topic, char *message);
 void LightSensorQuery(char *topic, char *message);
+void SensorQuery(char *topic, char *message);
+void TestMotor(char *topic, char *message);
 
 int ix;
 struct mqtt_callback_table {
@@ -69,23 +71,27 @@ struct mqtt_callback_table {
   int		len;
 } mqtt_callback_table [] = {
   { "/BMP180/query",		BMP180Query,		0},
-  { "/date/query",		DateTimeQuery,		0},
-  { "/date/set/",		DateTimeSet,		0},
-  { "/boot/query",		BootTimeQuery,		0},
   { "/timezone/set/",		TimezoneSet,		0},
-  { "/maxtime/query",		MaxTimeQuery,		0},
-  { "/maxtime/set/",		MaxTimeSet,		0},
   { "/hatch/query",		HatchQuery,		0},
   { "/hatch/up",		HatchUp,		0},
   { "/hatch/down",		HatchDown,		0},
   { "/hatch/stop",		HatchStop,		0},
+  { "/schedule/set/",		ScheduleSet,		0},
+  { "/schedule/query",		ScheduleQuery,		0},
+#if 1
+  { "/date/query",		DateTimeQuery,		0},
+  { "/date/set/",		DateTimeSet,		0},
+  { "/boot/query",		BootTimeQuery,		0},
+  { "/maxtime/query",		MaxTimeQuery,		0},
+  { "/maxtime/set/",		MaxTimeSet,		0},
   { "/light/duration/set/",	LightDurationSet,	0},
   { "/light/duration/query",	LightDurationQuery,	0},
   { "/light/query",		LightSensorQuery,	0},
-  { "/schedule/set/",		ScheduleSet,		0},
-  { "/schedule/query",		ScheduleQuery,		0},
+  { "/sensor/query",		SensorQuery,		0},
   { "/version/query",		VersionQuery,		0},
-  { "/esp-link/kippen/1",	ProcessCallback,	0},	// test
+  // { "/esp-link/kippen/1",	ProcessCallback,	0},	// test
+#endif
+  { "/motor/set/",		TestMotor,	0},	// test
   { NULL, NULL}
 };
 
@@ -157,6 +163,29 @@ void BMP180Query(char *topic, char *message) {
   mqtt.publish("/BMP180", reply);
 }
 
+void SensorQuery(char *topic, char *message) {
+  if (bmp == 0)
+    BMPInitialize();
+
+  if (bmp) {
+    BMPQuery();
+
+    int a, b, c;
+    // Temperature
+    a = (int) newTemperature;
+    double td = newTemperature - a;
+    b = 100 * td;
+    c = newPressure;
+
+    // Format the result
+    sprintf(reply, gpm(sensor_fmt), a, b, c, light->query());
+ 
+  } else {
+    sprintf(reply, gpm(no_sensor_string));
+  }
+  mqtt.publish("/sensor", reply);
+}
+
 void DateTimeSet(char *topic, char *message) {
     //
     // Get input for this from date +T%s
@@ -178,7 +207,7 @@ void DateTimeSet(char *topic, char *message) {
       sprintf(buffer, gpm(timedate_fmt),
         hour(), minute(), second(), day(), month(), year());
       Serial.println(buffer);
-      mqtt.publish("/date", answer_ok);
+      mqtt.publish("/date", gpm(answer_ok));
     }
 }
 
@@ -200,14 +229,14 @@ void TimezoneSet(char *topic, char *message) {
 		*q = p + mqtt_callback_table[ix].len;
     int t = atoi(q);
     personal_timezone = t;
-    mqtt.publish("/timezone", answer_ok);
+    mqtt.publish("/timezone", gpm(answer_ok));
 }
 
 void MaxTimeSet(char *topic, char *message) {
     const char	*p = message,
 		*q = p + mqtt_callback_table[ix].len;
     hatch->setMaxTime(atoi(q));
-    mqtt.publish("/maxtime", answer_ok);
+    mqtt.publish("/maxtime", gpm(answer_ok));
 }
 
 void MaxTimeQuery(char *topic, char *message) {
@@ -221,23 +250,24 @@ void MaxTimeQuery(char *topic, char *message) {
  *                                                                              *
  ********************************************************************************/
 void HatchQuery(char *topic, char *message) {
-    sprintf(reply, gpm(hatch_state_fmt), hatch->moving());
+    // sprintf(reply, gpm(hatch_state_fmt), hatch->moving());
+    sprintf(reply, "hatch state %d", hatch->moving());
     mqtt.publish("/hatch", reply);
 }
 
 void HatchUp(char *topic, char *message) {
     hatch->Up();
-    mqtt.publish("/hatch", answer_ok);
+    mqtt.publish("/hatch", gpm(answer_ok));
 }
 
 void HatchDown(char *topic, char *message) {
     hatch->Down();
-    mqtt.publish("/hatch", answer_ok);
+    mqtt.publish("/hatch", gpm(answer_ok));
 }
 
 void HatchStop(char *topic, char *message) {
     hatch->Stop();
-    mqtt.publish("/hatch", answer_ok);
+    mqtt.publish("/hatch", gpm(answer_ok));
 }
 
 /********************************************************************************
@@ -249,7 +279,7 @@ void LightDurationSet(char *topic, char *message) {
     const char	*p = message,
 		*q = p + mqtt_callback_table[ix].len;
     light->setDuration(atoi(q));
-    mqtt.publish("/light", answer_ok);
+    mqtt.publish("/light", gpm(answer_ok));
 }
 
 void LightDurationQuery(char *topic, char *message) {
@@ -268,7 +298,7 @@ void ScheduleSet(char *topic, char *message) {
     hatch->setSchedule(q);
     // Serial.print(gpm(set_schedule_to));
     // Serial.println(q);
-    mqtt.publish("/schedule", answer_ok);
+    mqtt.publish("/schedule", gpm(answer_ok));
 }
 
 void ScheduleQuery(char *topic, char *message) {
@@ -302,6 +332,7 @@ void VersionQuery(char *topic, char *message) {
 void LightSensorQuery(char *topic, char *message) {
     sprintf(reply, "Light %d", light->query());
     mqtt.publish("/light", reply);
+    Serial.println(reply);
 }
 
 void ProcessCallback(char *topic, char *message) {
@@ -311,3 +342,38 @@ void ProcessCallback(char *topic, char *message) {
   Serial.print(message);
   Serial.println(")");
 }
+
+#if 0
+#include "AFMotor.h"
+
+AF_DCMotor *motor = 0;
+
+void TestMotor(char *topic, char *message) {
+  Serial.print("MQTT TestMotor(");
+  Serial.print(topic);
+  Serial.print(") message (");
+  Serial.print(message);
+  Serial.println(")");
+
+  const char *p = message,
+	     *q = p + mqtt_callback_table[ix].len;
+  int ms = atoi(q);
+  Serial.print("Set motor speed to "); Serial.println(ms);
+
+  if (motor == 0)
+    motor = new AF_DCMotor(3);
+  if (ms < 0) {
+    motor->setSpeed(-ms);
+    motor->run(BACKWARD);
+  } else if (ms > 0) {
+    motor->setSpeed(ms);
+    motor->run(FORWARD);
+  } else {
+    motor->run(RELEASE);
+    motor->setSpeed(0);
+  }
+}
+#else
+void TestMotor(char *topic, char *message) {
+}
+#endif

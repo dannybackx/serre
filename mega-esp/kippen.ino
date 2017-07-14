@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Danny Backx
+ * Copyright (c) 2016, 2017 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,6 +35,7 @@
 #include <DS1307RTC.h>
 #include "Ifttt.h"
 #include "global.h"
+#include <Dyndns.h>
 
 #ifdef BUILT_BY_MAKE
 #include "buildinfo.h"
@@ -58,6 +59,8 @@ ELClient	esp(&Serial, &Serial);
 ELClientMqtt	mqtt(&esp);
 ELClientCmd	cmd(&esp);
 
+void NoIP();
+
 /*
  * Helper function because the ELClientCmd doesn't have a static function for this.
  */
@@ -67,7 +70,10 @@ time_t mygettime() {
 
 void setup() {
   delay(2000);
-  Serial.begin(9600);
+
+  // Needs to be in sync with esp-link's baud rate
+  Serial.begin(115200);
+
   Serial.println("Yow !");
 
   // Display startup text
@@ -81,6 +87,9 @@ void setup() {
   while (! esp.Sync()) {
     Serial.println("ELClient sync failed");
   }
+
+  // Register with NoIP.com
+  NoIP();
 
   // If built by make, talk about specifics
 #ifdef BUILT_BY_MAKE
@@ -99,12 +108,12 @@ void setup() {
   Serial.println(bmp ? "ok" : "failed");
 
   // Time
-  setSyncProvider(RTC.get);	// Set the function to get time from RTC
+  // setSyncProvider(RTC.get);	// Set the function to get time from RTC
   setSyncProvider(mygettime);	// Set the function to get time from the ESP's esp-link
   if (timeStatus() != timeSet)
     Serial.println(gpm(rtc_failure));
   else {
-    Serial.print("RTC ok, ");      
+    Serial.print("Clock ok, ");      
     boot_time = now();
     sprintf(buffer, gpm(timedate_fmt),
       hour(), minute(), second(), day(), month(), year());
@@ -114,7 +123,9 @@ void setup() {
   // Hatch
   Serial.println(F("Set up hatch ..."));
   hatch = new Hatch(schedule_string);
-  hatch->setMotor(3);
+  // hatch->setMotor(3);
+  hatch->setMotor();	// Default 2, 3, 9
+  hatch->setMotor(2, 3, 9);
   hatch->setMaxTime(6);
 
   newhatch = oldhatch = 0;
@@ -332,3 +343,13 @@ int BMPQuery() {
 void mqttSend(const char *msg) {
   mqtt.publish(mqtt_topic, (char *)msg);
 }
+
+void NoIP() {
+  Serial.print("Registering with no-ip.com ... ");
+  Dyndns *d = new Dyndns();
+  d->setHostname(noip_hostname);
+  d->setAuth(noip_auth);	// base64 of user:password
+  d->update();
+  Serial.println("done");
+}
+

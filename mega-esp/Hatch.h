@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Danny Backx
+ * Copyright (c) 2016, 2017 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,7 +24,7 @@
 #define _INCLUDE_HATCH_H_
 
 #include "item.h"
-#include "AFMotor.h"
+#include "SimpleL298.h"
 
 class Hatch {
 public:
@@ -36,6 +36,7 @@ public:
   char *getSchedule();		// Caller must free result
   void set(int);
   void setMotor(int n);
+  void setMotor(int a = 2, int b = 3, int c = 9);
   int moving();
 
   void setMaxTime(int m);
@@ -59,7 +60,7 @@ private:
 
   int _moving;			// -1 is going down, +1 is going up, 0 is off
   int _position;		// -1 is down, 0 is moving or unknown, 1 is up
-  AF_DCMotor *motor;
+  SimpleL298 *motor;
 
   int starttime;
   void SetStartTime(int hr, int mn, int sec);

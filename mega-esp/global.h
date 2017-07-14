@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Danny Backx
+ * Copyright (c) 2016, 2017 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -69,6 +69,7 @@ extern const char button_up_string[];
 extern const char button_down_string[];
 extern const char light_sensor_string[];
 extern const char bmp_fmt[];
+extern const char sensor_fmt[];
 extern const char no_sensor_string[];
 extern const char setting_rtc[];
 extern const char initializing_bmp180[];
@@ -135,6 +136,8 @@ extern const char mqtt_topic[];
 extern const char mqtt_4[];
 
 extern const char out_of_memory[];
+extern const char noip_hostname[];
+extern const char noip_auth[];
 
 extern char progmem_bfr[];
 extern "C" {

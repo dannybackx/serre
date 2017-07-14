@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Danny Backx
+ * Copyright (c) 2016, 2017 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,6 +33,7 @@
 #include "ThingSpeak.h"
 #include "global.h"
 #include "AFMotor.h"
+#include "SimpleL298.h"
 
 Hatch::Hatch() {
   items = NULL;
@@ -232,6 +233,7 @@ void Hatch::set(int s) {
   _moving = s;
 }
 
+#if 0
 void Hatch::setMotor(int n) {
   Serial.print(gpm(hatch_use_motor));
   Serial.print(n);
@@ -241,6 +243,13 @@ void Hatch::setMotor(int n) {
   motor->setSpeed(200);
   motor->run(RELEASE);
 }
+#else
+void Hatch::setMotor(int a, int b, int c) {
+  motor = new SimpleL298(a, b, c);
+  motor->setSpeed(200);
+  motor->run(RELEASE);
+}
+#endif
 
 int Hatch::moving() {
   return _moving;
