@@ -21,7 +21,7 @@ EXTRA_SRC=	personal.c Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
 # EXTRA_SRC +=	AFMotor.cpp
 EXTRA_SRC +=	SimpleL298.cpp
 
-#UPLOAD_HOST=	esplink
+#UPLOAD_HOST=	kippen
 UPLOAD_HOST=	testesp
 
 UPLOAD_PORT=	/dev/ttyACM0
