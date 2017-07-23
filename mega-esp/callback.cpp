@@ -87,6 +87,7 @@ struct mqtt_callback_table {
   { "/light/duration/set/",	LightDurationSet,	0},
   { "/light/duration/query",	LightDurationQuery,	0},
   { "/light/query",		LightSensorQuery,	0},
+  // { "/analog/query",		LightSensorQuery,	0},
   { "/sensor/query",		SensorQuery,		0},
   { "/version/query",		VersionQuery,		0},
   // { "/esp-link/kippen/1",	ProcessCallback,	0},	// test

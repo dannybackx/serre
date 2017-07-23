@@ -134,7 +134,7 @@ void setup() {
   ActivatePin(sensor_up_pin, gpm(sensor_up_string));
   ActivatePin(sensor_down_pin, gpm(sensor_down_string));
   ActivatePin(button_up_pin, gpm(button_up_string));
-  ActivatePin(button_up_pin, gpm(button_down_string));
+  ActivatePin(button_down_pin, gpm(button_down_string));
 
   light = new Light();
   light->setSensorPin(light_sensor_pin);
@@ -202,10 +202,20 @@ void setup() {
  
 void ActivatePin(int pin, const char *name) {
   if (pin >= 0) {
-    Serial.print(name);
-    Serial.print(F(" is on pin "));
-    Serial.println(pin);
-    pinMode(sensor_up_pin, INPUT);
+    if (pin > NUM_DIGITAL_PINS - NUM_ANALOG_INPUTS) {	// Analog
+      Serial.print(name);
+      Serial.print(F(" is on analog pin "));
+      Serial.print(pin - (NUM_DIGITAL_PINS - NUM_ANALOG_INPUTS));
+      Serial.print(" (");
+      Serial.print(pin);
+      Serial.println(")");
+      pinMode(sensor_up_pin, INPUT);
+    } else {						// Digital
+      Serial.print(name);
+      Serial.print(F(" is on pin "));
+      Serial.println(pin);
+      pinMode(sensor_up_pin, INPUT);
+    }
   } else {
     Serial.print(F("No "));
     Serial.println(name);

@@ -54,8 +54,8 @@ const int	loop_delay =	50;
 const int	sensor_up_pin =		22;	// Digital
 const int	sensor_down_pin =	23;	// Digital
 
-const int	button_up_pin =		25;	// Digital
-const int	button_down_pin =	26;	// Digital
+const int	button_up_pin =		26;	// Digital
+const int	button_down_pin =	27;	// Digital
 
 const int	light_sensor_pin =	57;	// Analog, A3 translates to 57 on a Mega
 
