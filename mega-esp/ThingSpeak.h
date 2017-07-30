@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Danny Backx
+ * Copyright (c) 2016, 2017 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,6 +33,7 @@ public:
   ~ThingSpeak();
   void loop(time_t);
   void changeState(int);
+  void changeState(int, int);
 
 private:
   time_t lasttime;

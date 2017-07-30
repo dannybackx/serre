@@ -129,6 +129,7 @@ extern const char ts_1[];
 extern const char ts_2[];
 extern const char ts_3[];
 extern const char ts_4[];
+extern const char ts_45[];
 extern const char ts_123[];
 extern const char ts_timeout[];
 extern const char ts_get_fail[];
@@ -140,6 +141,7 @@ extern const char mqtt_123[];
 extern const char mqtt_123b[];
 extern const char mqtt_topic[];
 extern const char mqtt_4[];
+extern const char mqtt_45[];
 
 extern const char out_of_memory[];
 extern const char noip_hostname[];
