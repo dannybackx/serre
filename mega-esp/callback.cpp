@@ -297,7 +297,7 @@ void MaxTimeQuery(char *topic, char *message) {
  ********************************************************************************/
 void HatchQuery(char *topic, char *message) {
     // sprintf(reply, gpm(hatch_state_fmt), hatch->moving());
-    sprintf(reply, "hatch state %d", hatch->moving());
+    sprintf(reply, "hatch motion %d position %d", hatch->moving(), hatch->getPosition());
     mqtt.publish("/hatch", reply);
 }
 

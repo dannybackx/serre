@@ -51,6 +51,7 @@ public:
 
   void IsUp();
   void IsDown();
+  int getPosition();
 
 private:
   int nitems;

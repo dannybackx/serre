@@ -314,3 +314,7 @@ void Hatch::IsUp() {
 void Hatch::IsDown() {
   _position = -1;
 }
+
+int Hatch::getPosition() {
+  return _position;
+}
