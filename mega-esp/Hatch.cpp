@@ -106,6 +106,12 @@ int Hatch::loop(int hr, int mn, int sec) {
   // Stop if running for too long
   if (_moving != 0) {
     if (RunTooLong(hr, mn, sec)) {
+      // Assume we're up/down
+      if (_moving < 0)
+        _position = -1;
+      else if (_moving > 0)
+	_position = +1;
+
       Stop();
       return _moving;
     }
@@ -116,6 +122,7 @@ int Hatch::loop(int hr, int mn, int sec) {
     if (sensor_down_pin >= 0) {
       int state = digitalRead(sensor_down_pin);
       if (state == 0) {
+	_position = -1;
 	// Serial.println("Down sensor : stop hatch");
 	Stop();
       }
@@ -125,6 +132,7 @@ int Hatch::loop(int hr, int mn, int sec) {
     if (sensor_up_pin >= 0) {
       int state = digitalRead(sensor_up_pin);
       if (state == 0) {
+	_position = +1;
 	// Serial.println("Up sensor : stop hatch");
 	Stop();
       }
