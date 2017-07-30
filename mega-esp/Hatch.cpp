@@ -284,7 +284,7 @@ void Hatch::Up() {
     return;
   motor->run(BACKWARD);
   _moving = +1;
-  ts->changeState(_moving);
+  ts->changeState(_moving, _position);
 }
 
 void Hatch::Down(int hr, int mn, int sec) {
@@ -300,7 +300,7 @@ void Hatch::Down() {
     return;
   motor->run(FORWARD);
   _moving = -1;
-  ts->changeState(_moving);
+  ts->changeState(_moving, _position);
 }
 
 void Hatch::Stop() {
@@ -308,7 +308,7 @@ void Hatch::Stop() {
     return;
   motor->run(RELEASE);
   _moving = 0;
-  ts->changeState(_moving);
+  ts->changeState(_moving, _position);
 }
 
 void Hatch::reset() {
