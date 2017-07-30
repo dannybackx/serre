@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Danny Backx
+ * Copyright (c) 2016, 2017 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,6 +28,7 @@
 #include <Arduino.h>
 
 #include <ELClient.h>
+#include <ELClientCmd.h>
 #include <ELClientRest.h>
 #include <ELClientMqtt.h>
 

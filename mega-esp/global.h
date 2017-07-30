@@ -36,7 +36,7 @@ extern int report_frequency_seconds;
 const int		buffer_size = 80;
 extern char		buffer[];
 extern struct tm	*tmnow;
-extern time_t		boot_time;
+extern time_t		boot_time, nowts;
 extern const int	loop_delay;
 
 extern void BMPInitialize();
@@ -44,6 +44,9 @@ extern int BMPQuery();
 extern SFE_BMP180	*bmp;
 extern Hatch		*hatch;
 extern Light		*light;
+
+//
+extern ELClientCmd	cmd;
 
 // Light
 extern const int light_treshold_high,
@@ -61,6 +64,9 @@ extern int lightSensorValue();
 // Pin definitions
 extern int	sensor_up_pin, sensor_down_pin, button_up_pin, button_down_pin, light_sensor_pin;
 extern void ActivatePin(int, const char *);
+
+extern int	button_up, button_down;
+extern int	sensor_up, sensor_down;
 
 extern const char timedate_fmt[];
 extern const char sensor_up_string[];
@@ -150,3 +156,5 @@ extern ELClientMqtt mqtt;
 extern void mqConnected(void *response);
 extern void mqDisconnected(void *response);
 extern void mqData(void *response);
+
+extern void StartTrackStatus();

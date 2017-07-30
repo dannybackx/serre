@@ -42,6 +42,7 @@
 #endif
 
 time_t		boot_time = 0;
+time_t		nowts;
 
 SFE_BMP180	*bmp = 0;
 double		newPressure, newTemperature, oldPressure, oldTemperature;
@@ -82,6 +83,13 @@ void setup() {
 
   // Start WiFi
   Serial.println(gpm(starting_wifi));
+
+  // Query MQTT name, we'll use this to steer debug/production behaviour
+  // Note this is in the ESP-link config so you can configure per device.
+  // Debug behaviour is device is called "testesp".
+  Serial.print("MQTT client id : ");
+  char *mqtt_clientid = cmd.mqttGetClientId();
+  Serial.println(mqtt_clientid);
 
   esp.wifiCb.attach(WifiStatusCallback);
   while (! esp.Sync()) {
@@ -198,6 +206,8 @@ void setup() {
 
   delay(3000);
   Serial.println(" !");
+
+  StartTrackStatus();
 }
  
 void ActivatePin(int pin, const char *name) {
@@ -214,7 +224,8 @@ void ActivatePin(int pin, const char *name) {
       Serial.print(name);
       Serial.print(F(" is on pin "));
       Serial.println(pin);
-      pinMode(sensor_up_pin, INPUT);
+      pinMode(sensor_up_pin, INPUT_PULLUP);
+      // pinMode(sensor_up_pin, INPUT);
     }
   } else {
     Serial.print(F("No "));
@@ -230,7 +241,7 @@ void ActivatePin(int pin, const char *name) {
 void loop() {
   esp.Process();
 
-  time_t nowts = now();
+  nowts = now();
   
   oldlight = newlight;
   newlight = light->loop(nowts);
@@ -267,24 +278,36 @@ void loop() {
     }
   }
 
+  // Read the button states
+  int old_button_up = button_up,
+      old_button_down = button_down;
+
+  if (button_up_pin >= 0)
+    button_up = digitalRead(button_up_pin);
+  if (button_down_pin >= 0)
+    button_down = digitalRead(button_down_pin);
+
+  // Action :-)
+  // Note buttons are wired between input pin and LOW voltage,
+  // pins are programmed to have a pull up resistor.
+  // So active low.
+#if 0
   // Buttons start motion
   if (button_up_pin >= 0) {
-    int oldvalue = button_up;
-    button_up = digitalRead(button_up_pin);
-    if (oldvalue != button_up && button_up == 1) {
+    if (old_button_up != button_up && button_up == 0) {
       // Move the hatch up
-      hatch->Up();
+      // hatch->Up();
+      hatch->Up(hour(nowts), minute(nowts), second(nowts));
     }
   }
   if (button_down_pin >= 0) {
-    int oldvalue = button_up;
-    button_down = digitalRead(button_down_pin);
-    if (oldvalue != button_down && button_down == 1) {
+    if (old_button_down != button_down && button_down == 0) {
       // Move the hatch down
-      hatch->Down();
+      // hatch->Down();
+      hatch->Down(hour(nowts), minute(nowts), second(nowts));
     }
   }
-
+#endif
   ts->loop(nowts);
 
   delay(loop_delay);

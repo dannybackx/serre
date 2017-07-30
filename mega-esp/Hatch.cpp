@@ -23,6 +23,7 @@
 #include <Arduino.h>
 
 #include <ELClient.h>
+#include <ELClientCmd.h>
 #include <ELClientRest.h>
 #include <ELClientMqtt.h>
 
@@ -99,10 +100,15 @@ bool Hatch::RunTooLong(int hr, int mn, int sec) {
 }
 
 int Hatch::loop(int hr, int mn, int sec) {
+  // Serial.print("Hatch "); Serial.print(hr); Serial.print(":"); Serial.print(mn); Serial.print(":"); Serial.print(sec); Serial.print(" moving "); Serial.print(_moving); Serial.print(" state "); Serial.println(_position);
+  // delay(500);
+
   // Stop if running for too long
-  if (_moving && RunTooLong(hr, mn, sec)) {
-    Stop();
-    return _moving;
+  if (_moving != 0) {
+    if (RunTooLong(hr, mn, sec)) {
+      Stop();
+      return _moving;
+    }
   }
 
   // If we're moving, stop if we hit the right sensor
@@ -139,10 +145,12 @@ int Hatch::loop(int hr, int mn, int sec) {
     if (items[i].hour == hr && items[i].minute == mn) {
       switch (items[i].state) {
       case -1:
+	Serial.print(__LINE__); Serial.print(" Down()");
         Down();
 	SetStartTime(hr, mn, sec);
 	return _moving;
       case +1:
+	Serial.print(__LINE__); Serial.print(" Up()");
         Up();
 	SetStartTime(hr, mn, sec);
         return _moving;
@@ -261,6 +269,7 @@ void Hatch::Up(int hr, int mn, int sec) {
 }
 
 void Hatch::Up() {
+  // Serial.print(__LINE__); Serial.println("Up()");
   if (_position == 1)
     return;
   if (_moving)
@@ -276,6 +285,7 @@ void Hatch::Down(int hr, int mn, int sec) {
 }
 
 void Hatch::Down() {
+  // Serial.print(__LINE__); Serial.println("Down()");
   if (_position == -1)
     return;
   if (_moving)
@@ -286,7 +296,7 @@ void Hatch::Down() {
 }
 
 void Hatch::Stop() {
-  if (! _moving)
+  if (_moving == 0)
     return;
   motor->run(RELEASE);
   _moving = 0;

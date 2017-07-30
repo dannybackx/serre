@@ -23,6 +23,7 @@
 #include <Arduino.h>
 
 #include <ELClient.h>
+#include <ELClientCmd.h>
 #include <ELClientMqtt.h>
 
 #include <Wire.h>
@@ -61,8 +62,13 @@ void ScheduleSet(char *topic, char *message);
 void ScheduleQuery(char *topic, char *message);
 void VersionQuery(char *topic, char *message);
 void LightSensorQuery(char *topic, char *message);
-void SensorQuery(char *topic, char *message);
+// void SensorQuery(char *topic, char *message);
 void TestMotor(char *topic, char *message);
+
+void ButtonQuery(char *topic, char *message);
+void ButtonsQuery(char *topic, char *message);
+void SensorQuery(char *topic, char *message);
+void SensorsQuery(char *topic, char *message);
 
 int ix;
 struct mqtt_callback_table {
@@ -78,6 +84,10 @@ struct mqtt_callback_table {
   { "/hatch/stop",		HatchStop,		0},
   { "/schedule/set/",		ScheduleSet,		0},
   { "/schedule/query",		ScheduleQuery,		0},
+  { "/buttons/query",		ButtonsQuery,		0},
+  { "/button/query/",		ButtonQuery,		0},
+  { "/sensors/query",		SensorsQuery,		0},
+  { "/sensor/query/",		SensorQuery,		0},
 #if 1
   { "/date/query",		DateTimeQuery,		0},
   { "/date/set/",		DateTimeSet,		0},
@@ -87,8 +97,8 @@ struct mqtt_callback_table {
   { "/light/duration/set/",	LightDurationSet,	0},
   { "/light/duration/query",	LightDurationQuery,	0},
   { "/light/query",		LightSensorQuery,	0},
-  // { "/analog/query",		LightSensorQuery,	0},
-  { "/sensor/query",		SensorQuery,		0},
+  { "/analog/query",		LightSensorQuery,	0},
+  // { "/sensor/query",		SensorQuery,		0},
   { "/version/query",		VersionQuery,		0},
   // { "/esp-link/kippen/1",	ProcessCallback,	0},	// test
 #endif
@@ -135,7 +145,40 @@ void mqData(void *response) {
     }
 }
 
+static int busy = 1;
+#define IP(ip, x) ((int)((ip >> (8*x)) & 0xFF))
+
+// Unlock this, called from setup().
+void StartTrackStatus() {
+  busy = 0;
+}
+
+// This can be used to detect connectivity changes
 void WifiStatusCallback(void *response) {
+  ELClientResponse *res = (ELClientResponse *)response;
+
+  if (busy == 1)
+    return;
+  busy = 1;
+
+  if (res->argc() == 1) {
+    uint8_t status;
+    res->popArg(&status, 1);
+
+    if (status == STATION_GOT_IP) {
+      Serial.println("Network status change\n");
+#if 1
+      // Share our IP address
+      uint32_t ip, nm, gw;
+      cmd.GetWifiInfo(&ip, &nm, &gw);
+
+      sprintf(buffer, ", IP %d.%d.%d.%d", IP(ip, 0), IP(ip, 1), IP(ip, 2), IP(ip, 3));
+      Serial.println(buffer);
+#endif
+    }
+  }
+
+  busy = 0;
 }
 
 void BMP180Query(char *topic, char *message) {
@@ -164,6 +207,7 @@ void BMP180Query(char *topic, char *message) {
   mqtt.publish("/BMP180", reply);
 }
 
+#if 0
 void SensorQuery(char *topic, char *message) {
   if (bmp == 0)
     BMPInitialize();
@@ -186,6 +230,7 @@ void SensorQuery(char *topic, char *message) {
   }
   mqtt.publish("/sensor", reply);
 }
+#endif
 
 void DateTimeSet(char *topic, char *message) {
     //
@@ -257,12 +302,12 @@ void HatchQuery(char *topic, char *message) {
 }
 
 void HatchUp(char *topic, char *message) {
-    hatch->Up();
+    hatch->Up(hour(nowts), minute(nowts), second(nowts));
     mqtt.publish("/hatch", gpm(answer_ok));
 }
 
 void HatchDown(char *topic, char *message) {
-    hatch->Down();
+    hatch->Down(hour(nowts), minute(nowts), second(nowts));
     mqtt.publish("/hatch", gpm(answer_ok));
 }
 
@@ -286,6 +331,36 @@ void LightDurationSet(char *topic, char *message) {
 void LightDurationQuery(char *topic, char *message) {
     sprintf(buffer, "%d", light->getDuration());
     mqtt.publish("/light", buffer);
+}
+
+/********************************************************************************
+ *                                                                              *
+ * Buttons                                                                      *
+ *                                                                              *
+ ********************************************************************************/
+void ButtonsQuery(char *topic, char *message) {
+    sprintf(buffer, "up %d down %d", button_up, button_down);
+    mqtt.publish("/button", buffer);
+}
+
+void ButtonQuery(char *topic, char *message) {
+    sprintf(buffer, "%d", light->getDuration());
+    mqtt.publish("/button", buffer);
+}
+
+/********************************************************************************
+ *                                                                              *
+ * Magnetic Sensors                                                             *
+ *                                                                              *
+ ********************************************************************************/
+void SensorsQuery(char *topic, char *message) {
+    sprintf(buffer, "up %d down %d", sensor_up, sensor_down);
+    mqtt.publish("/sensors", buffer);
+}
+
+void SensorQuery(char *topic, char *message) {
+    sprintf(buffer, "%d", light->getDuration());
+    mqtt.publish("/sensors", buffer);
 }
 
 /********************************************************************************
@@ -325,6 +400,7 @@ void VersionQuery(char *topic, char *message) {
   mqtt.publish("/version", gpm(no_info));
 #endif
 }
+
 /********************************************************************************
  *                                                                              *
  * Light sensor                                                                 *
