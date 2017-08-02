@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2017 Danny Backx
+ * Copyright (c) 2017 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,25 +19,23 @@
  *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
- *
- * Initialization, and code to cope with strings in program memory
  */
-#include <avr/pgmspace.h>
+#ifndef _INCLUDE_SUNSET_H_
+#define _INCLUDE_SUNSET_H_
 
-// Length limit (39 chars)      		"......................................."
-const char ts_read_key[] PROGMEM =		"abcdefg";
-const char ts_write_key[] PROGMEM =		"123456";
+#include <ELClient.h>
+#include <ELClientRest.h>
 
-const char ifttt_key[] PROGMEM =		"abcdefghikjlmn";
-const char ifttt_event[] =			"some-code-you-trigger-on";
+class Sunset {
+public:
+  Sunset();
+  ~Sunset();
+  void query();
+  void query(char *lon, char *lat);
 
-const char wifi1_ssid[] = "qwerty";
-const char wifi1_pass[] = "uiop";
-const char wifi2_ssid[] = "Free hotspot";
-const char wifi2_pass[] = "";
-const char wifi3_ssid[] = "private-ssid";
-const char wifi3_pass[] = "pass";
-
-const char noip_hostname[] = "yourhost.dyndns.me";
-const char test_noip_hostname[] = "test_yourhost.dyndns.me";
-const char noip_auth[] = "something-created-with-base64";
+private:
+  time_t lasttime;
+  time_t delta;
+  ELClientRest *rest;
+};
+#endif

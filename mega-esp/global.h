@@ -145,6 +145,7 @@ extern const char mqtt_45[];
 
 extern const char out_of_memory[];
 extern const char noip_hostname[];
+extern const char test_noip_hostname[];
 extern const char noip_auth[];
 
 extern char progmem_bfr[];

@@ -36,6 +36,7 @@
 #include "Ifttt.h"
 #include "global.h"
 #include <Dyndns.h>
+#include "Sunset.h"
 
 #ifdef BUILT_BY_MAKE
 #include "buildinfo.h"
@@ -55,12 +56,13 @@ enum lightState	newlight, oldlight;
 int		sensor_up, sensor_down, button_up, button_down;
 
 ThingSpeak	*ts = 0;
+Sunset		*sunset = 0;
 
 ELClient	esp(&Serial, &Serial);
 ELClientMqtt	mqtt(&esp);
 ELClientCmd	cmd(&esp);
 
-void NoIP();
+void NoIP(int);
 
 /*
  * Helper function because the ELClientCmd doesn't have a static function for this.
@@ -97,7 +99,7 @@ void setup() {
   }
 
   // Register with NoIP.com
-  NoIP();
+  NoIP(strcmp(mqtt_clientid, "testesp") == 0);
 
   // If built by make, talk about specifics
 #ifdef BUILT_BY_MAKE
@@ -169,6 +171,10 @@ void setup() {
 
   // Serial.println("Starting ThingSpeak...");
   ts = new ThingSpeak();
+
+  // Sunset query
+  sunset = new Sunset();
+  sunset->query();
 
 #ifdef USE_IFTTT
   Ifttt *ifttt = new Ifttt();
@@ -377,10 +383,13 @@ void mqttSend(const char *msg) {
   mqtt.publish(mqtt_topic, (char *)msg);
 }
 
-void NoIP() {
+void NoIP(int test) {
   Serial.print("Registering with no-ip.com ... ");
   Dyndns *d = new Dyndns();
-  d->setHostname(noip_hostname);
+  if (test) 
+    d->setHostname(test_noip_hostname);
+  else
+    d->setHostname(noip_hostname);
   d->setAuth(noip_auth);	// base64 of user:password
   d->update();
   Serial.println("done");
