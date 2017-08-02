@@ -99,6 +99,7 @@ void setup() {
   }
 
   // Register with NoIP.com
+  // This passes along whether to register with a debug hostname
   NoIP(strcmp(mqtt_clientid, "testesp") == 0);
 
   // If built by make, talk about specifics
@@ -383,6 +384,11 @@ void mqttSend(const char *msg) {
   mqtt.publish(mqtt_topic, (char *)msg);
 }
 
+/*
+ * Register yourself with a debug hostname depending on parameter
+ *
+ * You can use this to have the test and production sites on different networks
+ */
 void NoIP(int test) {
   Serial.print("Registering with no-ip.com ... ");
   Dyndns *d = new Dyndns();
@@ -394,4 +400,3 @@ void NoIP(int test) {
   d->update();
   Serial.println("done");
 }
-
