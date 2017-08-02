@@ -31,7 +31,7 @@ public:
   Sunset();
   ~Sunset();
   void query();
-  void query(char *lon, char *lat);
+  void query(char *lat, char *lon);
 
 private:
   time_t lasttime;

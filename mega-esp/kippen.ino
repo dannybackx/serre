@@ -174,7 +174,7 @@ void setup() {
 
   // Sunset query
   sunset = new Sunset();
-  sunset->query();
+  sunset->query(sunset_latitude, sunset_longitude);
 
 #ifdef USE_IFTTT
   Ifttt *ifttt = new Ifttt();

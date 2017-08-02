@@ -61,7 +61,6 @@
 extern ELClient esp;
 
 char *ss_url = "api.sunrise-sunset.org";
-char *ss_cmd = "/json?lat=36.7201600&lng=-4.4203400";
 char *ss_template = "/json?lat=%s&lng=%s";
 
 static char *buf = 0;
@@ -92,9 +91,12 @@ void Sunset::query(char *lat, char *lon) {
     Serial.print("Sunset : initialized ");
     Serial.println(ss_url);
   }
-  rest->get(ss_cmd);
 
   buf = (char *)malloc(bufsiz);
+
+  sprintf(buf, ss_template, lat, lon);
+  rest->get(buf);
+
   buf[0] = 0;
   err = rest->waitResponse(buf, bufsiz);
   if (err == HTTP_STATUS_OK) {
@@ -110,5 +112,5 @@ void Sunset::query(char *lat, char *lon) {
 }
 
 void Sunset::query() {
-  query("36.7201600", "-4.4203400");
+  query("36.7201600", "-4.4203400");	// Demo coordinates from their site
 }

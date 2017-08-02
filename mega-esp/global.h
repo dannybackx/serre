@@ -65,6 +65,9 @@ extern int lightSensorValue();
 extern int	sensor_up_pin, sensor_down_pin, button_up_pin, button_down_pin, light_sensor_pin;
 extern void ActivatePin(int, const char *);
 
+// Sunset
+extern char	*sunset_latitude, *sunset_longitude;
+
 extern int	button_up, button_down;
 extern int	sensor_up, sensor_down;
 
