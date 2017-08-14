@@ -99,10 +99,10 @@ void Sunset::query(char *lat, char *lon) {
   uint16_t totalLen = 0, packetLen = 0;
   memset(buf, 0, bufsiz);
   char *ptr = buf;
-  err = rest->waitResponse2(ptr, bufsiz-1, DEFAULT_REST_TIMEOUT, &totalLen, &packetLen);
+  err = rest->waitResponse2(ptr, bufsiz-1, &totalLen, &packetLen);
   while (totalLen) {
     ptr += packetLen;
-    err = rest->waitResponse2(ptr, bufsiz-1, DEFAULT_REST_TIMEOUT, &totalLen, &packetLen);
+    err = rest->waitResponse2(ptr, bufsiz-1, &totalLen, &packetLen);
   }
   if (err == HTTP_STATUS_OK) {
     Serial.print("Sunset success ");
