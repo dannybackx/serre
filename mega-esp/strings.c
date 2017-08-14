@@ -94,7 +94,6 @@ const char ts_colon[] PROGMEM =			"ThingSpeak : ";
 
 const char mqtt_123[] PROGMEM =			"%d.%02d,%d,%d";
 const char mqtt_123b[] PROGMEM =		"kippen, no bmp sensor";
-const char mqtt_topic[] =			"kippen";
 const char mqtt_4[] PROGMEM =			"motion %d";
 const char mqtt_45[] PROGMEM =			"motion %d, state %d";
 

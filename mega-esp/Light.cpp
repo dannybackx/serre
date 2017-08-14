@@ -57,6 +57,7 @@ enum lightState Light::loop(time_t t) {
   int sensorValue = analogRead(sensorPin);
 
   if (stableValue == LIGHT_NONE) {
+// FIX ME this should be time based
     /*
      * Startup : get a sensible value to begin with
      */
@@ -68,36 +69,41 @@ enum lightState Light::loop(time_t t) {
       stableTime = t;
     }
   } else if (stableValue == LIGHT_NIGHT) {
-    /*
-     *
-     */
     if (sensorValue < lowTreshold) {
-      // reset counter
-        lastChange = t;
+      // Don't do anything
     } else if (sensorValue > highTreshold) {
+      // It's light. Figure out if it's for real.
       if (lastChange < 0) {
         lastChange = t;
-      } else if (t - lastChange > duration) {
+      } else if (t - lastChange > duration) {	// Also for lastChange == 0
         // This is a real change !
         stableValue = LIGHT_DAY;
+	stableTime = t;
+
 	return LIGHT_MORNING;
       }
     } else {
+      // Between low and high tresholds --> don't do anything
     }
   } else if (stableValue == LIGHT_DAY) {
     if (sensorValue > highTreshold) {
-        lastChange = t;
+      // Don't do anything
     } else if (sensorValue < lowTreshold) {
+      // It's dark. Figure out if it's for real.
       if (lastChange < 0) {
         lastChange = t;
-      } else if (t - lastChange > duration) {
+      } else if (t - lastChange > duration) {	// Also for lastChange == 0
         // This is a real change !
         stableValue = LIGHT_NIGHT;
+	stableTime = t;
+
 	return LIGHT_EVENING;
       }
     } else {
+      // Between low and high tresholds --> don't do anything
     }
   }
+  // Ignore other (transient) states
 
   return stableValue;
 }

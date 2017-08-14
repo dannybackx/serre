@@ -62,6 +62,8 @@ ELClient	esp(&Serial, &Serial);
 ELClientMqtt	mqtt(&esp);
 ELClientCmd	cmd(&esp);
 
+char		*mqtt_topic = 0;
+
 void NoIP(int);
 
 /*
@@ -92,6 +94,8 @@ void setup() {
   Serial.print("MQTT client id : ");
   char *mqtt_clientid = cmd.mqttGetClientId();
   Serial.println(mqtt_clientid);
+  
+  mqtt_topic = mqtt_clientid;
 
   esp.wifiCb.attach(WifiStatusCallback);
   while (! esp.Sync()) {
@@ -101,17 +105,6 @@ void setup() {
   // Register with NoIP.com
   // This passes along whether to register with a debug hostname
   NoIP(strcmp(mqtt_clientid, "testesp") == 0);
-
-  // If built by make, talk about specifics
-#ifdef BUILT_BY_MAKE
-#warning "This takes a lot of memory, especially due to the file name"
-  Serial.print(gpm(server_build));
-  Serial.print(_BuildInfo.src_filename);
-  Serial.print(" ");
-  Serial.print(_BuildInfo.date);
-  Serial.print(" ");
-  Serial.println(_BuildInfo.time);
-#endif
 
   // BMP180 temperature and air pressure sensor
   Serial.print(gpm(initializing_bmp180));
@@ -250,6 +243,10 @@ void loop() {
 
   nowts = now();
   
+  // Query sunset
+  sunset->loop(nowts);
+
+  // Has the light changed ?
   oldlight = newlight;
   newlight = light->loop(nowts);
   if (oldlight != newlight) {

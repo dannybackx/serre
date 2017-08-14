@@ -24,23 +24,24 @@
  *
  * See http://www.sunrise-sunset.org
  *
- * Example call : http://api.sunrise-sunset.org/json?lat=36.7201600&lng=-4.4203400
+ * Example call : http://api.sunrise-sunset.org/json?lat=36.7201600&lng=-4.4203400&formatted=0
  *
  * Example reply (spacing added for clarity) :
- *	{"results":
+ *	{
+ *	  "results":
  *	  {
- *	    "sunrise":"5:24:07 AM",
- *	    "sunset":"7:23:50 PM",
- *	    "solar_noon":"12:23:58 PM",
- *	    "day_length":"13:59:43",
- *	    "civil_twilight_begin":"4:55:40 AM",
- *	    "civil_twilight_end":"7:52:16 PM",
- *	    "nautical_twilight_begin":"4:20:59 AM",
- *	    "nautical_twilight_end":"8:26:58 PM",
- *	    "astronomical_twilight_begin":"3:43:42 AM",
- *	    "astronomical_twilight_end":"9:04:15 PM"
- *	   },
- *	   "status":"OK"
+ *	    "sunrise":"2015-05-21T05:05:35+00:00",
+ *	    "sunset":"2015-05-21T19:22:59+00:00",
+ *	    "solar_noon":"2015-05-21T12:14:17+00:00",
+ *	    "day_length":51444,
+ *	    "civil_twilight_begin":"2015-05-21T04:36:17+00:00",
+ *	    "civil_twilight_end":"2015-05-21T19:52:17+00:00",
+ *	    "nautical_twilight_begin":"2015-05-21T04:00:13+00:00",
+ *	    "nautical_twilight_end":"2015-05-21T20:28:21+00:00",
+ *	    "astronomical_twilight_begin":"2015-05-21T03:20:49+00:00",
+ *	    "astronomical_twilight_end":"2015-05-21T21:07:45+00:00"
+ *	  },
+ *	  "status":"OK"
  *	}
  */
 #include <Arduino.h>
@@ -61,14 +62,12 @@
 extern ELClient esp;
 
 char *ss_url = "api.sunrise-sunset.org";
-char *ss_template = "/json?lat=%s&lng=%s";
+char *ss_template = "/json?lat=%s&lng=%s&formatted=0";
 
 static char *buf = 0;
-static int bufsiz = 512;
+static int bufsiz = 700;
 
 Sunset::Sunset() {
-  lasttime = -1;
-  delta = 600;				// FIXME 10 minutes
   rest = new ELClientRest(&esp);
 }
 
@@ -97,10 +96,24 @@ void Sunset::query(char *lat, char *lon) {
   sprintf(buf, ss_template, lat, lon);
   rest->get(buf);
 
-  buf[0] = 0;
-  err = rest->waitResponse(buf, bufsiz);
+  uint16_t datalen = 0, packetlen = 0;
+  memset(buf, 0, bufsiz);
+  char *ptr = buf;
+  err = rest->waitResponse2(ptr, bufsiz-1, DEFAULT_REST_TIMEOUT, &datalen, &packetlen);
+  while (datalen) {
+    ptr += packetlen;
+    err = rest->waitResponse2(ptr, bufsiz-1, DEFAULT_REST_TIMEOUT, &datalen, &packetlen);
+  }
   if (err == HTTP_STATUS_OK) {
-    Serial.print("Sunset success "); Serial.println(buf);
+    Serial.print("Sunset success ");
+
+    sunrise = String2Time(findData(buf, "sunrise"));
+    sunset = String2Time(findData(buf, "sunset"));
+    twilight_begin = String2Time(findData(buf, "civil_twilight_begin"));
+    twilight_end = String2Time(findData(buf, "civil_twilight_end"));
+
+    DebugPrint("sunrise ", sunrise, ", ");
+    DebugPrint("sunset ", sunset, "\n");
   } else if (err == 0) {
     // timeout
     Serial.print("Sunset timeout "); Serial.println(buf);
@@ -111,6 +124,119 @@ void Sunset::query(char *lat, char *lon) {
   buf = 0;
 }
 
+void Sunset::DebugPrint(const char *prefix, time_t tm, const char *suffix) {
+  char buf[20];
+  int	a = tm / 3600L,
+  	b = (tm / 60L) % 60L,
+	c = tm % 60L;
+  sprintf(buf, "%02d:%02d:%02d", a, b, c);
+
+  Serial.print(prefix);
+  Serial.print(buf);
+  Serial.print(suffix);
+}
+
 void Sunset::query() {
   query("36.7201600", "-4.4203400");	// Demo coordinates from their site
+}
+
+/*
+ * In the "response", find the date/time field after the specified search string.
+ */
+char *Sunset::findData(char *response, const char *search) {
+  char *f = strstr(response, search);
+
+  int len = strlen(search);
+  if (! f) {
+    // Serial.println("error 1");
+    return (time_t)0;
+  }
+  if (f[-1] != '"') {
+    // Serial.println("error 2");
+    return (time_t)0;
+  }
+  if (f[len] != '"') {
+    // Serial.println("error 3");
+    return (time_t)0;
+  }
+
+  // time_t r = readTimeString(f + len + 3);
+  // return r;
+  return f + len + 3;
+}
+
+/*
+ * Convert a standard time string such as
+ *	    "sunrise":"2015-05-21T05:05:35+00:00",
+ * to the seconds since "the epoch" (January 1, 1970) like on a Unix system.
+ */
+time_t Sunset::String2DateTime(char *ts) {
+  long epoch=0;
+  int year, month, day, hour, minute, second;
+
+  sscanf(ts, "%d-%d-%dT%d:%d:%d", &year, &month, &day, &hour, &minute, &second);
+  if (year<100) year+=2000;
+
+  for (int yr=1970;yr<year;yr++)
+    if (isLeapYear(yr))
+      epoch+=366*86400L;
+    else
+      epoch+=365*86400L;
+
+  for(int m=1;m<month;m++)
+    epoch += daysInMonth(year,m)*86400L;
+  epoch += (day-1)*86400L;
+  epoch += hour*3600L;
+  epoch += minute*60;
+  epoch += second;
+
+  return epoch;
+}
+
+/*
+ * Convert a standard time string such as
+ *	    "sunrise":"2015-05-21T05:05:35+00:00",
+ * to just the seconds since midnight.
+ */
+time_t Sunset::String2Time(char *ts) {
+  int year, month, day, hour, minute, second;
+
+  sscanf(ts, "%d-%d-%dT%d:%d:%d", &year, &month, &day, &hour, &minute, &second);
+
+  time_t r = hour * 3600L + minute * 60L + second;
+#if 0
+  Serial.print("String2Time(");
+  char *p = ts;
+  char c = *p;
+  while (c != '"') {
+    Serial.print(c);
+    c = *++p;
+  }
+  Serial.print(") -> "); Serial.println(r);
+#endif
+  return r;
+}
+
+bool Sunset::isLeapYear(int yr)
+{
+  if (yr % 4 == 0 && yr % 100 != 0 || yr % 400 == 0)
+    return true;
+  else
+    return false;
+}
+
+byte Sunset::daysInMonth(int yr, int m)
+{
+  byte days[12]={31,28,31,30,31,30,31,31,30,31,30,31};
+  if (m==2 && isLeapYear(yr))
+    return 29;
+  else
+    return days[m-1];
+}
+
+/*
+ * Query once per day
+ */
+void Sunset::loop(time_t t) {
+  // FIXME
 }

@@ -32,10 +32,17 @@ public:
   ~Sunset();
   void query();
   void query(char *lat, char *lon);
+  void loop(time_t);
 
 private:
-  time_t lasttime;
-  time_t delta;
   ELClientRest *rest;
+  time_t String2DateTime(char *);
+  time_t String2Time(char *);
+  byte daysInMonth(int yr, int m);
+  bool isLeapYear(int yr);
+  char *findData(char *, const char *);
+
+  time_t sunrise, sunset, twilight_begin, twilight_end;
+  void DebugPrint(const char *, time_t, const char *);
 };
 #endif

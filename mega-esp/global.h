@@ -142,7 +142,7 @@ extern const char ts_colon[];
 
 extern const char mqtt_123[];
 extern const char mqtt_123b[];
-extern const char mqtt_topic[];
+extern char *mqtt_topic;
 extern const char mqtt_4[];
 extern const char mqtt_45[];
 
@@ -154,6 +154,7 @@ extern const char noip_auth[];
 extern char progmem_bfr[];
 extern "C" {
   const char *gpm(const char *p);
+  char *strptime(const char *s, const char *format, struct tm *timeptr);
 }
 
 extern void mqttSend(const char *);
