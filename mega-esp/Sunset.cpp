@@ -96,13 +96,13 @@ void Sunset::query(char *lat, char *lon) {
   sprintf(buf, ss_template, lat, lon);
   rest->get(buf);
 
-  uint16_t datalen = 0, packetlen = 0;
+  uint16_t totalLen = 0, packetLen = 0;
   memset(buf, 0, bufsiz);
   char *ptr = buf;
-  err = rest->waitResponse2(ptr, bufsiz-1, DEFAULT_REST_TIMEOUT, &datalen, &packetlen);
-  while (datalen) {
-    ptr += packetlen;
-    err = rest->waitResponse2(ptr, bufsiz-1, DEFAULT_REST_TIMEOUT, &datalen, &packetlen);
+  err = rest->waitResponse2(ptr, bufsiz-1, DEFAULT_REST_TIMEOUT, &totalLen, &packetLen);
+  while (totalLen) {
+    ptr += packetLen;
+    err = rest->waitResponse2(ptr, bufsiz-1, DEFAULT_REST_TIMEOUT, &totalLen, &packetLen);
   }
   if (err == HTTP_STATUS_OK) {
     Serial.print("Sunset success ");
