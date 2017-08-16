@@ -44,14 +44,17 @@ public:
 
   void Up();
   void Up(int hr, int mn, int sec);
+  void Up(time_t);
   void Down();
   void Down(int hr, int mn, int sec);
+  void Down(time_t);
   void Stop();
   void reset();
 
   void IsUp();
   void IsDown();
   int getPosition();
+  void initialPosition();
 
 private:
   int nitems;

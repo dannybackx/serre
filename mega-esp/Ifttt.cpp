@@ -45,6 +45,7 @@
 #include "Hatch.h"
 #include "Light.h"
 #include "ThingSpeak.h"
+#include "Sunset.h"
 #include "global.h"
 #include "Ifttt.h"
 

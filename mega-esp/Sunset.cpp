@@ -69,6 +69,8 @@ static int bufsiz = 700;
 
 Sunset::Sunset() {
   rest = new ELClientRest(&esp);
+  today = 0;
+  stable = LIGHT_NONE;
 }
 
 Sunset::~Sunset() {
@@ -77,6 +79,9 @@ Sunset::~Sunset() {
 }
 
 void Sunset::query(char *lat, char *lon) {
+  this->lat = lat;
+  this->lon = lon;
+
   int err = rest->begin(ss_url);
   if (err != 0) {
     delete rest;
@@ -237,6 +242,35 @@ byte Sunset::daysInMonth(int yr, int m)
 /*
  * Query once per day
  */
-void Sunset::loop(time_t t) {
-  // FIXME
+enum lightState Sunset::loop(time_t t) {
+  if (today == 0) {
+    today = t;
+    return LIGHT_NONE;	// First call ever, so we just got initialized. Don't bother
+  }
+
+  if ((day(t) != day(today))
+   || (month(t) != month(today))
+   || (year(t) != year(today)))
+    query(lat, lon);
+
+  int	h = hour(t), m = minute(t), s = second(t);
+  time_t tt = h * 3600L + m * 60L + s;
+
+  if (tt < sunrise) {
+    stable = LIGHT_NIGHT;
+    return LIGHT_NIGHT;
+  }
+  if (tt > sunset) {
+    if (stable == LIGHT_DAY) {
+      stable = LIGHT_NIGHT;
+      return LIGHT_EVENING;	// Transient state
+    }
+    stable = LIGHT_NIGHT;
+    return LIGHT_NIGHT;
+  }
+  if (stable == LIGHT_NIGHT) {
+    stable = LIGHT_DAY;
+    return LIGHT_MORNING;	// Transient state
+  }
+  return LIGHT_DAY;
 }

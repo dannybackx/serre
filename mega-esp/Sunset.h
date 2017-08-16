@@ -32,17 +32,24 @@ public:
   ~Sunset();
   void query();
   void query(char *lat, char *lon);
-  void loop(time_t);
+  enum lightState loop(time_t);
 
 private:
-  ELClientRest *rest;
+  // State variables
+  time_t sunrise, sunset, twilight_begin, twilight_end;		// These are time-only, no date
+  time_t today;							// Date of last update
+  char *lat, *lon;						// Use this for daily update
+  enum lightState stable;					// Stable state
+
+  // Function definitions
   time_t String2DateTime(char *);
   time_t String2Time(char *);
   byte daysInMonth(int yr, int m);
   bool isLeapYear(int yr);
   char *findData(char *, const char *);
-
-  time_t sunrise, sunset, twilight_begin, twilight_end;
   void DebugPrint(const char *, time_t, const char *);
+
+  // Internal stuff
+  ELClientRest *rest;
 };
 #endif

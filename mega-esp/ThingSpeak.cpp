@@ -37,11 +37,12 @@
 #include "Light.h"
 #include "Hatch.h"
 #include "ThingSpeak.h"
+#include "Sunset.h"
 #include "global.h"
 
 extern ELClient esp;
 
-ThingSpeak::ThingSpeak() {
+ThingSpeak::ThingSpeak(int test) {
   lasttime = -1;
   delta = 600;				// FIXME 10 minutes
   rest = new ELClientRest(&esp);
@@ -55,6 +56,11 @@ ThingSpeak::ThingSpeak() {
     Serial.print(" , error code ");
     Serial.println(err);
   }
+
+  if (test)
+    write_key = test_ts_write_key;
+  else
+    write_key = ts_write_key;
 }
 
 ThingSpeak::~ThingSpeak() {
@@ -90,7 +96,7 @@ void ThingSpeak::loop(time_t nowts) {
         if (sb != NULL) {
 	  if (rest != 0) {
 	    // Format the result
-            sprintf(sb, gpm(ts_123), ts_write_key, a, b, c, l);
+            sprintf(sb, gpm(ts_123), write_key, a, b, c, l);
 
 	    // Send to ThingSpeak
 	    rest->get(sb);
@@ -133,7 +139,7 @@ void ThingSpeak::loop(time_t nowts) {
 void ThingSpeak::changeState(int motion) {
   // Serial.print(gpm(ts_state_change)); Serial.println(motion);
 
-  sprintf(buffer, gpm(ts_4), ts_write_key, motion);
+  sprintf(buffer, gpm(ts_4), write_key, motion);
   rest->get(buffer);
 
   int err = rest->getResponse(buffer, buffer_size);
@@ -156,7 +162,7 @@ void ThingSpeak::changeState(int motion) {
 void ThingSpeak::changeState(int motion, int state) {
   // Serial.print(gpm(ts_state_change)); Serial.println(state);
 
-  sprintf(buffer, gpm(ts_45), ts_write_key, motion, state);
+  sprintf(buffer, gpm(ts_45), write_key, motion, state);
   rest->get(buffer);
 
   int err = rest->getResponse(buffer, buffer_size);

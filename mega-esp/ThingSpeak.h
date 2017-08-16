@@ -29,7 +29,7 @@
 
 class ThingSpeak {
 public:
-  ThingSpeak();
+  ThingSpeak(int test);
   ~ThingSpeak();
   void loop(time_t);
   void changeState(int);
@@ -39,5 +39,6 @@ private:
   time_t lasttime;
   time_t delta;
   ELClientRest *rest;
+  const char	*write_key;
 };
 #endif

@@ -32,6 +32,7 @@
 #include "Hatch.h"
 #include "Light.h"
 #include "ThingSpeak.h"
+#include "Sunset.h"
 #include "global.h"
 #include <TimeLib.h>
 #include <DS1307RTC.h>
@@ -420,10 +421,9 @@ void ProcessCallback(char *topic, char *message) {
   Serial.println(")");
 }
 
-#if 0
-#include "AFMotor.h"
+#include "SimpleL298.h"
 
-AF_DCMotor *motor = 0;
+SimpleL298 *motor = 0;
 
 void TestMotor(char *topic, char *message) {
   Serial.print("MQTT TestMotor(");
@@ -438,7 +438,7 @@ void TestMotor(char *topic, char *message) {
   Serial.print("Set motor speed to "); Serial.println(ms);
 
   if (motor == 0)
-    motor = new AF_DCMotor(3);
+    motor = new SimpleL298(2, 3, 9);
   if (ms < 0) {
     motor->setSpeed(-ms);
     motor->run(BACKWARD);
@@ -450,7 +450,3 @@ void TestMotor(char *topic, char *message) {
     motor->setSpeed(0);
   }
 }
-#else
-void TestMotor(char *topic, char *message) {
-}
-#endif

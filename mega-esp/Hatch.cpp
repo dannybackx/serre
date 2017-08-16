@@ -32,6 +32,7 @@
 #include "Light.h"
 #include "SFE_BMP180.h"
 #include "ThingSpeak.h"
+#include "Sunset.h"
 #include "global.h"
 #include "AFMotor.h"
 #include "SimpleL298.h"
@@ -40,7 +41,7 @@ Hatch::Hatch() {
   items = NULL;
   nitems = 0;
   _moving = 0;
-  _position = 0;
+  _position = 0;	// Don't know
   maxtime = starttime = 0;
 
   motor = 0;
@@ -107,10 +108,13 @@ int Hatch::loop(int hr, int mn, int sec) {
   if (_moving != 0) {
     if (RunTooLong(hr, mn, sec)) {
       // Assume we're up/down
-      if (_moving < 0)
+      if (_moving < 0) {
+        Serial.println("Run Too Long : Hatch is down");
         _position = -1;
-      else if (_moving > 0)
+      } else if (_moving > 0) {
+        Serial.println("Run Too Long : Hatch is up");
 	_position = +1;
+      }
 
       Stop();
       return _moving;
@@ -123,7 +127,7 @@ int Hatch::loop(int hr, int mn, int sec) {
       int state = digitalRead(sensor_down_pin);
       if (state == 0) {
 	_position = -1;
-	// Serial.println("Down sensor : stop hatch");
+	Serial.println("Down sensor : stop hatch");
 	Stop();
       }
     }
@@ -133,7 +137,7 @@ int Hatch::loop(int hr, int mn, int sec) {
       int state = digitalRead(sensor_up_pin);
       if (state == 0) {
 	_position = +1;
-	// Serial.println("Up sensor : stop hatch");
+	Serial.println("Up sensor : stop hatch");
 	Stop();
       }
     }
@@ -153,12 +157,12 @@ int Hatch::loop(int hr, int mn, int sec) {
     if (items[i].hour == hr && items[i].minute == mn) {
       switch (items[i].state) {
       case -1:
-	Serial.print(__LINE__); Serial.print(" Down()");
+	// Serial.print(__LINE__); Serial.print(" Down()");
         Down();
 	SetStartTime(hr, mn, sec);
 	return _moving;
       case +1:
-	Serial.print(__LINE__); Serial.print(" Up()");
+	// Serial.print(__LINE__); Serial.print(" Up()");
         Up();
 	SetStartTime(hr, mn, sec);
         return _moving;
@@ -249,29 +253,27 @@ void Hatch::set(int s) {
   _moving = s;
 }
 
-#if 0
-void Hatch::setMotor(int n) {
-  Serial.print(gpm(hatch_use_motor));
-  Serial.print(n);
-  Serial.println(".");
-
-  motor = new AF_DCMotor(n);
-  motor->setSpeed(200);
-  motor->run(RELEASE);
-}
-#else
 void Hatch::setMotor(int a, int b, int c) {
   motor = new SimpleL298(a, b, c);
   motor->setSpeed(200);
   motor->run(RELEASE);
 }
-#endif
 
 int Hatch::moving() {
   return _moving;
 }
 
+void Hatch::Up(time_t ts) {
+  int hr, min, sec;
+  hr = hour(ts); min = minute(ts); sec = second(ts);
+  Up(hr, min, sec);
+}
+
 void Hatch::Up(int hr, int mn, int sec) {
+  char b[40];
+  sprintf(b, "Hatch up %02d:%02d:%02d\n", hr, mn, sec);
+  Serial.print(b);
+
   SetStartTime(hr, mn, sec);
   Up();
 }
@@ -287,7 +289,17 @@ void Hatch::Up() {
   ts->changeState(_moving, _position);
 }
 
+void Hatch::Down(time_t ts) {
+  int hr, min, sec;
+  hr = hour(ts); min = minute(ts); sec = second(ts);
+  Down(hr, min, sec);
+}
+
 void Hatch::Down(int hr, int mn, int sec) {
+  char b[40];
+  sprintf(b, "Hatch down %02d:%02d:%02d\n", hr, mn, sec);
+  Serial.print(b);
+
   SetStartTime(hr, mn, sec);
   Down();
 }
@@ -325,4 +337,28 @@ void Hatch::IsDown() {
 
 int Hatch::getPosition() {
   return _position;
+}
+
+void Hatch::initialPosition() {
+  Serial.print("Hatch initialPosition");
+  if (_position < 0 || _position > 0)
+    return;
+
+  time_t nowts = now();
+  enum lightState sun = sunset->loop(nowts);
+
+  switch (sun) {
+  case LIGHT_MORNING:
+  case LIGHT_DAY:
+  Serial.print("Hatch initialPosition : moving up");
+    Up(nowts);
+    break;
+  case LIGHT_EVENING:
+  case LIGHT_NIGHT:
+  Serial.print("Hatch initialPosition : moving down");
+    Down(nowts);
+    break;
+  default:
+    break;
+  }
 }

@@ -34,9 +34,9 @@
 #include "ThingSpeak.h"
 #include <DS1307RTC.h>
 #include "Ifttt.h"
-#include "global.h"
 #include <Dyndns.h>
 #include "Sunset.h"
+#include "global.h"
 
 #ifdef BUILT_BY_MAKE
 #include "buildinfo.h"
@@ -52,7 +52,7 @@ char		buffer[buffer_size];
 Hatch		*hatch = 0;
 Light		*light = 0;
 int		newhatch, oldhatch;
-enum lightState	newlight, oldlight;
+enum lightState	newlight, oldlight, sun;
 int		sensor_up, sensor_down, button_up, button_down;
 
 ThingSpeak	*ts = 0;
@@ -127,8 +127,6 @@ void setup() {
   // Hatch
   Serial.println(F("Set up hatch ..."));
   hatch = new Hatch(schedule_string);
-  // hatch->setMotor(3);
-  hatch->setMotor();	// Default 2, 3, 9
   hatch->setMotor(2, 3, 9);
   hatch->setMaxTime(6);
 
@@ -140,6 +138,10 @@ void setup() {
   ActivatePin(button_up_pin, gpm(button_up_string));
   ActivatePin(button_down_pin, gpm(button_down_string));
 
+  // Sunset query
+  sunset = new Sunset();
+  sunset->query(sunset_latitude, sunset_longitude);
+
   light = new Light();
   light->setSensorPin(light_sensor_pin);
   ActivatePin(light_sensor_pin, gpm(light_sensor_string));
@@ -147,28 +149,27 @@ void setup() {
   // Initialize sensor states
   sensor_up = sensor_down = button_up = button_down = -1;
   if (sensor_up_pin >= 0)  {
-    sensor_up = digitalRead(sensor_up_pin);
+    sensor_up = ReadPin(sensor_up_pin);
 
-    if (sensor_up == 1)
+    if (sensor_up >= sensor_treshold)
       hatch->IsUp();
   }
   if (sensor_down_pin >= 0) {
-    sensor_down = digitalRead(sensor_down_pin);
+    sensor_down = ReadPin(sensor_down_pin);
 
-    if (sensor_down == 1)
+    if (sensor_down >= sensor_treshold)
       hatch->IsDown();
   }
   if (button_up_pin >= 0)
-    button_up = digitalRead(button_up_pin);
+    button_up = ReadPin(button_up_pin);
   if (button_down_pin >= 0)
-    button_down = digitalRead(button_down_pin);
+    button_down = ReadPin(button_down_pin);
 
   // Serial.println("Starting ThingSpeak...");
-  ts = new ThingSpeak();
+  ts = new ThingSpeak(strcmp(mqtt_clientid, "testesp") == 0);
 
-  // Sunset query
-  sunset = new Sunset();
-  sunset->query(sunset_latitude, sunset_longitude);
+  // Determine and set initial position
+  hatch->initialPosition();
 
 #ifdef USE_IFTTT
   Ifttt *ifttt = new Ifttt();
@@ -210,6 +211,12 @@ void setup() {
   StartTrackStatus();
 }
  
+
+/*********************************************************************************
+ *                                                                               *
+ * Pin management                                                                *
+ *                                                                               *
+ *********************************************************************************/
 void ActivatePin(int pin, const char *name) {
   if (pin >= 0) {
     if (pin > NUM_DIGITAL_PINS - NUM_ANALOG_INPUTS) {	// Analog
@@ -233,6 +240,17 @@ void ActivatePin(int pin, const char *name) {
   }
 }
 
+int ReadPin(int pin) {
+  if (pin >= 0) {
+    if (pin > NUM_DIGITAL_PINS - NUM_ANALOG_INPUTS) {	// Analog
+      return analogRead(pin);
+    } else {						// Digital
+      return digitalRead(pin);
+    }
+  }
+  return -1;	// error
+}
+
 /*********************************************************************************
  *                                                                               *
  * Loop                                                                          *
@@ -243,12 +261,13 @@ void loop() {
 
   nowts = now();
   
-  // Query sunset
-  sunset->loop(nowts);
+  // Query Sunset, feed value into Light
+  sun = sunset->loop(nowts);
 
   // Has the light changed ?
   oldlight = newlight;
-  newlight = light->loop(nowts);
+  newlight = light->loop(nowts, sun);
+
   if (oldlight != newlight) {
     if (newlight == LIGHT_MORNING)
       hatch->Up(hour(nowts), minute(nowts), second(nowts));
@@ -265,7 +284,7 @@ void loop() {
   // Sensors stop motion
   if (sensor_up_pin >= 0) {
     int oldvalue = sensor_up;
-    sensor_up = digitalRead(sensor_up_pin);
+    sensor_up = ReadPin(sensor_up_pin);
     if (oldvalue != sensor_up && sensor_up == 1) {
       // Stop moving the hatch
       hatch->Stop();
@@ -274,7 +293,7 @@ void loop() {
   }
   if (sensor_down_pin >= 0) {
     int oldvalue = sensor_up;
-    sensor_down = digitalRead(sensor_down_pin);
+    sensor_down = ReadPin(sensor_down_pin);
     if (oldvalue != sensor_down && sensor_down == 1) {
       // Stop moving the hatch
       hatch->Stop();
@@ -287,9 +306,9 @@ void loop() {
       old_button_down = button_down;
 
   if (button_up_pin >= 0)
-    button_up = digitalRead(button_up_pin);
+    button_up = ReadPin(button_up_pin);
   if (button_down_pin >= 0)
-    button_down = digitalRead(button_down_pin);
+    button_down = ReadPin(button_down_pin);
 
   // Action :-)
   // Note buttons are wired between input pin and LOW voltage,

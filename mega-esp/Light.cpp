@@ -37,6 +37,7 @@
 #include "Hatch.h"
 #include "SFE_BMP180.h"
 #include "ThingSpeak.h"
+#include "Sunset.h"
 #include "global.h"
 #include "AFMotor.h"
 
@@ -53,21 +54,32 @@ Light::Light() {
 Light::~Light() {
 }
 
-enum lightState Light::loop(time_t t) {
+enum lightState Light::loop(time_t t, enum lightState sun) {
   int sensorValue = analogRead(sensorPin);
 
   if (stableValue == LIGHT_NONE) {
-// FIX ME this should be time based
     /*
      * Startup : get a sensible value to begin with
+     *	the parameter is from Sunset::loop so gives time-based initialisation
      */
-    if (sensorValue < lowTreshold) {
-      stableValue = LIGHT_NIGHT;
-      stableTime = t;
-    } else if (sensorValue > highTreshold) {
-      stableValue = LIGHT_DAY;
-      stableTime = t;
-    }
+    stableTime = t;
+
+    // Don't put transient states in here ...
+    if (sun == LIGHT_MORNING) stableValue = LIGHT_NIGHT;
+    else if (sun == LIGHT_EVENING) stableValue = LIGHT_DAY;
+    else stableValue = sun;
+
+  }
+  
+  // Transient states happen only once, so take precedence
+  if (sun == LIGHT_MORNING) {
+    stableValue = LIGHT_NIGHT;
+    return sun;
+  } else if (sun == LIGHT_EVENING) {
+    stableValue = LIGHT_DAY;
+    return sun;
+
+  // Now take light into account
   } else if (stableValue == LIGHT_NIGHT) {
     if (sensorValue < lowTreshold) {
       // Don't do anything

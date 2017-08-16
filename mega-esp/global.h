@@ -44,6 +44,7 @@ extern int BMPQuery();
 extern SFE_BMP180	*bmp;
 extern Hatch		*hatch;
 extern Light		*light;
+extern Sunset		*sunset;
 
 //
 extern ELClientCmd	cmd;
@@ -51,7 +52,9 @@ extern ELClientCmd	cmd;
 // Light
 extern const int light_treshold_high,
 		 light_treshold_low,
-		 light_min_duration;
+		 light_min_duration,
+		 sensor_treshold;
+
 // ThingSpeak
 extern ThingSpeak	*ts;
 
@@ -125,6 +128,7 @@ extern const char maxtime_set[];
 extern const char ts_url[];
 extern const char ts_read_key[];
 extern const char ts_write_key[];
+extern const char test_ts_write_key[];
 extern const char ifttt_key[];
 extern const char ifttt_event[];
 
@@ -165,3 +169,4 @@ extern void mqDisconnected(void *response);
 extern void mqData(void *response);
 
 extern void StartTrackStatus();
+extern int ReadPin(int pin);

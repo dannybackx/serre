@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Danny Backx
+ * Copyright (c) 2016, 2017 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,7 +35,7 @@ class Light {
 public:
   Light();
   ~Light();
-  enum lightState loop(time_t);
+  enum lightState loop(time_t, enum lightState);
   void setSensorPin(int pin);
   int getSensorPin();
   void setLowTreshold(int);

@@ -43,6 +43,8 @@ int light_treshold_high =	700,	// Depends on components used.
     light_treshold_low =	400,
     light_min_duration =	500;	// 5 minutes
 
+int sensor_treshold = 200;
+
 const int	loop_delay =	50;
 
 /*
@@ -51,8 +53,11 @@ const int	loop_delay =	50;
  * If the definition is < 0 then assume it's not hooked up.
  */
 // Sensors that indicate when the hatch is at the up or down position
-const int	sensor_up_pin =		23;	// Digital
-const int	sensor_down_pin =	25;	// Digital
+// const int	sensor_up_pin =		23;	// Digital
+// const int	sensor_down_pin =	25;	// Digital
+
+const int	sensor_up_pin =		55;	// Analog 1
+const int	sensor_down_pin =	56;	// Analog 2
 
 const int	button_up_pin =		27;	// Digital
 const int	button_down_pin =	29;	// Digital
