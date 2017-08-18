@@ -68,7 +68,7 @@ static char *buf = 0;
 static int bufsiz = 700;
 
 Sunset::Sunset() {
-  rest = new ELClientRest(&esp);
+  rest = 0;	// Don't do more here, keep CTOR and rest->begin() together
   today = 0;
   stable = LIGHT_NONE;
 }
@@ -82,6 +82,11 @@ void Sunset::query(char *lat, char *lon) {
   this->lat = lat;
   this->lon = lon;
 
+  rest = new ELClientRest(&esp);
+  if (rest == 0) {
+    Serial.println("Sunset : could not create REST api");
+    return;
+  }
   int err = rest->begin(ss_url);
   if (err != 0) {
     delete rest;

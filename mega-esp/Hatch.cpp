@@ -316,6 +316,7 @@ void Hatch::Down() {
 }
 
 void Hatch::Stop() {
+  Serial.println("Stop");
   if (_moving == 0)
     return;
   motor->run(RELEASE);

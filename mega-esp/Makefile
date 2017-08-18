@@ -23,7 +23,8 @@ EXTRA_SRC=	personal.c Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
 EXTRA_SRC +=	SimpleL298.cpp
 
 #UPLOAD_HOST=	kippen
-UPLOAD_HOST=	testesp
+#UPLOAD_HOST=	testesp
+UPLOAD_HOST=	d1mini3
 
 UPLOAD_PORT=	/dev/ttyACM0
 

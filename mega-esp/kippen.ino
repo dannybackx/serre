@@ -66,6 +66,17 @@ char		*mqtt_topic = 0;
 
 void NoIP(int);
 
+struct {
+  char *name;
+  int test;
+} esplist [] = {
+  { "testesp", 1 },
+  { "d1mini3", 1 },
+  { "kippen", 0 },
+  { NULL, 0 }
+};
+int test = 0;
+
 /*
  * Helper function because the ELClientCmd doesn't have a static function for this.
  */
@@ -88,23 +99,34 @@ void setup() {
   // Start WiFi
   Serial.println(gpm(starting_wifi));
 
-  // Query MQTT name, we'll use this to steer debug/production behaviour
-  // Note this is in the ESP-link config so you can configure per device.
-  // Debug behaviour is device is called "testesp".
-  Serial.print("MQTT client id : ");
-  char *mqtt_clientid = cmd.mqttGetClientId();
-  Serial.println(mqtt_clientid);
-  
-  mqtt_topic = mqtt_clientid;
-
   esp.wifiCb.attach(WifiStatusCallback);
   while (! esp.Sync()) {
     Serial.println("ELClient sync failed");
   }
 
+  // Query MQTT name, we'll use this to steer debug/production behaviour
+  // Note this is in the ESP-link config so you can configure per device.
+
+  Serial.print("MQTT client id : ");
+  char *mqtt_clientid = cmd.mqttGetClientId();
+  Serial.print(mqtt_clientid);
+  mqtt_topic = mqtt_clientid;
+
+  // Debug behaviour is defined in the table esplist, e.g. one is called "testesp".
+  for (int i=0; esplist[i].name; i++)
+    if (strcmp(esplist[i].name, mqtt_clientid) == 0) {
+      test = esplist[i].test;
+      break;
+    }
+
+  if (test)
+    Serial.println(" -> test");
+  else
+    Serial.println(" -> production");
+
   // Register with NoIP.com
   // This passes along whether to register with a debug hostname
-  NoIP(strcmp(mqtt_clientid, "testesp") == 0);
+  NoIP(test);
 
   // BMP180 temperature and air pressure sensor
   Serial.print(gpm(initializing_bmp180));
@@ -166,7 +188,7 @@ void setup() {
     button_down = ReadPin(button_down_pin);
 
   // Serial.println("Starting ThingSpeak...");
-  ts = new ThingSpeak(strcmp(mqtt_clientid, "testesp") == 0);
+  ts = new ThingSpeak(test);
 
   // Determine and set initial position
   hatch->initialPosition();

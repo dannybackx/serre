@@ -108,7 +108,7 @@ struct mqtt_callback_table {
 };
 
 void mqConnected(void *response) {
-  Serial.println("MQTT connect");
+  // Serial.println("MQTT connect");
 
   for (int i=0; mqtt_callback_table[i].token != NULL; i++) {
 #if 0
@@ -123,7 +123,7 @@ void mqConnected(void *response) {
 }
 
 void mqDisconnected(void *response) {
-  Serial.println("MQTT disconnect");
+  // Serial.println("MQTT disconnect");
 }
 
 void mqData(void *response) {
