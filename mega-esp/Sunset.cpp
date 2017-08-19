@@ -20,7 +20,8 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  *
- * This contains code to query the API server at api.sunrise-sunset.org
+ * This contains code to query the API server at api.sunrise-sunset.org .
+ * Note this needs a patch to esp-link/el-client to cope with reply length ~500 bytes.
  *
  * See http://www.sunrise-sunset.org
  *
@@ -152,6 +153,8 @@ void Sunset::query() {
 
 /*
  * In the "response", find the date/time field after the specified search string.
+ * Return a pointer into the original string (no private copy, not terminated).
+ * Flag error if we don't see quotes/column in the expected places.
  */
 char *Sunset::findData(char *response, const char *search) {
   char *f = strstr(response, search);
@@ -159,19 +162,25 @@ char *Sunset::findData(char *response, const char *search) {
   int len = strlen(search);
   if (! f) {
     // Serial.println("error 1");
-    return (time_t)0;
+    return (char *)0;
   }
   if (f[-1] != '"') {
     // Serial.println("error 2");
-    return (time_t)0;
+    return (char *)0;
   }
   if (f[len] != '"') {
     // Serial.println("error 3");
-    return (time_t)0;
+    return (char *)0;
+  }
+  if (f[len+1] != ':') {
+    // Serial.println("error 4");
+    return (char *)0;
+  }
+  if (f[len+2] != '"') {
+    // Serial.println("error 5");
+    return (char *)0;
   }
 
-  // time_t r = readTimeString(f + len + 3);
-  // return r;
   return f + len + 3;
 }
 
@@ -248,15 +257,17 @@ byte Sunset::daysInMonth(int yr, int m)
  * Query once per day
  */
 enum lightState Sunset::loop(time_t t) {
+  // First call ever, so we just got initialized.
+  // Don't bother querying, this is done from elsewhere.
   if (today == 0) {
     today = t;
-    return LIGHT_NONE;	// First call ever, so we just got initialized. Don't bother
+    return LIGHT_NONE;
   }
 
-  if ((day(t) != day(today))
-   || (month(t) != month(today))
-   || (year(t) != year(today)))
+  if ((day(t) != day(today)) || (month(t) != month(today)) || (year(t) != year(today))) {
     query(lat, lon);
+    today = t;
+  }
 
   int	h = hour(t), m = minute(t), s = second(t);
   time_t tt = h * 3600L + m * 60L + s;
@@ -278,4 +289,9 @@ enum lightState Sunset::loop(time_t t) {
     return LIGHT_MORNING;	// Transient state
   }
   return LIGHT_DAY;
+}
+
+void Sunset::reset() {
+  today = 123456789L;	// Causes re-query
+  Serial.println("Sunset : reset");
 }

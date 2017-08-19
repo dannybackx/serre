@@ -70,6 +70,7 @@ void ButtonQuery(char *topic, char *message);
 void ButtonsQuery(char *topic, char *message);
 void SensorQuery(char *topic, char *message);
 void SensorsQuery(char *topic, char *message);
+void SunsetReset(char *topic, char *message);
 
 int ix;
 struct mqtt_callback_table {
@@ -89,6 +90,7 @@ struct mqtt_callback_table {
   { "/button/query/",		ButtonQuery,		0},
   { "/sensors/query",		SensorsQuery,		0},
   { "/sensor/query/",		SensorQuery,		0},
+  { "/sunset/reset",		SunsetReset,		0},
 #if 1
   { "/date/query",		DateTimeQuery,		0},
   { "/date/set/",		DateTimeSet,		0},
@@ -450,3 +452,13 @@ void TestMotor(char *topic, char *message) {
     motor->setSpeed(0);
   }
 }
+
+/********************************************************************************
+ *                                                                              *
+ * Sunset                                                                       *
+ *                                                                              *
+ ********************************************************************************/
+void SunsetReset(char *topic, char *message) {
+  sunset->reset();
+}
+

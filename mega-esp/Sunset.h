@@ -33,6 +33,7 @@ public:
   void query();
   void query(char *lat, char *lon);
   enum lightState loop(time_t);
+  void reset();
 
 private:
   // State variables
