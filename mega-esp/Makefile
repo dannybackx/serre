@@ -22,8 +22,8 @@ EXTRA_SRC=	personal.c Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
 # EXTRA_SRC +=	AFMotor.cpp
 EXTRA_SRC +=	SimpleL298.cpp
 
-#UPLOAD_HOST=	kippen
 #UPLOAD_HOST=	testesp
+PRODUCTION_HOST=	kippen
 UPLOAD_HOST=	d1mini3
 
 UPLOAD_PORT=	/dev/ttyACM0
@@ -178,6 +178,9 @@ upload: all
 
 ota: all
 	$(AVRFLASH) $(UPLOAD_HOST) $(MAIN_HEX)
+
+pota: all
+	$(AVRFLASH) $(PRODUCTION_HOST) $(MAIN_HEX)
 
 showotaip:
 	echo "IP Address for OTA is $(UPLOAD_AVAHI_IP) (symbol $(UPLOAD_AVAHI_NAME))"
