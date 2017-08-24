@@ -43,6 +43,7 @@ Hatch::Hatch() {
   _moving = 0;
   _position = 0;	// Don't know
   maxtime = starttime = 0;
+  initialized = false;
 
   motor = 0;
 }
@@ -54,6 +55,7 @@ Hatch::Hatch(char *desc) {
   _position = 0;
   maxtime = starttime = 0;
   motor = 0;
+  initialized = false;
   setSchedule(desc);
 }
 
@@ -103,6 +105,8 @@ bool Hatch::RunTooLong(int hr, int mn, int sec) {
 int Hatch::loop(int hr, int mn, int sec) {
   // Serial.print("Hatch "); Serial.print(hr); Serial.print(":"); Serial.print(mn); Serial.print(":"); Serial.print(sec); Serial.print(" moving "); Serial.print(_moving); Serial.print(" state "); Serial.println(_position);
   // delay(500);
+
+  initialPosition();
 
   // Stop if running for too long
   if (_moving != 0) {
@@ -341,9 +345,18 @@ int Hatch::getPosition() {
 }
 
 void Hatch::initialPosition() {
-  Serial.print("Hatch initialPosition");
-  if (_position < 0 || _position > 0)
+  if (initialized)
     return;
+  initialized = true;
+
+  if (_position < 0 || _position > 0) {
+    char buffer[60];
+    sprintf(buffer, "Hatch initialPosition, position %d\n", _position);
+    Serial.print(buffer);
+    return;
+  }
+
+  Serial.print("Hatch initialPosition");
 
   time_t nowts = now();
   enum lightState sun = sunset->loop(nowts);
@@ -351,15 +364,16 @@ void Hatch::initialPosition() {
   switch (sun) {
   case LIGHT_MORNING:
   case LIGHT_DAY:
-  Serial.print("Hatch initialPosition : moving up");
+  Serial.println(" : moving up");
     Up(nowts);
     break;
   case LIGHT_EVENING:
   case LIGHT_NIGHT:
-  Serial.print("Hatch initialPosition : moving down");
+  Serial.println(" : moving down");
     Down(nowts);
     break;
   default:
+    Serial.println(" : no action");
     break;
   }
 }

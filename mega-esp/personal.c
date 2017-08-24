@@ -63,4 +63,3 @@ const int	button_up_pin =		27;	// Digital
 const int	button_down_pin =	29;	// Digital
 
 const int	light_sensor_pin =	57;	// Analog, A3 translates to 57 on a Mega
-

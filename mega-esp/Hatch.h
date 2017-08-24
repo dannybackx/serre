@@ -54,7 +54,6 @@ public:
   void IsUp();
   void IsDown();
   int getPosition();
-  void initialPosition();
 
 private:
   int nitems;
@@ -69,5 +68,10 @@ private:
   int starttime;
   void SetStartTime(int hr, int mn, int sec);
   bool RunTooLong(int hr, int mn, int sec);
+
+  // initialPosition() is private so we call it in the first call of loop()
+  // after everything is initialized
+  void initialPosition();
+  bool initialized;
 };
 #endif

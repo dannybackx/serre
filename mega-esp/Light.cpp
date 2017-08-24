@@ -55,6 +55,9 @@ Light::~Light() {
 }
 
 enum lightState Light::loop(time_t t, enum lightState sun) {
+  if (sensorPin < 0)
+    return LIGHT_NONE;
+
   int sensorValue = analogRead(sensorPin);
 
   if (stableValue == LIGHT_NONE) {

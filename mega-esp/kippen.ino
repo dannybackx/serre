@@ -38,9 +38,7 @@
 #include "Sunset.h"
 #include "global.h"
 
-#ifdef BUILT_BY_MAKE
 #include "buildinfo.h"
-#endif
 
 time_t		boot_time = 0;
 time_t		nowts;
@@ -93,7 +91,11 @@ void setup() {
   Serial.println("Yow !");
 
   // Display startup text
-  Serial.println(gpm(startup_text1));
+  Serial.print(gpm(startup_text1));
+  Serial.print(", build ");
+  Serial.print(_BuildInfo.date);
+  Serial.print(" ");
+  Serial.println(_BuildInfo.time);
   Serial.println(gpm(startup_text2));
 
   // Start WiFi
@@ -164,24 +166,25 @@ void setup() {
   sunset = new Sunset();
   sunset->query(sunset_latitude, sunset_longitude);
 
+  ActivatePin(light_sensor_pin, gpm(light_sensor_string));
   light = new Light();
   light->setSensorPin(light_sensor_pin);
-  ActivatePin(light_sensor_pin, gpm(light_sensor_string));
 
   // Initialize sensor states
   sensor_up = sensor_down = button_up = button_down = -1;
   if (sensor_up_pin >= 0)  {
     sensor_up = ReadPin(sensor_up_pin);
-
-    if (sensor_up >= sensor_treshold)
-      hatch->IsUp();
   }
   if (sensor_down_pin >= 0) {
     sensor_down = ReadPin(sensor_down_pin);
-
-    if (sensor_down >= sensor_treshold)
-      hatch->IsDown();
   }
+
+#if 0
+  if (sensor_down >= sensor_treshold)
+    hatch->IsDown();
+  if (sensor_up >= sensor_treshold)
+    hatch->IsUp();
+#endif
   if (button_up_pin >= 0)
     button_up = ReadPin(button_up_pin);
   if (button_down_pin >= 0)
@@ -190,8 +193,8 @@ void setup() {
   // Serial.println("Starting ThingSpeak...");
   ts = new ThingSpeak(test);
 
-  // Determine and set initial position
-  hatch->initialPosition();
+  // This is moved to Hatch::loop()
+  // hatch->initialPosition();
 
 #ifdef USE_IFTTT
   Ifttt *ifttt = new Ifttt();
@@ -273,6 +276,14 @@ int ReadPin(int pin) {
   return -1;	// error
 }
 
+int Cnt = 5;
+void DebugMe(char c)
+{
+  if (Cnt == 0) return;
+  if (c == 'a') Cnt--;
+  Serial.print(c);
+}
+
 /*********************************************************************************
  *                                                                               *
  * Loop                                                                          *
@@ -298,11 +309,11 @@ void loop() {
   }
 
   // Note the hatch->loop code will also trigger the motor
-  if (hatch) {
+  if (hatch != NULL) {
     oldhatch = newhatch;
     newhatch = hatch->loop(hour(nowts), minute(nowts), second(nowts));
   }
-
+#if 0
   // Sensors stop motion
   if (sensor_up_pin >= 0) {
     int oldvalue = sensor_up;
@@ -322,7 +333,7 @@ void loop() {
       hatch->IsDown();
     }
   }
-
+#endif
   // Read the button states
   int old_button_up = button_up,
       old_button_down = button_down;
