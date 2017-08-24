@@ -146,6 +146,8 @@ void setup() {
     sprintf(buffer, gpm(timedate_fmt),
       hour(), minute(), second(), day(), month(), year());
     Serial.println(buffer); 
+
+    // Note the time info in the buffer will be re-used below.
   }
 
   // Hatch
@@ -211,8 +213,13 @@ void setup() {
   int ip3 = (ip & 0x00FF0000) >> 16;
   int ip4 = (ip & 0xFF000000) >> 24;
 
+  // Print several things to MQTT, re-use the current time from above.
+  char *p = buffer + strlen(buffer);
   // sprintf(buffer, gpm(ready_wifi), ip1, ip2, ip3, ip4);
-  sprintf(buffer, "IP address %d.%d.%d.%d", ip1, ip2, ip3, ip4);
+  sprintf(p, ", IP address %d.%d.%d.%d, %s, build %s %s",
+    ip1, ip2, ip3, ip4,
+    test ? "test" : "production",
+    _BuildInfo.date, _BuildInfo.time);
   Serial.println(buffer);
 
   // Set up MQTT

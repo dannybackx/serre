@@ -120,7 +120,7 @@ int Hatch::loop(int hr, int mn, int sec) {
 	_position = +1;
       }
 
-      Stop();
+      Stop(hr, mn, sec);
       return _moving;
     }
   }
@@ -132,7 +132,7 @@ int Hatch::loop(int hr, int mn, int sec) {
       if (state == 0) {
 	_position = -1;
 	Serial.println("Down sensor : stop hatch");
-	Stop();
+	Stop(hr, mn, sec);
       }
     }
     return _moving;
@@ -142,7 +142,7 @@ int Hatch::loop(int hr, int mn, int sec) {
       if (state == 0) {
 	_position = +1;
 	Serial.println("Up sensor : stop hatch");
-	Stop();
+	Stop(hr, mn, sec);
       }
     }
     return _moving;
@@ -275,7 +275,7 @@ void Hatch::Up(time_t ts) {
 
 void Hatch::Up(int hr, int mn, int sec) {
   char b[40];
-  sprintf(b, "Hatch up %02d:%02d:%02d\n", hr, mn, sec);
+  sprintf(b, "Hatch moving up %02d:%02d:%02d\n", hr, mn, sec);
   Serial.print(b);
 
   SetStartTime(hr, mn, sec);
@@ -301,7 +301,7 @@ void Hatch::Down(time_t ts) {
 
 void Hatch::Down(int hr, int mn, int sec) {
   char b[40];
-  sprintf(b, "Hatch down %02d:%02d:%02d\n", hr, mn, sec);
+  sprintf(b, "Hatch moving down %02d:%02d:%02d\n", hr, mn, sec);
   Serial.print(b);
 
   SetStartTime(hr, mn, sec);
@@ -320,12 +320,20 @@ void Hatch::Down() {
 }
 
 void Hatch::Stop() {
-  Serial.println("Stop");
-  if (_moving == 0)
-    return;
   motor->run(RELEASE);
   _moving = 0;
   ts->changeState(_moving, _position);
+}
+
+void Hatch::Stop(int hr, int mn, int sec) {
+  if (_moving == 0)
+    return;
+
+  char b[40];
+  sprintf(b, "Hatch stopped %02d:%02d:%02d\n", hr, mn, sec);
+  Serial.println(b);
+
+  Stop();
 }
 
 void Hatch::reset() {

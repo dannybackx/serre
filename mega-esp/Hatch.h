@@ -49,6 +49,7 @@ public:
   void Down(int hr, int mn, int sec);
   void Down(time_t);
   void Stop();
+  void Stop(int hr, int mn, int sec);
   void reset();
 
   void IsUp();
