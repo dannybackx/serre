@@ -9,15 +9,25 @@ The secrets.h file is only provided as a sample, you need to supply your own val
 
 You can remotely set or disable the relay as such :
  - to set
+```
     % mosquitto_pub -t /switch/set -m x
+```
  - to disable
+```
     % mosquitto_pub -t /switch/reset -m x
+```
  - to query the ESP's network settings
+```
     % mosquitto_pub -t /switch/network -m x
+```
  - to set the time schedule
+```
     % mosquitto_pub -t /switch/program -m 06:45,1,07:35,0,21:00,1,22:35,0
+```
  - to query the time schedule
+```
     % mosquitto_pub -t /switch/query -m x
+```
 
 So obviously it responds to MQTT.
 
