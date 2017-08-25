@@ -18,6 +18,7 @@ extern "C" {
 static int OTAprev;
 
 #include "secrets.h"
+#include "buildinfo.h"
 
 struct mywifi {
   const char *ssid, *pass;
@@ -84,15 +85,17 @@ void setup() {
   Serial.begin(9600);
   delay(3000);    // Allow you to plug in the console
 
-  Serial.println("\n\nPower switch\n");
+  Serial.println("\n\nPower switch\n(c) 2017 by Danny Backx\n");
   Serial.printf("Boot version %d, flash chip size %d, SDK version %s\n",
     ESP.getBootVersion(), ESP.getFlashChipSize(), ESP.getSdkVersion());
 
-  Serial.printf("Free sketch space %d\n", ESP.getFreeSketchSpace());
+  Serial.printf("Free sketch space %d, application build %s %s\n",
+    ESP.getFreeSketchSpace(), _BuildInfo.date, _BuildInfo.time);
+
+  // Try to connect to WiFi
   Serial.print("Starting WiFi ");
   WiFi.mode(WIFI_STA);
 
-  // Try to connect to WiFi
   int wcr = WL_IDLE_STATUS;
   for (int ix = 0; wcr != WL_CONNECTED && mywifi[ix].ssid != NULL; ix++) {
     int wifi_tries = 3;

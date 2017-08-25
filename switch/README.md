@@ -34,4 +34,23 @@ So obviously it responds to MQTT.
 You can specify more than one network, if you have more than one Wifi network available in your home.
 
 The schedule provided in the example above is the default. The switch will provide power between 6:45am and 7:35am,
-and between 9pm and 10:35pm.
+and between 9pm and 10:35pm. The schedule takes DST into account (after a restart).
+
+It's possible to update the app in the esp over OTA (type "make ota").
+
+The app console should show something like this :
+```
+
+Power switch
+(c) 2017 by Danny Backx
+
+Boot version 6, flash chip size 4194304, SDK version 1.5.2
+Free sketch space 786432, application build 2017-08-25 16:33:15
+Starting WiFi . MAC XX:XX:XX:XX:XX:XX, SSID {XXXXXXXXX}, IP 192.168.1.XXX, GW 192.168.1.XXX
+Initialize SNTP ...
+Starting OTA listener ...
+Time .....  2017-08-25 16:33:41
+Ready!
+Attempting MQTT connection...connected
+
+```

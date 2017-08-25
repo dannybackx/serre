@@ -187,7 +187,8 @@ showotaip:
 
 clean:
 	echo Removing all intermediate build files...
-	rm  -f $(OBJ_DIR)/*
+	rm -rf $(BUILD_ROOT)
+	rm -f *~ *.bak *-
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
