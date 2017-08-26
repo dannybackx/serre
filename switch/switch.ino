@@ -45,7 +45,8 @@ PubSubClient	client(espClient);
 const char* mqtt_server = MQTT_HOST;
 const int mqtt_port = MQTT_PORT;
 
-const char *mqtt_topic = "/switch/boot";
+const char *mqtt_topic = "/switch";
+const char *reply_topic = "/switch/reply";
 int mqtt_initial = 1;
 
 // Forward
@@ -233,8 +234,9 @@ void PinOff() {
   digitalWrite(LED_PIN, 0);
 }
 
-int counter = 0;
+int	counter = 0;
 int	oldminute, newminute, oldhour, newhour;
+time_t	the_time;
 
 void loop() {
     ArduinoOTA.handle();
@@ -257,9 +259,9 @@ void loop() {
     oldminute = newminute;
     oldhour = newhour;
 
-    time_t t = sntp_get_current_timestamp();
-    newhour = hour(t);
-    newminute = minute(t);
+    the_time = sntp_get_current_timestamp();
+    newhour = hour(the_time);
+    newminute = minute(the_time);
 
     if (newminute == oldminute && newhour == oldhour) {
       return;
@@ -290,20 +292,24 @@ void callback(char *topic, byte *payload, unsigned int length) {
   }
   Serial.println("}");
 
-         if (strcmp(topic, "/switch/set") == 0) {
+         if (strcmp(topic, "/switch/on") == 0) {	// Turn the relay on
     Serial.println("SSR on");
     PinOn();
-  } else if (strcmp(topic, "/switch/reset") == 0) {
+  } else if (strcmp(topic, "/switch/off") == 0) {	// Turn the relay off
     Serial.println("SSR off");
     PinOff();
-  } else if (strcmp(topic, "/switch/query") == 0) {
+  } else if (strcmp(topic, "/switch/query") == 0) {	// Query schedule
     client.publish("/switch/schedule", GetSchedule());
-  } else if (strcmp(topic, "/switch/network") == 0) {
+  } else if (strcmp(topic, "/switch/network") == 0) {	// Query network parameters
     sprintf(reply, "SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
-    client.publish("/switch/reply", reply);
-  } else if (strcmp(topic, "/switch/program") == 0) {
+    client.publish(reply_topic, reply);
+  } else if (strcmp(topic, "/switch/program") == 0) {	// Set the schedule according to the string provided
     SetSchedule((char *)payload);
     client.publish("/switch/schedule", "Ok");
+  } else if (strcmp(topic, "/switch/time") == 0) {	// Query the device's current time
+    struct tm *tmp = localtime(&the_time);
+    strftime(reply, sizeof(reply), "%F %T", tmp);
+    client.publish(reply_topic, reply);
   } else {
     // Silently ignore, this includes our own replies
   }

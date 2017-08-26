@@ -8,13 +8,13 @@ Hook up a cheap ESP8266 processor, a small power supply, and a relay (SSR or rea
 The secrets.h file is only provided as a sample, you need to supply your own values.
 
 You can remotely set or disable the relay as such :
- - to set
+ - to enable
 ```
-    % mosquitto_pub -t /switch/set -m x
+    % mosquitto_pub -t /switch/on -m x
 ```
  - to disable
 ```
-    % mosquitto_pub -t /switch/reset -m x
+    % mosquitto_pub -t /switch/off -m x
 ```
  - to query the ESP's network settings
 ```
