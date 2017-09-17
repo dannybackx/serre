@@ -22,7 +22,7 @@
  */
 #include <Arduino.h>
 
-int personal_timezone = +1;
+int personal_timezone = +2;
 
 int verbose = 0;
 
@@ -63,3 +63,20 @@ const int	button_up_pin =		27;	// Digital
 const int	button_down_pin =	29;	// Digital
 
 const int	light_sensor_pin =	57;	// Analog, A3 translates to 57 on a Mega
+
+const int	motor_dir1_pin =	3;
+const int	motor_dir2_pin =	4;
+const int	motor_speed_pin =	5;
+
+/*
+ * Table to determine whether a device has test or production status
+ */
+struct EspTestProduction {
+  char *name;
+  int test;
+} esplist [] = {
+  { "testesp", 1 },
+  { "d1mini3", 1 },
+  { "kippen", 0 },
+  { NULL, 0 }
+};

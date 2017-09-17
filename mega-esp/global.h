@@ -66,6 +66,7 @@ extern int lightSensorValue();
 
 // Pin definitions
 extern int	sensor_up_pin, sensor_down_pin, button_up_pin, button_down_pin, light_sensor_pin;
+extern int	motor_dir1_pin, motor_dir2_pin, motor_speed_pin;
 extern void ActivatePin(int, const char *);
 
 // Sunset
@@ -170,3 +171,9 @@ extern void mqData(void *response);
 
 extern void StartTrackStatus();
 extern int ReadPin(int pin);
+
+struct EspTestProduction {
+  char *name;
+  int test;
+};
+extern struct EspTestProduction esplist [];

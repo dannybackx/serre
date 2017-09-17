@@ -52,6 +52,7 @@ Light		*light = 0;
 int		newhatch, oldhatch;
 enum lightState	newlight, oldlight, sun;
 int		sensor_up, sensor_down, button_up, button_down;
+int		test = 0;
 
 ThingSpeak	*ts = 0;
 Sunset		*sunset = 0;
@@ -63,17 +64,6 @@ ELClientCmd	cmd(&esp);
 char		*mqtt_topic = 0;
 
 void NoIP(int);
-
-struct {
-  char *name;
-  int test;
-} esplist [] = {
-  { "testesp", 1 },
-  { "d1mini3", 1 },
-  { "kippen", 0 },
-  { NULL, 0 }
-};
-int test = 0;
 
 /*
  * Helper function because the ELClientCmd doesn't have a static function for this.
@@ -153,7 +143,7 @@ void setup() {
   // Hatch
   Serial.println(F("Set up hatch ..."));
   hatch = new Hatch(schedule_string);
-  hatch->setMotor(2, 3, 9);
+  hatch->setMotor(motor_dir1_pin, motor_dir2_pin, motor_speed_pin);
   hatch->setMaxTime(6);
 
   newhatch = oldhatch = 0;

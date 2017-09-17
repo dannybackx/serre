@@ -21,7 +21,11 @@
  *   THE SOFTWARE.
  *
  * This contains code to query the API server at api.sunrise-sunset.org .
- * Note this needs a patch to esp-link/el-client to cope with reply length ~500 bytes.
+ * Notes :
+ * - This needs a patch to esp-link/el-client to cope with reply length ~500 bytes.
+ * - All times in GMT so timezone and DST must still be applied.
+ *   This is now treated very simply by adding a hardcoded value right before
+ *   storing the times in private variables.
  *
  * See http://www.sunrise-sunset.org
  *
@@ -118,10 +122,14 @@ void Sunset::query(char *lat, char *lon) {
   if (err == HTTP_STATUS_OK) {
     Serial.print("Sunset success ");
 
-    sunrise = String2Time(findData(buf, "sunrise"));
-    sunset = String2Time(findData(buf, "sunset"));
-    twilight_begin = String2Time(findData(buf, "civil_twilight_begin"));
-    twilight_end = String2Time(findData(buf, "civil_twilight_end"));
+    sunrise = String2Time(findData(buf, "sunrise"))
+      + personal_timezone * 3600;
+    sunset = String2Time(findData(buf, "sunset"))
+      + personal_timezone * 3600;
+    twilight_begin = String2Time(findData(buf, "civil_twilight_begin"))
+      + personal_timezone * 3600;
+    twilight_end = String2Time(findData(buf, "civil_twilight_end"))
+      + personal_timezone * 3600;
 
     DebugPrint("sunrise ", sunrise, ", ");
     DebugPrint("sunset ", sunset, "\n");
@@ -255,6 +263,7 @@ byte Sunset::daysInMonth(int yr, int m)
 
 /*
  * Query once per day
+ * All times in local timezone.
  */
 enum lightState Sunset::loop(time_t t) {
   // First call ever, so we just got initialized.
