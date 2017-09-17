@@ -56,7 +56,7 @@ ARDUINO_ROOT=	/home/danny/src/arduino/arduino-1.7.11-linux64
 AVR_ROOT=	${ARDUINO_ROOT}/hardware/arduino/avr
 AVR_LIBS=	$(AVR_ROOT)/libraries
 # AVRFLASH=	${ARDUINO_ROOT}/hardware/tools/esp-link-tools/avrflash
-AVRFLASH=	${HOME}/src/github/jeelabs/mine/esp-link.git/trunk/megaflash
+AVRFLASH=	${HOME}/src/github/jeelabs/esp-link/megaflash
 ARCH=		avr
 
 time_string = $(shell perl -e 'use POSIX qw(strftime); print strftime($(1), localtime());')

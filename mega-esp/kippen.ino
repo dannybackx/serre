@@ -125,6 +125,17 @@ void setup() {
   BMPInitialize();
   Serial.println(bmp ? "ok" : "failed");
 
+  // Hatch
+  sprintf(buffer, "Set up hatch ... motor control on pins %d, %d, %d\n",
+    motor_dir1_pin, motor_dir2_pin, motor_speed_pin);
+  Serial.print(buffer);
+
+  hatch = new Hatch(schedule_string);
+  hatch->setMotor(motor_dir1_pin, motor_dir2_pin, motor_speed_pin);
+  hatch->setMaxTime(6);
+
+  newhatch = oldhatch = 0;
+
   // Time
   // setSyncProvider(RTC.get);	// Set the function to get time from RTC
   setSyncProvider(mygettime);	// Set the function to get time from the ESP's esp-link
@@ -139,14 +150,6 @@ void setup() {
 
     // Note the time info in the buffer will be re-used below.
   }
-
-  // Hatch
-  Serial.println(F("Set up hatch ..."));
-  hatch = new Hatch(schedule_string);
-  hatch->setMotor(motor_dir1_pin, motor_dir2_pin, motor_speed_pin);
-  hatch->setMaxTime(6);
-
-  newhatch = oldhatch = 0;
 
   // Sensors and buttons
   ActivatePin(sensor_up_pin, gpm(sensor_up_string));
