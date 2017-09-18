@@ -359,12 +359,12 @@ void Hatch::initialPosition() {
 
   if (_position < 0 || _position > 0) {
     char buffer[60];
-    sprintf(buffer, "Hatch initialPosition, position %d\n", _position);
+    sprintf(buffer, "Hatch initial position, position %d\n", _position);
     Serial.print(buffer);
     return;
   }
 
-  Serial.print("Hatch initialPosition");
+  Serial.print("Hatch initial position");
 
   time_t nowts = now();
   enum lightState sun = sunset->loop(nowts);
