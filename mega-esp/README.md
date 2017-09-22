@@ -36,6 +36,10 @@ The default configuration is to use time information from esp-link. If you use m
 proposed addition (to esp-link), DST is automatically handled. If you use a real RTC
 then you need to put the clock in local time, and handle DST yourself.
 
+Internet queries for sunrise/sunset times are performed daily, so the door operates based on
+that as well as sunlight. The queries require another patch for esp-link to allow for REST
+queries with long results.
+
 I don't use the Arduino IDE, I've supplied a Makefile. Using the sources
 with the Arduino IDE should be possible too, it's been tested several times during
 the development.
