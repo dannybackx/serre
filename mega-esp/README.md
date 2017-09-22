@@ -53,4 +53,4 @@ and personalize those too.
 
 This is what the setup looks like :
 - production board under construction
-  ![Production board]Kippen-20170922-v2.png
+  ![Production board](Kippen-20170922-v2.png)
