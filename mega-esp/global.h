@@ -53,7 +53,8 @@ extern ELClientCmd	cmd;
 extern const int light_treshold_high,
 		 light_treshold_low,
 		 light_min_duration,
-		 sensor_treshold;
+		 hall_sensor_idle,
+		 hall_sensor_trigger;
 
 // ThingSpeak
 extern ThingSpeak	*ts;

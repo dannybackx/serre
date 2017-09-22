@@ -174,12 +174,20 @@ void setup() {
     sensor_down = ReadPin(sensor_down_pin);
   }
 
-#if 0
-  if (sensor_down >= sensor_treshold)
+  /*
+   * Analog Hall Effect sensors (such as SS49E) have an idle value around 500.
+   * When approached by a magnet, the value moves away from that. The direction
+   * depends on the polarity of the magnetic field.
+   */
+#define	HALL_ANALOG_SENSOR_ACTIVE(x) \
+	(  ((x - hall_sensor_idle) > hall_sensor_trigger)	\
+	|| ((hall_sensor_idle - x ) > hall_sensor_trigger) )
+
+  if (HALL_ANALOG_SENSOR_ACTIVE(sensor_down))
     hatch->IsDown();
-  if (sensor_up >= sensor_treshold)
+  if (HALL_ANALOG_SENSOR_ACTIVE(sensor_up))
     hatch->IsUp();
-#endif
+
   if (button_up_pin >= 0)
     button_up = ReadPin(button_up_pin);
   if (button_down_pin >= 0)

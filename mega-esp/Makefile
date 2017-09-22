@@ -220,5 +220,5 @@ all:: $(OBJ_DIR) $(BUILD_INFO_H) $(MAIN_EXE)
 
 ifndef VERBOSE
 # Set silent mode as default
-# MAKEFLAGS += --silent
+MAKEFLAGS += --silent
 endif

@@ -43,7 +43,8 @@ int light_treshold_high =	700,	// Depends on components used.
     light_treshold_low =	400,
     light_min_duration =	500;	// 5 minutes
 
-int sensor_treshold =		350;
+const int hall_sensor_idle =	504;
+const int hall_sensor_trigger = 100;
 
 const int	loop_delay =	50;
 

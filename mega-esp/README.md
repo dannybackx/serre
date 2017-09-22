@@ -3,7 +3,7 @@
 #
 # esp-link + Arduino Mega 2560
 #
-# (c) 2016 by Danny Backx
+# (c) 2016, 2017 by Danny Backx
 #
 
 This module is meant to power a hatch that protects your chickens against nightly predators
