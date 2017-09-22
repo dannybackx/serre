@@ -72,6 +72,9 @@ time_t mygettime() {
   return cmd.GetTime();
 }
 
+/*
+ * Application startup on Arduino :
+ */
 void setup() {
   delay(2000);
 
@@ -243,7 +246,6 @@ void setup() {
 
   StartTrackStatus();
 }
- 
 
 /*********************************************************************************
  *                                                                               *
@@ -294,7 +296,7 @@ void DebugMe(char c)
 
 /*********************************************************************************
  *                                                                               *
- * Loop                                                                          *
+ * Loop : Arduino keeps running this                                             *
  *                                                                               *
  *********************************************************************************/
 void loop() {
@@ -308,6 +310,8 @@ void loop() {
   // Has the light changed ?
   oldlight = newlight;
   newlight = light->loop(nowts, sun);
+
+  // FIXME need to average values over e.g. a five minute period
 
   if (oldlight != newlight) {
     if (newlight == LIGHT_MORNING)
