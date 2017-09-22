@@ -21,6 +21,7 @@ This is what this software is based on :
 - ESP8266 (nodemcu board),
 - running JeeLabs's esp-link (https://github.com/jeelabs/esp-link)
 
+Input and output hardware :
 - a simple L298N motor steering module (older code uses the old style Adafruit Motor Shield)
 - a LDR (light dependent resistor) to detect day/night
 - a BMP180 sensor to monitor temperature and air pressure
