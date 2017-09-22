@@ -21,21 +21,20 @@ This is what this software is based on :
 - ESP8266 (nodemcu board),
 - running JeeLabs's esp-link (https://github.com/jeelabs/esp-link)
 
-Motor steering can be done with the (old style) Adafruit Motor Shield, which is widely
-available from cheap manufacturers. Converting to the new shield should be simple.
-But later versions of this software use a simpler L298N module that can be controlled via just
-three wires.
+- a simple L298N motor steering module (older code uses the old style Adafruit Motor Shield)
+- a LDR (light dependent resistor) to detect day/night
+- a BMP180 sensor to monitor temperature and air pressure
+- two analog hall effect sensors (SS49E for instance) to detect door open/close
 
 The code can periodically feed environmental data to ThingSpeak, and to MQTT.
 
-A significant issue is memory - current implementation already takes 75% both in program and
-variable memory. Note that most of the variable space is in use by the ESP driver for the
-Uno Wifi (more than half of the available memory !).
+There's no way to run this on an Arduino Uno : it simply doesn't have enough memory.
 
-Timezone management is done in a simplistic way : the RTC needs to be in local time.
-The time set code adds timezone offset, but nothing else manages timezones.
+The default configuration is to use time information from esp-link. If you use my
+proposed addition (to esp-link), DST is automatically handled. If you use a real RTC
+then you need to put the clock in local time, and handle DST yourself.
 
-Note : I'm not using the Arduino IDE, I've supplied a Makefile. Using the sources
+I don't use the Arduino IDE, I've supplied a Makefile. Using the sources
 with the Arduino IDE should be possible too, it's been tested several times during
 the development.
 
