@@ -25,6 +25,7 @@ This is what this software is based on :
 - a LDR (light dependent resistor) to detect day/night
 - a BMP180 sensor to monitor temperature and air pressure
 - two analog hall effect sensors (SS49E for instance) to detect door open/close
+- two push buttons to force door open/close
 
 The code can periodically feed environmental data to ThingSpeak, and to MQTT.
 
