@@ -83,7 +83,7 @@ Sunset::~Sunset() {
   rest = 0;
 }
 
-void Sunset::query(char *lat, char *lon) {
+void Sunset::query(char *lat, char *lon, char *msg) {
   this->lat = lat;
   this->lon = lon;
 
@@ -103,6 +103,11 @@ void Sunset::query(char *lat, char *lon) {
     Serial.println(err);
   } else {
     Serial.print("Sunset : initialized ");
+    if (msg != NULL) {
+      Serial.print("(");
+      Serial.print(msg);
+      Serial.print(") ");
+    }
     Serial.println(ss_url);
   }
 
@@ -156,7 +161,7 @@ void Sunset::DebugPrint(const char *prefix, time_t tm, const char *suffix) {
 }
 
 void Sunset::query() {
-  query("36.7201600", "-4.4203400");	// Demo coordinates from their site
+  query("36.7201600", "-4.4203400", "demo");	// Demo coordinates from their site
 }
 
 /*
@@ -273,12 +278,16 @@ enum lightState Sunset::loop(time_t t) {
     return LIGHT_NONE;
   }
 
-  if ((day(t) != day(today)) || (month(t) != month(today)) || (year(t) != year(today))) {
-    query(lat, lon);
+  int	h = hour(t), m = minute(t), s = second(t);
+  int	dd = day(t), mm = month(t), yy = year(t);
+
+  if ((dd != day(today)) || (mm != month(today)) || (yy != year(today))) {
+    char _today[32];
+    sprintf(_today, "%04d-%02d-%02d, %02d:%02d", yy, mm, dd, h, m);
+    query(lat, lon, _today);
     today = t;
   }
 
-  int	h = hour(t), m = minute(t), s = second(t);
   time_t tt = h * 3600L + m * 60L + s;
 
   if (tt < sunrise) {

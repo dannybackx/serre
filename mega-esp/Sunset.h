@@ -31,7 +31,7 @@ public:
   Sunset();
   ~Sunset();
   void query();
-  void query(char *lat, char *lon);
+  void query(char *lat, char *lon, char *msg = NULL);
   enum lightState loop(time_t);
   void reset();
 
