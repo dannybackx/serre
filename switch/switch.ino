@@ -229,13 +229,13 @@ void setup() {
 
 void PinOn() {
   state = 1;
-  digitalWrite(SSR_PIN, 0);
+  digitalWrite(SSR_PIN, 1);
   digitalWrite(LED_PIN, 1);
 }
 
 void PinOff() {
   state = 0;
-  digitalWrite(SSR_PIN, 1);
+  digitalWrite(SSR_PIN, 0);
   digitalWrite(LED_PIN, 0);
 }
 
