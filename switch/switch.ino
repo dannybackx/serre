@@ -53,6 +53,7 @@ int mqtt_initial = 1;
 bool IsDST(int day, int month, int dow);
 char *GetSchedule();
 void SetSchedule(const char *desc);
+void PinOff();
 
 // All kinds of variables
 #ifdef DO_BLINK
@@ -60,6 +61,7 @@ int		count = 0;
 #endif
 int		verbose = 0;
 String		ips, gws;
+int		state = 0;
 
 // Schedule
 struct item {
@@ -215,8 +217,9 @@ void setup() {
   client.setCallback(callback);
 
   // Pin to the (Solid state) Relay must be output, and 0
-  pinMode(SSR_PIN, OUTPUT); digitalWrite(SSR_PIN, 1);
-  pinMode(LED_PIN, OUTPUT); digitalWrite(LED_PIN, 0);
+  pinMode(SSR_PIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
+  PinOff();
 
   // Default schedule
   SetSchedule("21:00,1,22:35,0,06:45,1,07:35,0");
@@ -225,13 +228,19 @@ void setup() {
 }
 
 void PinOn() {
+  state = 1;
   digitalWrite(SSR_PIN, 0);
   digitalWrite(LED_PIN, 1);
 }
 
 void PinOff() {
+  state = 0;
   digitalWrite(SSR_PIN, 1);
   digitalWrite(LED_PIN, 0);
+}
+
+int GetState() {
+  return state;
 }
 
 int	counter = 0;
@@ -298,6 +307,9 @@ void callback(char *topic, byte *payload, unsigned int length) {
   } else if (strcmp(topic, "/switch/off") == 0) {	// Turn the relay off
     Serial.println("SSR off");
     PinOff();
+  } else if (strcmp(topic, "/switch/state") == 0) {	// Query on/off state
+    sprintf(reply, "Switch %s", GetState() ? "on" : "off");
+    client.publish("/switch/relay", reply);
   } else if (strcmp(topic, "/switch/query") == 0) {	// Query schedule
     client.publish("/switch/schedule", GetSchedule());
   } else if (strcmp(topic, "/switch/network") == 0) {	// Query network parameters
