@@ -18,6 +18,7 @@ extern "C" {
 static int OTAprev;
 
 #include "secrets.h"
+#include "personal.h"
 #include "buildinfo.h"
 
 struct mywifi {
@@ -230,13 +231,13 @@ void setup() {
 void PinOn() {
   state = 1;
   digitalWrite(SSR_PIN, 1);
-  digitalWrite(LED_PIN, 1);
+  digitalWrite(LED_PIN, 0);
 }
 
 void PinOff() {
   state = 0;
   digitalWrite(SSR_PIN, 0);
-  digitalWrite(LED_PIN, 0);
+  digitalWrite(LED_PIN, 1);
 }
 
 int GetState() {
