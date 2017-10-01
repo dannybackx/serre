@@ -46,8 +46,13 @@ PubSubClient	client(espClient);
 const char* mqtt_server = MQTT_HOST;
 const int mqtt_port = MQTT_PORT;
 
-const char *mqtt_topic = "/switch";
-const char *reply_topic = "/switch/reply";
+// #define	SWITCH_TOPIC	"/switch"
+#define	SWITCH_TOPIC	"/testswitch"
+
+const char *mqtt_topic = SWITCH_TOPIC;
+const char *reply_topic = SWITCH_TOPIC "/reply";
+const char *relay_topic = SWITCH_TOPIC "/relay";
+
 int mqtt_initial = 1;
 
 // Forward
@@ -144,7 +149,7 @@ void setup() {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
-      client.publish(mqtt_topic, "OTA start");
+      client.publish(reply_topic, "OTA start");
     }
   });
   ArduinoOTA.onEnd([]() {
@@ -152,7 +157,7 @@ void setup() {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
-      client.publish(mqtt_topic, "OTA complete");
+      client.publish(reply_topic, "OTA complete");
     }
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
@@ -173,7 +178,7 @@ void setup() {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
-      client.publish(mqtt_topic, "OTA Error");
+      client.publish(reply_topic, "OTA Error");
     }
   });
 
@@ -193,8 +198,12 @@ void setup() {
     t = sntp_get_current_timestamp();
   }
 
+  int _isdst = 0;
+
   // DST handling
   if (IsDST(day(t), month(t), dayOfWeek(t))) {
+    _isdst = 1;
+
     // Set TZ again
     sntp_stop();
     (void)sntp_set_timezone(MY_TIMEZONE + 1);
@@ -209,13 +218,17 @@ void setup() {
     }
   }
 
-  tsnow = localtime(&t);
-  strftime(buffer, sizeof(buffer), " %F %T", tsnow);
-  Serial.println(buffer);
-
   // MQTT
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
+
+  tsnow = localtime(&t);
+  if (_isdst)
+    strftime(buffer, sizeof(buffer), "Switch boot %F %T DST", tsnow);
+  else
+    strftime(buffer, sizeof(buffer), "Switch boot %F %T", tsnow);
+  Serial.println(buffer);
+  client.publish(reply_topic, buffer);
 
   // Pin to the (Solid state) Relay must be output, and 0
   pinMode(SSR_PIN, OUTPUT);
@@ -249,7 +262,9 @@ int	oldminute, newminute, oldhour, newhour;
 time_t	the_time;
 
 void loop() {
-    ArduinoOTA.handle();
+  char buffer[80];
+
+  ArduinoOTA.handle();
 
   // MQTT
   if (!client.connected()) {
@@ -280,10 +295,15 @@ void loop() {
     // Check if this is a timestamp with processing
     for (int i=0; i<nitems; i++) {
       if (items[i].hour == newhour && items[i].minute == newminute) {
-	if (items[i].state == 1)
+	if (items[i].state == 1) {
 	  PinOn();
-	else
+	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "on");
+	  client.publish(relay_topic, buffer);
+	} else {
 	  PinOff();
+	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "off");
+	  client.publish(relay_topic, buffer);
+	}
         return;
       }
     }
@@ -302,24 +322,24 @@ void callback(char *topic, byte *payload, unsigned int length) {
   }
   Serial.println("}");
 
-         if (strcmp(topic, "/switch/on") == 0) {	// Turn the relay on
+         if (strcmp(topic, SWITCH_TOPIC "/on") == 0) {	// Turn the relay on
     Serial.println("SSR on");
     PinOn();
-  } else if (strcmp(topic, "/switch/off") == 0) {	// Turn the relay off
+  } else if (strcmp(topic, SWITCH_TOPIC "/off") == 0) {	// Turn the relay off
     Serial.println("SSR off");
     PinOff();
-  } else if (strcmp(topic, "/switch/state") == 0) {	// Query on/off state
+  } else if (strcmp(topic, SWITCH_TOPIC "/state") == 0) {	// Query on/off state
     sprintf(reply, "Switch %s", GetState() ? "on" : "off");
-    client.publish("/switch/relay", reply);
-  } else if (strcmp(topic, "/switch/query") == 0) {	// Query schedule
-    client.publish("/switch/schedule", GetSchedule());
-  } else if (strcmp(topic, "/switch/network") == 0) {	// Query network parameters
+    client.publish(relay_topic, reply);
+  } else if (strcmp(topic, SWITCH_TOPIC "/query") == 0) {	// Query schedule
+    client.publish(SWITCH_TOPIC "/schedule", GetSchedule());
+  } else if (strcmp(topic, SWITCH_TOPIC "/network") == 0) {	// Query network parameters
     sprintf(reply, "SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
     client.publish(reply_topic, reply);
-  } else if (strcmp(topic, "/switch/program") == 0) {	// Set the schedule according to the string provided
+  } else if (strcmp(topic, SWITCH_TOPIC "/program") == 0) {	// Set the schedule according to the string provided
     SetSchedule((char *)payload);
-    client.publish("/switch/schedule", "Ok");
-  } else if (strcmp(topic, "/switch/time") == 0) {	// Query the device's current time
+    client.publish(SWITCH_TOPIC "/schedule", "Ok");
+  } else if (strcmp(topic, SWITCH_TOPIC "/time") == 0) {	// Query the device's current time
     struct tm *tmp = localtime(&the_time);
     strftime(reply, sizeof(reply), "%F %T", tmp);
     client.publish(reply_topic, reply);
@@ -339,15 +359,15 @@ void reconnect(void) {
       // Once connected, publish an announcement...
       if (mqtt_initial) {
 	strftime(buffer, sizeof(buffer), "boot %F %T", tsnow);
-        client.publish(mqtt_topic, buffer);
+        client.publish(reply_topic, buffer);
 	mqtt_initial = 0;
       } else {
 	strftime(buffer, sizeof(buffer), "reconnect %F %T", tsnow);
-        client.publish(mqtt_topic, buffer);
+        client.publish(reply_topic, buffer);
       }
 
       // ... and (re)subscribe
-      client.subscribe("/switch/#");
+      client.subscribe(SWITCH_TOPIC "/#");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
