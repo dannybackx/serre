@@ -77,7 +77,7 @@ struct EspTestProduction {
   int test;
 } esplist [] = {
   { "testesp", 1 },
-  { "d1mini3", 1 },
+  { "d1mini2", 1 },
   { "kippen", 0 },
   { NULL, 0 }
 };

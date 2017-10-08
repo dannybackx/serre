@@ -54,3 +54,8 @@ and personalize those too.
 This is what the setup looks like :
 - production board under construction
   ![Production board](Kippen-20170922-v2.png)
+
+You can query all kinds of things like this :
+  mosquitto_pub -h pi3 -m kippen -t /light/query
+  mosquitto_pub -h pi3 -m kippen -t /boot/query
+  mosquitto_pub -h pi3 -m kippen -t /BMP180/query

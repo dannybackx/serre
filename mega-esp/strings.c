@@ -43,29 +43,12 @@ const char startup_text1[] PROGMEM =		"\nArduino Mega Wifi Chicken Hatch";
 const char startup_text2[] PROGMEM =		"(c) 2016-2017 by Danny Backx\n";
 const char unmatched_command[] PROGMEM =	"Unmatched command {";
 
-const char time_query[] PROGMEM =		"/arduino/digital/time/query";
-const char boot_time_query[] PROGMEM =		"/arduino/digital/boot/query";
-const char rcmd_time_set[] PROGMEM =		"/arduino/digital/time/set/";
-const char rcmd_timezone_set[] PROGMEM =	"/arduino/digital/timezone/set/";
-
-const char query_bmp180[] PROGMEM =		"/arduino/digital/bmp180";
-const char hatch_query[] PROGMEM =		"/arduino/digital/hatch/query";
-const char hatch_up[] PROGMEM =			"/arduino/digital/hatch/up";
-const char hatch_down[] PROGMEM =		"/arduino/digital/hatch/down";
-const char hatch_stop[] PROGMEM =		"/arduino/digital/hatch/stop";
 const char hatch_use_motor[] PROGMEM =		"Hatch : use motor ";
 const char hatch_state_fmt[] PROGMEM =		"Hatch state %d";
 
 const char set_schedule_to[] PROGMEM =		"Schedule set to : ";
-const char schedule_query[] PROGMEM =		"/arduino/digital/schedule/query";
-const char schedule_update[] PROGMEM =		"/arduino/digital/schedule/set/";
 const char schedule[] PROGMEM =			"Schedule : ";
 
-const char light_sensor_query[] PROGMEM =	"/arduino/digital/light/query";
-const char light_duration_query[] PROGMEM =	"/arduino/digital/light/time/query";
-const char light_duration_set[] PROGMEM =	"/arduino/digital/light/time/set";
-
-const char version_query[] PROGMEM =		"/arduino/digital/version/query";
 const char no_info[] PROGMEM =			"No version info available";
 const char server_build[] PROGMEM =		"Server build ";
 const char rtc_failure[] PROGMEM =		"Unable to sync with the RTC";
@@ -74,9 +57,6 @@ const char answer_ok[] PROGMEM =		"Ok";
 const char ready[] PROGMEM =			"Ready";
 const char ready_wifi[] PROGMEM =		"Ready, IP address %d.%d.%d.%d";
 const char boot[] PROGMEM =			"Boot";
-
-const char maxtime_query[] PROGMEM =		"/arduino/digital/maxtime/query";
-const char maxtime_set[] PROGMEM =		"/arduino/digital/maxtime/set/";
 
 const char ts_url[] PROGMEM =			"api.thingspeak.com";
 

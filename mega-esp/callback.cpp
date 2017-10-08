@@ -169,13 +169,15 @@ void WifiStatusCallback(void *response) {
     res->popArg(&status, 1);
 
     if (status == STATION_GOT_IP) {
+#if 0
       Serial.println("Network status change\n");
-#if 1
+#else
       // Share our IP address
       uint32_t ip, nm, gw;
       cmd.GetWifiInfo(&ip, &nm, &gw);
 
-      sprintf(buffer, ", IP %d.%d.%d.%d", IP(ip, 0), IP(ip, 1), IP(ip, 2), IP(ip, 3));
+      sprintf(buffer, "Network status change, IP %d.%d.%d.%d",
+        IP(ip, 0), IP(ip, 1), IP(ip, 2), IP(ip, 3));
       Serial.println(buffer);
 #endif
     }
