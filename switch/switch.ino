@@ -3,6 +3,10 @@
  *
  * Copyright (c) 2017 by Danny Backx
  */
+
+#define	PRODUCTION
+#undef	USE_DST
+
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <TimeLib.h>
@@ -46,14 +50,20 @@ PubSubClient	client(espClient);
 const char* mqtt_server = MQTT_HOST;
 const int mqtt_port = MQTT_PORT;
 
-// #define	SWITCH_TOPIC	"/switch"
+#ifdef PRODUCTION
+#define	SWITCH_TOPIC	"/switch"
+#define OTA_ID		"OTA-Switch"
+#else
 #define	SWITCH_TOPIC	"/testswitch"
+#define OTA_ID		"OTA-TestSwitch"
+#endif
 
 const char *mqtt_topic = SWITCH_TOPIC;
 const char *reply_topic = SWITCH_TOPIC "/reply";
 const char *relay_topic = SWITCH_TOPIC "/relay";
 
 int mqtt_initial = 1;
+int _isdst = 0;
 
 // Forward
 bool IsDST(int day, int month, int dow);
@@ -83,7 +93,7 @@ item *items;
 #define	VERBOSE_4	0x08
 
 struct tm *tsnow;
-char	buffer[64];
+// char	buffer[64];
 
 // Forward declarations
 void callback(char * topic, byte *payload, unsigned int length);
@@ -91,6 +101,8 @@ void reconnect(void);
 
 // Arduino setup function
 void setup() {
+  char buffer[80];
+
   Serial.begin(9600);
   delay(3000);    // Allow you to plug in the console
 
@@ -184,6 +196,7 @@ void setup() {
 
   ArduinoOTA.setPort(8266);
   ArduinoOTA.setHostname(OTA_ID);
+  WiFi.hostname(OTA_ID);
   // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.begin();
@@ -198,8 +211,7 @@ void setup() {
     t = sntp_get_current_timestamp();
   }
 
-  int _isdst = 0;
-
+#ifdef USE_DST
   // DST handling
   if (IsDST(day(t), month(t), dayOfWeek(t))) {
     _isdst = 1;
@@ -217,15 +229,17 @@ void setup() {
       t = sntp_get_current_timestamp();
     }
   }
-
+#endif
   // MQTT
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
 
   tsnow = localtime(&t);
+#ifdef USE_DST
   if (_isdst)
-    strftime(buffer, sizeof(buffer), "Switch boot %F %T DST", tsnow);
+    strftime(buffer, sizeof(buffer), "Switch boot DST %F %T", tsnow);
   else
+#endif
     strftime(buffer, sizeof(buffer), "Switch boot %F %T", tsnow);
   Serial.println(buffer);
   client.publish(reply_topic, buffer);
@@ -350,6 +364,8 @@ void callback(char *topic, byte *payload, unsigned int length) {
 }
 
 void reconnect(void) {
+  char buffer[80];
+
   // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
