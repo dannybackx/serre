@@ -345,9 +345,9 @@ void loop() {
       int t1 = items[i-1].hour * 60 + items[i-1].minute;
       int t2 = items[i].hour * 60 + items[i].minute;
 
-      sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
-        newhour, newminute, i, tn, t1, t2, items[i].state, state);
-      client.publish(relay_topic, buffer);
+      // sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
+      //   newhour, newminute, i, tn, t1, t2, items[i].state, state);
+      // client.publish(relay_topic, buffer);
 
       if (t1 <= tn && tn < t2) {
 	if (items[i].state == 1 && state == 0) {
@@ -361,25 +361,6 @@ void loop() {
 	}
       }
     }
-
-#if 0
-// Old version
-    // Check if this is a timestamp with processing
-    for (int i=0; i<nitems; i++) {
-      if (items[i].hour == newhour && items[i].minute == newminute) {
-	if (items[i].state == 1) {
-	  PinOn();
-	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "on");
-	  client.publish(relay_topic, buffer);
-	} else {
-	  PinOff();
-	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "off");
-	  client.publish(relay_topic, buffer);
-	}
-        return;
-      }
-    }
-#endif
   }
 }
 
