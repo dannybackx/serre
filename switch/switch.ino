@@ -6,6 +6,7 @@
 
 #define	PRODUCTION
 #undef	USE_DST
+#undef	USE_SERIAL
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
@@ -103,6 +104,7 @@ void reconnect(void);
 void setup() {
   char buffer[80];
 
+#ifdef USE_SERIAL
   Serial.begin(9600);
   delay(3000);    // Allow you to plug in the console
 
@@ -113,8 +115,10 @@ void setup() {
   Serial.printf("Free sketch space %d, application build %s %s\n",
     ESP.getFreeSketchSpace(), _BuildInfo.date, _BuildInfo.time);
 
-  // Try to connect to WiFi
   Serial.print("Starting WiFi ");
+#endif
+
+  // Try to connect to WiFi
   WiFi.mode(WIFI_STA);
 
   int wcr = WL_IDLE_STATUS;
@@ -123,7 +127,9 @@ void setup() {
     while (wifi_tries-- >= 0) {
       // Serial.printf("\nTrying (%d %d) %s %s .. ", ix, wifi_tries, mywifi[ix].ssid, mywifi[ix].pass);
       WiFi.begin(mywifi[ix].ssid, mywifi[ix].pass);
+#ifdef USE_SERIAL
       Serial.print(".");
+#endif
       wcr = WiFi.waitForConnectResult();
       if (wcr == WL_CONNECTED)
         break;
@@ -132,7 +138,9 @@ void setup() {
 
   // Reboot if we didn't manage to connect to WiFi
   if (wcr != WL_CONNECTED) {
+#ifdef USE_SERIAL
     Serial.printf("WiFi Failed\n");
+#endif
     delay(2000);
     ESP.restart();
   }
@@ -141,10 +149,13 @@ void setup() {
   ips = ip.toString();
   IPAddress gw = WiFi.gatewayIP();
   gws = gw.toString();
+#ifdef USE_SERIAL
   Serial.print(" MAC "); Serial.print(WiFi.macAddress());
   Serial.printf(", SSID {%s}, IP %s, GW %s\n", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
 
   Serial.println("Initialize SNTP ...");
+#endif
+
   // Set up real time clock
   sntp_init();
   sntp_setservername(0, (char *)"ntp.scarlet.be");
@@ -154,9 +165,13 @@ void setup() {
   // Note : DST processing comes later
   (void)sntp_set_timezone(MY_TIMEZONE);
 
+#ifdef USE_SERIAL
   Serial.printf("Starting OTA listener ...\n");
+#endif
   ArduinoOTA.onStart([]() {
+#ifdef USE_SERIAL
     Serial.print("OTA Start : ");
+#endif
 
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
@@ -165,7 +180,9 @@ void setup() {
     }
   });
   ArduinoOTA.onEnd([]() {
+#ifdef USE_SERIAL
     Serial.println("\nOTA Complete");
+#endif
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
@@ -175,17 +192,21 @@ void setup() {
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     int curr;
     curr = (progress / (total / 50));
+#ifdef USE_SERIAL
     if (OTAprev < curr)
       Serial.print('#');
+#endif
     OTAprev = curr;
   });
   ArduinoOTA.onError([](ota_error_t error) {
+#ifdef USE_SERIAL
     Serial.printf("OTA Error[%u]: ", error);
     if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
     else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
     else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
     else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
     else if (error == OTA_END_ERROR) Serial.println("End Failed");
+#endif
 
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
@@ -203,10 +224,14 @@ void setup() {
 
   time_t t;
   // Wait for a correct time, and report it
+#ifdef USE_SERIAL
   Serial.printf("Time ");
+#endif
   t = sntp_get_current_timestamp();
   while (t < 0x1000) {
+#ifdef USE_SERIAL
     Serial.printf(".");
+#endif
     delay(1000);
     t = sntp_get_current_timestamp();
   }
@@ -224,7 +249,10 @@ void setup() {
     sntp_init();
     t = sntp_get_current_timestamp();
     while (t < 0x1000) {
+#ifdef USE_SERIAL
       Serial.printf(".");
+#endif
+    strftime(buffer, sizeof(buffer), "Switch boot %F %T", tsnow);
       delay(1000);
       t = sntp_get_current_timestamp();
     }
@@ -241,7 +269,10 @@ void setup() {
   else
 #endif
     strftime(buffer, sizeof(buffer), "Switch boot %F %T", tsnow);
+#ifdef USE_SERIAL
   Serial.println(buffer);
+#endif
+    strftime(buffer, sizeof(buffer), "Switch boot %F %T", tsnow);
   client.publish(reply_topic, buffer);
 
   // Pin to the (Solid state) Relay must be output, and 0
@@ -251,8 +282,11 @@ void setup() {
 
   // Default schedule
   SetSchedule("21:00,1,22:35,0,06:45,1,07:35,0");
+  // SetSchedule("06:45,1,07:35,0,21:00,1,22:35,0");
 
+#ifdef USE_SERIAL
   Serial.printf("Ready!\n");
+#endif
 }
 
 void PinOn() {
@@ -306,6 +340,30 @@ void loop() {
       return;
     }
 
+    int tn = newhour * 60 + newminute;
+    for (int i=1; i<nitems; i++) {
+      int t1 = items[i-1].hour * 60 + items[i-1].minute;
+      int t2 = items[i].hour * 60 + items[i].minute;
+
+      sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
+        newhour, newminute, i, tn, t1, t2, items[i].state, state);
+      client.publish(relay_topic, buffer);
+
+      if (t1 <= tn && tn < t2) {
+	if (items[i].state == 1 && state == 0) {
+	  PinOn();
+	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "on");
+	  client.publish(relay_topic, buffer);
+	} else if (items[i].state == 0 && state == 1) {
+	  PinOff();
+	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "off");
+	  client.publish(relay_topic, buffer);
+	}
+      }
+    }
+
+#if 0
+// Old version
     // Check if this is a timestamp with processing
     for (int i=0; i<nitems; i++) {
       if (items[i].hour == newhour && items[i].minute == newminute) {
@@ -321,6 +379,7 @@ void loop() {
         return;
       }
     }
+#endif
   }
 }
 
@@ -328,6 +387,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
   char *pl = (char *)payload;
   char reply[80];
 
+#ifdef USE_SERIAL
   Serial.print("Message arrived, topic [");
   Serial.print(topic);
   Serial.print("], payload {");
@@ -335,12 +395,17 @@ void callback(char *topic, byte *payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println("}");
+#endif
 
          if (strcmp(topic, SWITCH_TOPIC "/on") == 0) {	// Turn the relay on
+#ifdef USE_SERIAL
     Serial.println("SSR on");
+#endif
     PinOn();
   } else if (strcmp(topic, SWITCH_TOPIC "/off") == 0) {	// Turn the relay off
+#ifdef USE_SERIAL
     Serial.println("SSR off");
+#endif
     PinOff();
   } else if (strcmp(topic, SWITCH_TOPIC "/state") == 0) {	// Query on/off state
     sprintf(reply, "Switch %s", GetState() ? "on" : "off");
@@ -368,10 +433,14 @@ void reconnect(void) {
 
   // Loop until we're reconnected
   while (!client.connected()) {
+#ifdef USE_SERIAL
     Serial.print("Attempting MQTT connection...");
+#endif
     // Attempt to connect
     if (client.connect(MQTT_CLIENT)) {
+#ifdef USE_SERIAL
       Serial.println("connected");
+#endif
       // Once connected, publish an announcement...
       if (mqtt_initial) {
 	strftime(buffer, sizeof(buffer), "boot %F %T", tsnow);
@@ -385,9 +454,11 @@ void reconnect(void) {
       // ... and (re)subscribe
       client.subscribe(SWITCH_TOPIC "/#");
     } else {
+#ifdef USE_SERIAL
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
+#endif
       // Wait 5 seconds before retrying
       delay(5000);
     }
@@ -396,11 +467,15 @@ void reconnect(void) {
 
 extern "C" {
 void Debug(char *s) {
+#ifdef USE_SERIAL
   Serial.print(s);
+#endif
 }
 
 void DebugInt(int i) {
+#ifdef USE_SERIAL
   Serial.print(i);
+#endif
 }
 
 char *getenv(const char *name) {
@@ -430,6 +505,11 @@ bool IsDST(int day, int month, int dow)
   return previousSunday <= 0;
 }
 
+/*
+ * Set the schedule based on a formatted string.
+ *
+ * Example format : SetSchedule("21:00,1,22:35,0,06:45,1,07:35,0");
+ */
 void SetSchedule(const char *desc) {
   const char *p;
   int count;
@@ -447,14 +527,16 @@ void SetSchedule(const char *desc) {
     items = NULL;
   }
 
-  nitems = (count + 1) / 2;
+  nitems = (count + 1) / 2;	// Number of timestamps provided is half the commas
+  nitems += 2;			// For beginning and end of list
+
   items = (item *)malloc(sizeof(item) * nitems);
 
   // DebugInt(count); Debug(" -> "); DebugInt(nitems); Debug(" items\n");
 
   // Convert CSV string into items
   p = desc;
-  for (int i=0; i<nitems; i++) {
+  for (int i=1; i<nitems-1; i++) {
     int hr, min, val, nchars;
     // Debug("sscanf("); Debug(p); Debug(")\n");
     sscanf(p, "%d:%d,%d%n", &hr, &min, &val, &nchars);
@@ -468,7 +550,33 @@ void SetSchedule(const char *desc) {
     items[i].state = val;
   }
 
-  // PrintSchedule();
+  // Now add a first and last entry
+  items[0].hour = 0;
+  items[0].minute = 0;
+  items[0].state = items[nitems-2].state;
+  items[nitems-1].hour = 24;
+  items[nitems-1].minute = 0;
+  items[nitems-1].state = items[nitems-2].state;
+
+  // Sort the damn thing
+  for (int i=1; i<nitems; i++) {
+    int m=i;
+    int tm = items[i].hour * 60 + items[i].minute;
+    // Find lowest value
+    for (int j=i+1; j<nitems; j++) {
+      int tj = items[j].hour * 60 + items[j].minute;
+      if (tj < tm) {
+        m = j;
+	tm = tj;
+      }
+    }
+    // Swap if necessary
+    if (i != m) {
+      struct item xx = items[i];
+      items[i] = items[m];
+      items[m] = xx;
+    }
+  }
 }
 
 char *GetSchedule() {
