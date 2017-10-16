@@ -351,17 +351,17 @@ void loop() {
 
       if (t1 <= tn && tn < t2) {
 	if (items[i-1].state == 1 && state == 0) {
-          sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
-            newhour, newminute, i, tn, t1, t2, items[i].state, state);
-          client.publish(relay_topic, buffer);
+          // sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
+          //   newhour, newminute, i, tn, t1, t2, items[i].state, state);
+          // client.publish(relay_topic, buffer);
 
 	  PinOn();
 	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "on");
 	  client.publish(relay_topic, buffer);
 	} else if (items[i-1].state == 0 && state == 1) {
-          sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
-            newhour, newminute, i, tn, t1, t2, items[i].state, state);
-          client.publish(relay_topic, buffer);
+          // sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
+          //   newhour, newminute, i, tn, t1, t2, items[i].state, state);
+          // client.publish(relay_topic, buffer);
 
 	  PinOff();
 	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "off");
