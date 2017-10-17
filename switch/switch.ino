@@ -156,14 +156,14 @@ void setup() {
   Serial.println("Initialize SNTP ...");
 #endif
 
+  // This is a bad idea : fixed time zone, .. but it works for now.
+  // Note : DST processing comes later
+  (void)sntp_set_timezone(MY_TIMEZONE);
+
   // Set up real time clock
   sntp_init();
   sntp_setservername(0, (char *)"ntp.scarlet.be");
   sntp_setservername(1, (char *)"ntp.belnet.be");
-
-  // This is a bad idea : fixed time zone, .. but it works for now.
-  // Note : DST processing comes later
-  (void)sntp_set_timezone(MY_TIMEZONE);
 
 #ifdef USE_SERIAL
   Serial.printf("Starting OTA listener ...\n");
@@ -252,7 +252,6 @@ void setup() {
 #ifdef USE_SERIAL
       Serial.printf(".");
 #endif
-    strftime(buffer, sizeof(buffer), "Switch boot %F %T", tsnow);
       delay(1000);
       t = sntp_get_current_timestamp();
     }
@@ -430,6 +429,10 @@ void reconnect(void) {
 #ifdef USE_SERIAL
       Serial.println("connected");
 #endif
+      // Get the time
+      time_t t = sntp_get_current_timestamp();
+      tsnow = localtime(&t);
+
       // Once connected, publish an announcement...
       if (mqtt_initial) {
 	strftime(buffer, sizeof(buffer), "boot %F %T", tsnow);
