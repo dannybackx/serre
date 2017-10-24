@@ -5,8 +5,8 @@
  */
 
 #define	PRODUCTION
-#undef	USE_DST
-#undef	USE_SERIAL
+#define	USE_DST
+#define	SNTP_API
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
@@ -94,11 +94,11 @@ item *items;
 #define	VERBOSE_4	0x08
 
 struct tm *tsnow;
-// char	buffer[64];
 
 // Forward declarations
 void callback(char * topic, byte *payload, unsigned int length);
 void reconnect(void);
+time_t mySntpInit();
 
 // Arduino setup function
 void setup() {
@@ -156,14 +156,17 @@ void setup() {
   Serial.println("Initialize SNTP ...");
 #endif
 
-  // This is a bad idea : fixed time zone, .. but it works for now.
+  // Set up real time clock
+#ifdef SNTP_APIS
   // Note : DST processing comes later
   (void)sntp_set_timezone(MY_TIMEZONE);
-
-  // Set up real time clock
   sntp_init();
   sntp_setservername(0, (char *)"ntp.scarlet.be");
   sntp_setservername(1, (char *)"ntp.belnet.be");
+#else
+  // configTime(MY_TIMEZONE * 3600, 3600, (char *)"ntp.scarlet.be", (char *)"ntp.belnet.be");
+  configTime(7200, 3600, (char *)"ntp.scarlet.be", (char *)"ntp.belnet.be");
+#endif
 
 #ifdef USE_SERIAL
   Serial.printf("Starting OTA listener ...\n");
@@ -222,57 +225,13 @@ void setup() {
 
   ArduinoOTA.begin();
 
-  time_t t;
-  // Wait for a correct time, and report it
-#ifdef USE_SERIAL
-  Serial.printf("Time ");
-#endif
-  t = sntp_get_current_timestamp();
-  while (t < 0x1000) {
-#ifdef USE_SERIAL
-    Serial.printf(".");
-#endif
-    delay(1000);
-    t = sntp_get_current_timestamp();
-  }
+  mySntpInit();
 
-#ifdef USE_DST
-  // DST handling
-  if (IsDST(day(t), month(t), dayOfWeek(t))) {
-    _isdst = 1;
-
-    // Set TZ again
-    sntp_stop();
-    (void)sntp_set_timezone(MY_TIMEZONE + 1);
-
-    // Re-initialize/fetch
-    sntp_init();
-    t = sntp_get_current_timestamp();
-    while (t < 0x1000) {
-#ifdef USE_SERIAL
-      Serial.printf(".");
-#endif
-      delay(1000);
-      t = sntp_get_current_timestamp();
-    }
-  }
-#endif
   // MQTT
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
 
-  tsnow = localtime(&t);
-#ifdef USE_DST
-  if (_isdst)
-    strftime(buffer, sizeof(buffer), "Switch boot DST %F %T", tsnow);
-  else
-#endif
-    strftime(buffer, sizeof(buffer), "Switch boot %F %T", tsnow);
-#ifdef USE_SERIAL
-  Serial.println(buffer);
-#endif
-    strftime(buffer, sizeof(buffer), "Switch boot %F %T", tsnow);
-  client.publish(reply_topic, buffer);
+  // Note don't use MQTT here yet, we're probably not connected yet
 
   // Pin to the (Solid state) Relay must be output, and 0
   pinMode(SSR_PIN, OUTPUT);
@@ -331,7 +290,11 @@ void loop() {
     oldminute = newminute;
     oldhour = newhour;
 
+#ifdef SNTP_API
     the_time = sntp_get_current_timestamp();
+#else
+    the_time = time(NULL);
+#endif
     newhour = hour(the_time);
     newminute = minute(the_time);
 
@@ -409,6 +372,9 @@ void callback(char *topic, byte *payload, unsigned int length) {
   } else if (strcmp(topic, SWITCH_TOPIC "/time") == 0) {	// Query the device's current time
     struct tm *tmp = localtime(&the_time);
     strftime(reply, sizeof(reply), "%F %T", tmp);
+    char *p = reply + strlen(reply);
+    int tz = sntp_get_timezone();
+    sprintf(p, ", tz %d", tz);
     client.publish(reply_topic, reply);
   } else {
     // Silently ignore, this includes our own replies
@@ -430,12 +396,17 @@ void reconnect(void) {
       Serial.println("connected");
 #endif
       // Get the time
-      time_t t = sntp_get_current_timestamp();
+      time_t t = mySntpInit();
+
       tsnow = localtime(&t);
 
       // Once connected, publish an announcement...
       if (mqtt_initial) {
 	strftime(buffer, sizeof(buffer), "boot %F %T", tsnow);
+	char *p = buffer + strlen(buffer);
+	int tz = sntp_get_timezone();
+	sprintf(p, ", timezone is set to %d", tz);
+
         client.publish(reply_topic, buffer);
 	mqtt_initial = 0;
       } else {
@@ -597,4 +568,52 @@ char *GetSchedule() {
     len = strlen(r);
   }
   return r;
+}
+
+time_t mySntpInit() {
+  time_t t;
+
+  // Wait for a correct time, and report it
+#ifdef USE_SERIAL
+  Serial.printf("Time ");
+#endif
+#ifdef SNTP_API
+  t = sntp_get_current_timestamp();
+  while (t < 0x1000) {
+#ifdef USE_SERIAL
+    Serial.printf(".");
+#endif
+    delay(1000);
+    t = sntp_get_current_timestamp();
+  }
+#else
+  t = time(NULL);
+#endif
+
+#ifdef SNTP_API
+#ifdef USE_DST
+  // DST handling
+  if (IsDST(day(t), month(t), dayOfWeek(t))) {
+    _isdst = 1;
+
+    // Set TZ again
+    sntp_stop();
+    (void)sntp_set_timezone(MY_TIMEZONE + 1);
+
+    // Re-initialize/fetch
+    sntp_init();
+    t = sntp_get_current_timestamp();
+    while (t < 0x1000) {
+#ifdef USE_SERIAL
+      Serial.printf(".");
+#endif
+      delay(1000);
+      t = sntp_get_current_timestamp();
+    }
+  }
+#endif
+#else
+#warning todo
+#endif
+  return t;
 }

@@ -4,5 +4,4 @@
 #define	SSR_PIN		D3
 #define	LED_PIN		D4
 
-// #define	MY_TIMEZONE	+1
-#define	MY_TIMEZONE	+2
+#define	MY_TIMEZONE	+1

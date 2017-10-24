@@ -16,16 +16,18 @@
 # User editable area
 #====================================================================================
 
-# ESP_ROOT=/home/danny/.arduino15/packages/esp8266/hardware/esp8266/2.3.0
-# ESP_LIBS=$(ESP_ROOT)/libraries
-# BUILD_ROOT = buildroot-2.3.0
-# LIBCPP=-lstdc++
-
-ESP_ROOT=/home/danny/.arduino15/packages/esp8266/hardware/esp8266/2.2.0
+ESP_ROOT=/home/danny/.arduino15/packages/esp8266/hardware/esp8266/2.3.0
 ESP_LIBS=$(ESP_ROOT)/libraries
-BUILD_ROOT = buildroot-2.2.0
-LIBCPP=
+BUILD_ROOT = buildroot-2.3.0
+LIBCPP=-lstdc++
+
+# HWTYPE=	d1_mini
 HWTYPE=	nodemcu
+
+# ESP_ROOT=/home/danny/.arduino15/packages/esp8266/hardware/esp8266/2.2.0
+# ESP_LIBS=$(ESP_ROOT)/libraries
+# BUILD_ROOT = buildroot-2.2.0
+# LIBCPP=
 
 SKETCH = $(HOME)/src/sketchbook/esp8266/switch/switch.ino
 EXTRA_SRC =
@@ -53,7 +55,6 @@ FLASH_LAYOUT ?= eagle.flash.4m.ld
 UPLOAD_SPEED ?= 921600
 UPLOAD_PORT ?= /dev/ttyUSB0
 UPLOAD_VERB ?= -vv
-UPLOAD_HW = nodemcu
 UPLOAD_AVAHI_NAME ?= esp8266
 UPLOAD_AVAHI_IP = $(shell avahi-resolve-host-name $(UPLOAD_AVAHI_NAME) | awk '{print $$2;}')
 UPLOAD_AVAHI_PORT ?= 8266
@@ -177,7 +178,7 @@ $(MAIN_EXE): $(CORE_LIB) $(USER_OBJ)
 	perl -e 'print "Build complete. Elapsed time: ", time()-$(START_TIME),  " seconds\n\n"'
 
 upload: all
-	$(ESP_TOOL) $(UPLOAD_VERB) -cd $(UPLOAD_HW) -cb $(UPLOAD_SPEED) -cp $(UPLOAD_PORT) -ca 0x00000 -cf $(MAIN_EXE)
+	$(ESP_TOOL) $(UPLOAD_VERB) -cd $(HWTYPE) -cb $(UPLOAD_SPEED) -cp $(UPLOAD_PORT) -ca 0x00000 -cf $(MAIN_EXE)
 
 ota: all showotaip
 	$(UPLOAD_OTA_TOOL) -i $(UPLOAD_AVAHI_IP) -p $(UPLOAD_AVAHI_PORT) -f $(MAIN_EXE)
