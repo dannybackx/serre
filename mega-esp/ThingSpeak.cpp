@@ -114,7 +114,10 @@ void ThingSpeak::loop(time_t nowts) {
 	  }
 
 	  // Similar stuff via MQTT, formatted as CSV
-          sprintf(sb, gpm(mqtt_123), a, b, c, l);
+          // sprintf(sb, gpm(mqtt_123), a, b, c, l);
+	  char tfs[40];
+	  sprintf(tfs, gpm(timedate_fmt), hour(), minute(), second(), day(), month(), year());
+          sprintf(sb, "%s %d.%02d,%d,%d", tfs, a, b, c, l);
 	  mqttSend(sb);
 
 	  // Free the buffer

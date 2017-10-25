@@ -129,7 +129,7 @@ void setup() {
   Serial.println(bmp ? "ok" : "failed");
 
   // Hatch
-  sprintf(buffer, "Set up hatch ... motor control on pins %d, %d, %d\n",
+  sprintf(buffer, "Set up hatch ... motor control on pins (dir) %d, %d, (speed) %d\n",
     motor_dir1_pin, motor_dir2_pin, motor_speed_pin);
   Serial.print(buffer);
 
