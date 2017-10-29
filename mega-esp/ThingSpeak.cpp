@@ -155,7 +155,7 @@ void ThingSpeak::changeState(int motion) {
     Serial.print(gpm(ts_get_fail)); Serial.println(err);
   }
 
-  sprintf(buffer, gpm(mqtt_4), motion);
+  sprintf(buffer, "motion %d", motion);
   mqttSend(buffer);
 }
 
@@ -178,6 +178,30 @@ void ThingSpeak::changeState(int motion, int state) {
     Serial.print(gpm(ts_get_fail)); Serial.println(err);
   }
 
-  sprintf(buffer, gpm(mqtt_45), motion, state);
+  sprintf(buffer, "motion %d, state %d", motion, state);
+  mqttSend(buffer);
+}
+
+/*
+ * Report motor motion and hatch state
+ */
+void ThingSpeak::changeState(int hr, int mn, int sec, int motion, int state) {
+  // Serial.print(gpm(ts_state_change)); Serial.println(state);
+
+  sprintf(buffer, gpm(ts_45), write_key, motion, state);
+  rest->get(buffer);
+
+  int err = rest->getResponse(buffer, buffer_size);
+  if (err == HTTP_STATUS_OK) {
+    // Serial.print("TS success "); Serial.println(buffer);
+  } else if (err == 0) {
+    // timeout
+    Serial.print(gpm(ts_timeout)); Serial.println(buffer);
+  } else {
+    Serial.print(gpm(ts_get_fail)); Serial.println(err);
+  }
+
+  sprintf(buffer, "Time %02d:%02d:%02d motion %d, state %d",
+    hr, mn, sec, motion, state);
   mqttSend(buffer);
 }

@@ -10,7 +10,8 @@
 	Forked from BMP085 library by M.Grusin
 
 	version 1.0 2013/09/20 initial version
-	Verison 1.1.2 - Updated for Arduino 1.6.4 5/2015
+	Version 1.1.2 - Updated for Arduino 1.6.4 5/2015
+	BMP280 support, copyright (c) 2017 by Danny Backx
 	
 	Our example code uses the "beerware" license. You can do anything
 	you like with this code. No really, anything. If you find it useful,
@@ -90,6 +91,12 @@ class SFE_BMP180
 			// value: external unsigned int for returned value (16 bits)
 			// returns 1 for success, 0 for fail, with result in value
 
+		char readUInt8(char address, uint8_t &value);
+			// read an unsigned int (8 bits) from a BMP180 register
+			// address: BMP180 register address
+			// value: external unsigned int for returned value (8 bits)
+			// returns 1 for success, 0 for fail, with result in value
+
 		char readBytes(unsigned char *values, char length);
 			// read a number of bytes from a BMP180 register
 			// values: array of char with register address in first location [0]
@@ -106,17 +113,21 @@ class SFE_BMP180
 		uint16_t AC4,AC5,AC6; 
 		double c5,c6,mc,md,x0,x1,x2,y0,y1,y2,p0,p1,p2;
 		char _error;
+
+		uint8_t	chip_addr;	// also determine BMP180 / BMP280
 };
 
-#define BMP180_ADDR 0x77 // 7-bit address
+#define BMP180_ADDR	0x77	// 7-bit address
+#define	BMP280_ADDR	0x76
 
-#define	BMP180_REG_CONTROL 0xF4
-#define	BMP180_REG_RESULT 0xF6
+#define	BMP180_REG_CONTROL	0xF4
+#define	BMP180_REG_RESULT	0xF6
 
 #define	BMP180_COMMAND_TEMPERATURE 0x2E
 #define	BMP180_COMMAND_PRESSURE0 0x34
 #define	BMP180_COMMAND_PRESSURE1 0x74
 #define	BMP180_COMMAND_PRESSURE2 0xB4
 #define	BMP180_COMMAND_PRESSURE3 0xF4
+
 
 #endif

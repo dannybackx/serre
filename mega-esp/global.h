@@ -129,8 +129,6 @@ extern const char ts_colon[];
 extern const char mqtt_123[];
 extern const char mqtt_123b[];
 extern char *mqtt_topic;
-extern const char mqtt_4[];
-extern const char mqtt_45[];
 
 extern const char out_of_memory[];
 extern const char noip_hostname[];

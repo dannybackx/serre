@@ -162,12 +162,12 @@ int Hatch::loop(int hr, int mn, int sec) {
       switch (items[i].state) {
       case -1:
 	// Serial.print(__LINE__); Serial.print(" Down()");
-        Down();
+        Down(hr, mn, sec);
 	SetStartTime(hr, mn, sec);
 	return _moving;
       case +1:
 	// Serial.print(__LINE__); Serial.print(" Up()");
-        Up();
+        Up(hr, mn, sec);
 	SetStartTime(hr, mn, sec);
         return _moving;
       default:
@@ -279,9 +279,16 @@ void Hatch::Up(int hr, int mn, int sec) {
   Serial.print(b);
 
   SetStartTime(hr, mn, sec);
-  Up();
-}
 
+  if (_position == 1)
+    return;
+  if (_moving)
+    return;
+  motor->run(BACKWARD);
+  _moving = +1;
+  ts->changeState(hr, mn, sec, _moving, _position);
+}
+#if 0
 void Hatch::Up() {
   // Serial.print(__LINE__); Serial.println("Up()");
   if (_position == 1)
@@ -292,7 +299,7 @@ void Hatch::Up() {
   _moving = +1;
   ts->changeState(_moving, _position);
 }
-
+#endif
 void Hatch::Down(time_t ts) {
   int hr, min, sec;
   hr = hour(ts); min = minute(ts); sec = second(ts);
@@ -305,9 +312,16 @@ void Hatch::Down(int hr, int mn, int sec) {
   Serial.print(b);
 
   SetStartTime(hr, mn, sec);
-  Down();
-}
 
+  if (_position == -1)
+    return;
+  if (_moving)
+    return;
+  motor->run(FORWARD);
+  _moving = -1;
+  ts->changeState(hr, mn, sec, _moving, _position);
+}
+#if 0
 void Hatch::Down() {
   // Serial.print(__LINE__); Serial.println("Down()");
   if (_position == -1)
@@ -318,7 +332,7 @@ void Hatch::Down() {
   _moving = -1;
   ts->changeState(_moving, _position);
 }
-
+#endif
 void Hatch::Stop() {
   motor->run(RELEASE);
   _moving = 0;

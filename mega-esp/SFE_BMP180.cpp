@@ -10,7 +10,8 @@
  * Forked from BMP085 library by M.Grusin
  * 
  * version 1.0 2013/09/20 initial version
- * Verison 1.1.2 - Updated for Arduino 1.6.4 5/2015
+ * Version 1.1.2 - Updated for Arduino 1.6.4 5/2015
+ * BMP280 support, copyright (c) 2017 by Danny Backx
  * 
  * Our example code uses the "beerware" license. You can do anything
  * you like with this code. No really, anything. If you find it useful,
@@ -38,24 +39,56 @@ char SFE_BMP180::begin()
 	// Wire.begin();
 
 	// Deal with i2c not being active yet ?
-	Wire.beginTransmission(BMP180_ADDR);
+	chip_addr = BMP180_ADDR;
+	Wire.beginTransmission(chip_addr);
 	_error = Wire.endTransmission();
+
 	delay(100);
-	Wire.beginTransmission(BMP180_ADDR);
+	Wire.beginTransmission(chip_addr);
 	_error = Wire.endTransmission();
+
+	if (_error != 0) {
+	  chip_addr = BMP280_ADDR;
+	  Wire.beginTransmission(chip_addr);
+	  _error = Wire.endTransmission();
+	}
+
 	if (_error != 0) {
 	  delay(500);
-	  Wire.beginTransmission(BMP180_ADDR);
+	  chip_addr = BMP180_ADDR;
+	  Wire.beginTransmission(chip_addr);
 	  _error = Wire.endTransmission();
+
+	  if (_error != 0) {
+	    chip_addr = BMP280_ADDR;
+	    Wire.beginTransmission(chip_addr);
+	    _error = Wire.endTransmission();
+	  }
+
 	  if (_error != 0) {
 	    delay(500);
-	    Wire.beginTransmission(BMP180_ADDR);
+	    chip_addr = BMP180_ADDR;
+	    Wire.beginTransmission(chip_addr);
 	    _error = Wire.endTransmission();
 	    if (_error != 0) {
 	      return 0;
 	    }
 	  }
 	}
+
+	// Retrieve BMP180 Chip ID
+	// The Bosch BMP180 spec sheet says you can read the Chip ID to assess whether
+	// communication is working. 0x55 for BMP180, 0x58 for BMP280
+
+	uint8_t chipid;
+	int n = readUInt8(0xD0, chipid);
+	// Serial.print("BMP180 chip id is "); Serial.println(chipid);
+	if (n != 1)
+	  return 0;
+	if (chip_addr == BMP180_ADDR && chipid != 0x55)
+	  return 0;	// Error
+	if (chip_addr == BMP280_ADDR && chipid != 0x58)
+	  return 0;	// Error
 
 	// The BMP180 includes factory calibration data stored on the device.
 	// Each device has different numbers, these must be retrieved and
@@ -105,12 +138,12 @@ char SFE_BMP180::begin()
 		p2 = 3038.0 * 100.0 * pow(2,-36);
 
 		// Success!
-		return(1);
+		return 1;
 	}
 	else
 	{
 		// Error reading calibration data; bad component or connection?
-		return(0);
+		return 0;
 	}
 }
 
@@ -151,6 +184,18 @@ char SFE_BMP180::readUInt(char address, uint16_t &value)
 	return(0);
 }
 
+
+char SFE_BMP180::readUInt8(char address, uint8_t &value) {
+	unsigned char data[1];
+
+	data[0] = address;
+	if (readBytes(data, 1)) {
+		value = data[0];
+		return 1;
+	}
+	value = 0;
+	return 0;
+}
 
 char SFE_BMP180::readBytes(unsigned char *values, char length)
 // Read an array of bytes from device
