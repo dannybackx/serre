@@ -157,7 +157,7 @@ void setup() {
 #endif
 
   // Set up real time clock
-#ifdef SNTP_APIS
+#ifdef SNTP_API
   // Note : DST processing comes later
   (void)sntp_set_timezone(MY_TIMEZONE);
   sntp_init();
@@ -450,11 +450,11 @@ char *getenv(const char *name) {
 bool IsDST(int day, int month, int dow)
 {
   // January, february, and december are out.
-  if (month < 3 || month > 11)
+  if (month < 3 || month > 10)
     return false;
 
   // April to October are in
-  if (month > 3 && month < 11)
+  if (month > 3 && month < 10)
     return true;
 
   int previousSunday = day - dow;
