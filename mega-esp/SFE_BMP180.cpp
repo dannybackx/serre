@@ -23,6 +23,23 @@
 #include <stdio.h>
 #include <math.h>
 
+#include <ELClient.h>
+#include <ELClientCmd.h>
+#include <ELClientMqtt.h>
+#include <ELClientRest.h>
+
+#include <TimeLib.h>
+#include "Hatch.h"
+#include "Light.h"
+#include "ThingSpeak.h"
+#include <DS1307RTC.h>
+#include "Ifttt.h"
+#include <Dyndns.h>
+#include "Sunset.h"
+
+#include "buildinfo.h"
+#include "global.h"
+
 
 SFE_BMP180::SFE_BMP180()
 // Base library type
@@ -38,51 +55,34 @@ char SFE_BMP180::begin()
 	// Start up the Arduino's "wire" (I2C) library:
 	// Wire.begin();
 
+	int cnt = 0;
+	_error = 1;
+
 	// Deal with i2c not being active yet ?
-	chip_addr = BMP180_ADDR;
-	Wire.beginTransmission(chip_addr);
-	_error = Wire.endTransmission();
+	while (cnt++ < 10 && _error != 0) {
+	  chip_addr = ((cnt % 2) == 0) ? BMP180_ADDR : BMP280_ADDR;
 
-	delay(100);
-	Wire.beginTransmission(chip_addr);
-	_error = Wire.endTransmission();
-
-	if (_error != 0) {
-	  chip_addr = BMP280_ADDR;
-	  Wire.beginTransmission(chip_addr);
-	  _error = Wire.endTransmission();
-	}
-
-	if (_error != 0) {
-	  delay(500);
-	  chip_addr = BMP180_ADDR;
 	  Wire.beginTransmission(chip_addr);
 	  _error = Wire.endTransmission();
 
-	  if (_error != 0) {
-	    chip_addr = BMP280_ADDR;
-	    Wire.beginTransmission(chip_addr);
-	    _error = Wire.endTransmission();
-	  }
-
-	  if (_error != 0) {
-	    delay(500);
-	    chip_addr = BMP180_ADDR;
-	    Wire.beginTransmission(chip_addr);
-	    _error = Wire.endTransmission();
-	    if (_error != 0) {
-	      return 0;
-	    }
-	  }
+	  delay(100);
 	}
 
 	// Retrieve BMP180 Chip ID
 	// The Bosch BMP180 spec sheet says you can read the Chip ID to assess whether
 	// communication is working. 0x55 for BMP180, 0x58 for BMP280
 
-	uint8_t chipid;
-	int n = readUInt8(0xD0, chipid);
-	// Serial.print("BMP180 chip id is "); Serial.println(chipid);
+	uint8_t chipid = 0;
+	int n = 0, count = 5;
+	while (n == 0 && chipid == 0 && count-- > 0) {
+	  // Serial.print("BMPx80 : n "); Serial.print(n); Serial.print(" chipid "); Serial.println(chipid);
+	  n = readUInt8(0xD0, chipid);
+	  delay(100);
+	}
+
+	Serial.print("BMPx80 : n "); Serial.print(n); Serial.print(" chipid "); Serial.println(chipid);
+	// Debug("BMPx80 chip id is %d", chipid);
+
 	if (n != 1)
 	  return 0;
 	if (chip_addr == BMP180_ADDR && chipid != 0x55)
@@ -186,7 +186,15 @@ char SFE_BMP180::readUInt(char address, uint16_t &value)
 
 
 char SFE_BMP180::readUInt8(char address, uint8_t &value) {
-	unsigned char data[1];
+#if 1
+  Wire.beginTransmission(chip_addr);
+  Wire.write(address);
+  Wire.endTransmission();
+  Wire.requestFrom(chip_addr, (byte)1);
+  value = Wire.read();
+  return 1;
+#else
+	unsigned char data[2];
 
 	data[0] = address;
 	if (readBytes(data, 1)) {
@@ -195,6 +203,7 @@ char SFE_BMP180::readUInt8(char address, uint8_t &value) {
 	}
 	value = 0;
 	return 0;
+#endif
 }
 
 char SFE_BMP180::readBytes(unsigned char *values, char length)
@@ -204,12 +213,12 @@ char SFE_BMP180::readBytes(unsigned char *values, char length)
 {
 	char x;
 
-	Wire.beginTransmission(BMP180_ADDR);
+	Wire.beginTransmission(chip_addr);
 	Wire.write(values[0]);
 	_error = Wire.endTransmission();
 	if (_error == 0)
 	{
-		Wire.requestFrom(BMP180_ADDR,length);
+		Wire.requestFrom((uint8_t)chip_addr,length);
 		while(Wire.available() != length) ; // wait until bytes are ready
 		for(x=0;x<length;x++)
 		{
@@ -228,7 +237,7 @@ char SFE_BMP180::writeBytes(unsigned char *values, char length)
 {
 	char x;
 	
-	Wire.beginTransmission(BMP180_ADDR);
+	Wire.beginTransmission(chip_addr);
 	Wire.write(values,length);
 	_error = Wire.endTransmission();
 	if (_error == 0)
