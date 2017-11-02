@@ -4,6 +4,7 @@
 This is a simple esp8266 based application to control a power switch.
 
 Hook up a cheap ESP8266 processor, a small power supply, and a relay (SSR or real); and you're in business.
+It's also possible to replace the internals of a power plug, as I did with my (not so cheap) Belkin Wemos Switch after I found it became unsupported and unreliable.
 
 The secrets.h file is only provided as a sample, you need to supply your own values.
 
