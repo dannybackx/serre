@@ -52,7 +52,8 @@ Light		*light = 0;
 int		newhatch, oldhatch;
 enum lightState	newlight, oldlight, sun;
 int		sensor_up, sensor_down, button_up, button_down;
-int		test = 0;
+
+int		test = 1;		// Default is NOT production
 
 ThingSpeak	*ts = 0;
 Sunset		*sunset = 0;
@@ -196,6 +197,8 @@ void setup() {
   if (button_down_pin >= 0)
     button_down = ReadPin(button_down_pin);
 
+  Debug("Button states : up %d down %d", button_up, button_down);
+
   // Serial.println("Starting ThingSpeak...");
   ts = new ThingSpeak(test);
 
@@ -286,14 +289,6 @@ int ReadPin(int pin) {
   return -1;	// error
 }
 
-int Cnt = 5;
-void DebugMe(char c)
-{
-  if (Cnt == 0) return;
-  if (c == 'a') Cnt--;
-  Serial.print(c);
-}
-
 /*********************************************************************************
  *                                                                               *
  * Loop : Arduino keeps running this                                             *
@@ -362,14 +357,14 @@ void loop() {
 #if 0
   // Buttons start motion
   if (button_up_pin >= 0) {
-    if (old_button_up != button_up && button_up == 0) {
+    if (old_button_up != button_up && button_up == 1) {
       // Move the hatch up
       // hatch->Up();
       hatch->Up(hour(nowts), minute(nowts), second(nowts));
     }
   }
   if (button_down_pin >= 0) {
-    if (old_button_down != button_down && button_down == 0) {
+    if (old_button_down != button_down && button_down == 1) {
       // Move the hatch down
       // hatch->Down();
       hatch->Down(hour(nowts), minute(nowts), second(nowts));
@@ -461,3 +456,15 @@ void NoIP(int test) {
   d->update();
   Serial.println("done");
 }
+
+// Send a line of debug info to MQTT
+void Debug(const char *format, ...)
+{
+  char buffer[128];
+  va_list ap;
+  va_start(ap, format);
+  vsnprintf(buffer, 128, format, ap);
+  va_end(ap);
+  mqtt.publish(mqtt_topic, buffer);
+}
+
