@@ -30,7 +30,7 @@ HWTYPE=	nodemcu
 # LIBCPP=
 
 SKETCH = $(HOME)/src/sketchbook/esp8266/switch/switch.ino
-EXTRA_SRC =
+EXTRA_SRC = scanf.c bcopy.c strtoq.c strtouq.c
 
 UPLOAD_AVAHI_NAME = OTA-Switch.local
 
@@ -40,7 +40,6 @@ LIBS = $(ESP_LIBS)/ESP8266WiFi \
 	$(ESP_LIBS)/ArduinoOTA \
 	$(ESP_LIBS)/ESP8266mDNS \
 	${MYLIBS}/pubsubclient \
-	${MYLIBS}/tzstuff \
 	${MYLIBS}/Timezone
 
 #=== Project specific definitions: sketch and list of needed libraries

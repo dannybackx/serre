@@ -5,12 +5,11 @@
  */
 
 #define	PRODUCTION
-#define	USE_DST
-#define	SNTP_API
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <TimeLib.h>
+#include <stdarg.h>
 
 extern "C" {
 #include <sntp.h>
@@ -71,11 +70,9 @@ bool IsDST(int day, int month, int dow);
 char *GetSchedule();
 void SetSchedule(const char *desc);
 void PinOff();
+void Debug(const char *format, ...);
 
 // All kinds of variables
-#ifdef DO_BLINK
-int		count = 0;
-#endif
 int		verbose = 0;
 String		ips, gws;
 int		state = 0;
@@ -104,20 +101,6 @@ time_t mySntpInit();
 void setup() {
   char buffer[80];
 
-#ifdef USE_SERIAL
-  Serial.begin(9600);
-  delay(3000);    // Allow you to plug in the console
-
-  Serial.println("\n\nPower switch\n(c) 2017 by Danny Backx\n");
-  Serial.printf("Boot version %d, flash chip size %d, SDK version %s\n",
-    ESP.getBootVersion(), ESP.getFlashChipSize(), ESP.getSdkVersion());
-
-  Serial.printf("Free sketch space %d, application build %s %s\n",
-    ESP.getFreeSketchSpace(), _BuildInfo.date, _BuildInfo.time);
-
-  Serial.print("Starting WiFi ");
-#endif
-
   // Try to connect to WiFi
   WiFi.mode(WIFI_STA);
 
@@ -127,9 +110,6 @@ void setup() {
     while (wifi_tries-- >= 0) {
       // Serial.printf("\nTrying (%d %d) %s %s .. ", ix, wifi_tries, mywifi[ix].ssid, mywifi[ix].pass);
       WiFi.begin(mywifi[ix].ssid, mywifi[ix].pass);
-#ifdef USE_SERIAL
-      Serial.print(".");
-#endif
       wcr = WiFi.waitForConnectResult();
       if (wcr == WL_CONNECTED)
         break;
@@ -138,9 +118,6 @@ void setup() {
 
   // Reboot if we didn't manage to connect to WiFi
   if (wcr != WL_CONNECTED) {
-#ifdef USE_SERIAL
-    Serial.printf("WiFi Failed\n");
-#endif
     delay(2000);
     ESP.restart();
   }
@@ -149,68 +126,37 @@ void setup() {
   ips = ip.toString();
   IPAddress gw = WiFi.gatewayIP();
   gws = gw.toString();
-#ifdef USE_SERIAL
-  Serial.print(" MAC "); Serial.print(WiFi.macAddress());
-  Serial.printf(", SSID {%s}, IP %s, GW %s\n", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
-
-  Serial.println("Initialize SNTP ...");
-#endif
 
   // Set up real time clock
-#ifdef SNTP_API
   // Note : DST processing comes later
   (void)sntp_set_timezone(MY_TIMEZONE);
   sntp_init();
   sntp_setservername(0, (char *)"ntp.scarlet.be");
   sntp_setservername(1, (char *)"ntp.belnet.be");
-#else
-  // configTime(MY_TIMEZONE * 3600, 3600, (char *)"ntp.scarlet.be", (char *)"ntp.belnet.be");
-  configTime(7200, 3600, (char *)"ntp.scarlet.be", (char *)"ntp.belnet.be");
-#endif
 
-#ifdef USE_SERIAL
-  Serial.printf("Starting OTA listener ...\n");
-#endif
   ArduinoOTA.onStart([]() {
-#ifdef USE_SERIAL
-    Serial.print("OTA Start : ");
-#endif
-
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
       client.publish(reply_topic, "OTA start");
     }
   });
+
   ArduinoOTA.onEnd([]() {
-#ifdef USE_SERIAL
-    Serial.println("\nOTA Complete");
-#endif
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
       client.publish(reply_topic, "OTA complete");
     }
   });
+
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     int curr;
     curr = (progress / (total / 50));
-#ifdef USE_SERIAL
-    if (OTAprev < curr)
-      Serial.print('#');
-#endif
     OTAprev = curr;
   });
-  ArduinoOTA.onError([](ota_error_t error) {
-#ifdef USE_SERIAL
-    Serial.printf("OTA Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
-#endif
 
+  ArduinoOTA.onError([](ota_error_t error) {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
@@ -241,10 +187,6 @@ void setup() {
   // Default schedule
   SetSchedule("21:00,1,22:35,0,06:45,1,07:35,0");
   // SetSchedule("06:45,1,07:35,0,21:00,1,22:35,0");
-
-#ifdef USE_SERIAL
-  Serial.printf("Ready!\n");
-#endif
 }
 
 void PinOn() {
@@ -290,11 +232,8 @@ void loop() {
     oldminute = newminute;
     oldhour = newhour;
 
-#ifdef SNTP_API
     the_time = sntp_get_current_timestamp();
-#else
-    the_time = time(NULL);
-#endif
+
     newhour = hour(the_time);
     newminute = minute(the_time);
 
@@ -338,25 +277,9 @@ void callback(char *topic, byte *payload, unsigned int length) {
   char *pl = (char *)payload;
   char reply[80];
 
-#ifdef USE_SERIAL
-  Serial.print("Message arrived, topic [");
-  Serial.print(topic);
-  Serial.print("], payload {");
-  for (int i=0; i<length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println("}");
-#endif
-
          if (strcmp(topic, SWITCH_TOPIC "/on") == 0) {	// Turn the relay on
-#ifdef USE_SERIAL
-    Serial.println("SSR on");
-#endif
     PinOn();
   } else if (strcmp(topic, SWITCH_TOPIC "/off") == 0) {	// Turn the relay off
-#ifdef USE_SERIAL
-    Serial.println("SSR off");
-#endif
     PinOff();
   } else if (strcmp(topic, SWITCH_TOPIC "/state") == 0) {	// Query on/off state
     sprintf(reply, "Switch %s", GetState() ? "on" : "off");
@@ -370,12 +293,18 @@ void callback(char *topic, byte *payload, unsigned int length) {
     SetSchedule((char *)payload);
     client.publish(SWITCH_TOPIC "/schedule", "Ok");
   } else if (strcmp(topic, SWITCH_TOPIC "/time") == 0) {	// Query the device's current time
-    struct tm *tmp = localtime(&the_time);
-    strftime(reply, sizeof(reply), "%F %T", tmp);
-    char *p = reply + strlen(reply);
-    int tz = sntp_get_timezone();
-    sprintf(p, ", tz %d", tz);
-    client.publish(reply_topic, reply);
+    time_t t = sntp_get_current_timestamp();
+    Debug("%04d-%02d-%02d %02d:%02d:%02d, tz %d",
+      year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
+
+    // struct tm *tmp = localtime(&the_time);
+    // strftime(reply, sizeof(reply), "%F %T", tmp);
+    // char *p = reply + strlen(reply);
+    // int tz = sntp_get_timezone();
+    // sprintf(p, ", tz %d", tz);
+    // client.publish(reply_topic, reply);
+  } else if (strcmp(topic, SWITCH_TOPIC "/reinit") == 0) {
+    mySntpInit();
   } else {
     // Silently ignore, this includes our own replies
   }
@@ -387,14 +316,8 @@ void reconnect(void) {
 
   // Loop until we're reconnected
   while (!client.connected()) {
-#ifdef USE_SERIAL
-    Serial.print("Attempting MQTT connection...");
-#endif
     // Attempt to connect
     if (client.connect(MQTT_CLIENT)) {
-#ifdef USE_SERIAL
-      Serial.println("connected");
-#endif
       // Get the time
       time_t t = mySntpInit();
 
@@ -402,50 +325,23 @@ void reconnect(void) {
 
       // Once connected, publish an announcement...
       if (mqtt_initial) {
-	strftime(buffer, sizeof(buffer), "boot %F %T", tsnow);
-	char *p = buffer + strlen(buffer);
-	int tz = sntp_get_timezone();
-	sprintf(p, ", timezone is set to %d", tz);
+	Debug("boot %04d-%02d-%02d %02d:%02d:%02d, timezone is set to %d",
+	  year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
 
-        client.publish(reply_topic, buffer);
 	mqtt_initial = 0;
       } else {
-	strftime(buffer, sizeof(buffer), "reconnect %F %T", tsnow);
-        client.publish(reply_topic, buffer);
+        Debug("reconnect %04d-%02d-%02d %02d:%02d:%02d",
+	  year(t), month(t), day(t), hour(t), minute(t), second(t));
       }
 
       // ... and (re)subscribe
       client.subscribe(SWITCH_TOPIC "/#");
     } else {
-#ifdef USE_SERIAL
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-#endif
       // Wait 5 seconds before retrying
       delay(5000);
     }
   }
 }
-
-extern "C" {
-void Debug(char *s) {
-#ifdef USE_SERIAL
-  Serial.print(s);
-#endif
-}
-
-void DebugInt(int i) {
-#ifdef USE_SERIAL
-  Serial.print(i);
-#endif
-}
-
-char *getenv(const char *name) {
-  return 0;
-}
-}
-
 
 bool IsDST(int day, int month, int dow)
 {
@@ -477,8 +373,6 @@ void SetSchedule(const char *desc) {
   const char *p;
   int count;
 
-  // Debug("setSchedule("); Debug(desc); Debug(")\n");
-
   // Count commas
   for (p=desc,count=0; *p; p++)
     if (*p == ',')
@@ -495,13 +389,10 @@ void SetSchedule(const char *desc) {
 
   items = (item *)malloc(sizeof(item) * nitems);
 
-  // DebugInt(count); Debug(" -> "); DebugInt(nitems); Debug(" items\n");
-
   // Convert CSV string into items
   p = desc;
   for (int i=1; i<nitems-1; i++) {
     int hr, min, val, nchars;
-    // Debug("sscanf("); Debug(p); Debug(")\n");
     sscanf(p, "%d:%d,%d%n", &hr, &min, &val, &nchars);
 
     p += nchars;
@@ -571,27 +462,17 @@ char *GetSchedule() {
 }
 
 time_t mySntpInit() {
+  char buffer[80];	// just for debug
   time_t t;
 
   // Wait for a correct time, and report it
-#ifdef USE_SERIAL
-  Serial.printf("Time ");
-#endif
-#ifdef SNTP_API
+
   t = sntp_get_current_timestamp();
   while (t < 0x1000) {
-#ifdef USE_SERIAL
-    Serial.printf(".");
-#endif
     delay(1000);
     t = sntp_get_current_timestamp();
   }
-#else
-  t = time(NULL);
-#endif
 
-#ifdef SNTP_API
-#ifdef USE_DST
   // DST handling
   if (IsDST(day(t), month(t), dayOfWeek(t))) {
     _isdst = 1;
@@ -600,20 +481,35 @@ time_t mySntpInit() {
     sntp_stop();
     (void)sntp_set_timezone(MY_TIMEZONE + 1);
 
+    Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d, timezone %d",
+      day(t), month(t), dayOfWeek(t), _isdst, MY_TIMEZONE + 1);
+
     // Re-initialize/fetch
     sntp_init();
     t = sntp_get_current_timestamp();
     while (t < 0x1000) {
-#ifdef USE_SERIAL
-      Serial.printf(".");
-#endif
       delay(1000);
       t = sntp_get_current_timestamp();
     }
+
+    Debug("Checkup : day %d month %d time %02d:%02d:%02d, timezone %d",
+      day(t), month(t), hour(t), minute(t), second(t), sntp_get_timezone());
+  } else {
+    t = sntp_get_current_timestamp();
+    Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d",
+      day(t), month(t), dayOfWeek(t), _isdst);
   }
-#endif
-#else
-#warning todo
-#endif
+
   return t;
+}
+
+// Send a line of debug info to MQTT
+void Debug(const char *format, ...)
+{
+  char buffer[128];
+  va_list ap;
+  va_start(ap, format);
+  vsnprintf(buffer, 128, format, ap);
+  va_end(ap);
+  client.publish(reply_topic, buffer);
 }
