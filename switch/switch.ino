@@ -70,6 +70,8 @@ bool IsDST(int day, int month, int dow);
 char *GetSchedule();
 void SetSchedule(const char *desc);
 void PinOff();
+
+void RelayDebug(const char *format, ...);
 void Debug(const char *format, ...);
 
 // All kinds of variables
@@ -90,8 +92,6 @@ item *items;
 #define	VERBOSE_BMP	0x04
 #define	VERBOSE_4	0x08
 
-struct tm *tsnow;
-
 // Forward declarations
 void callback(char * topic, byte *payload, unsigned int length);
 void reconnect(void);
@@ -99,8 +99,6 @@ time_t mySntpInit();
 
 // Arduino setup function
 void setup() {
-  char buffer[80];
-
   // Try to connect to WiFi
   WiFi.mode(WIFI_STA);
 
@@ -186,7 +184,6 @@ void setup() {
 
   // Default schedule
   SetSchedule("21:00,1,22:35,0,06:45,1,07:35,0");
-  // SetSchedule("06:45,1,07:35,0,21:00,1,22:35,0");
 }
 
 void PinOn() {
@@ -210,8 +207,6 @@ int	oldminute, newminute, oldhour, newhour;
 time_t	the_time;
 
 void loop() {
-  char buffer[80];
-
   ArduinoOTA.handle();
 
   // MQTT
@@ -246,27 +241,13 @@ void loop() {
       int t1 = items[i-1].hour * 60 + items[i-1].minute;
       int t2 = items[i].hour * 60 + items[i].minute;
 
-      // sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
-      //   newhour, newminute, i, tn, t1, t2, items[i].state, state);
-      // client.publish(relay_topic, buffer);
-
       if (t1 <= tn && tn < t2) {
 	if (items[i-1].state == 1 && state == 0) {
-          // sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
-          //   newhour, newminute, i, tn, t1, t2, items[i].state, state);
-          // client.publish(relay_topic, buffer);
-
 	  PinOn();
-	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "on");
-	  client.publish(relay_topic, buffer);
+	  RelayDebug("%02d:%02d : %s", newhour, newminute, "on");
 	} else if (items[i-1].state == 0 && state == 1) {
-          // sprintf(buffer, "%02d:%02d : i %d tn %d t1 %d t2 %d state[i] %d state %d",
-          //   newhour, newminute, i, tn, t1, t2, items[i].state, state);
-          // client.publish(relay_topic, buffer);
-
 	  PinOff();
-	  sprintf(buffer, "%02d:%02d : %s", newhour, newminute, "off");
-	  client.publish(relay_topic, buffer);
+	  RelayDebug("%02d:%02d : %s", newhour, newminute, "off");
 	}
       }
     }
@@ -282,13 +263,11 @@ void callback(char *topic, byte *payload, unsigned int length) {
   } else if (strcmp(topic, SWITCH_TOPIC "/off") == 0) {	// Turn the relay off
     PinOff();
   } else if (strcmp(topic, SWITCH_TOPIC "/state") == 0) {	// Query on/off state
-    sprintf(reply, "Switch %s", GetState() ? "on" : "off");
-    client.publish(relay_topic, reply);
+    RelayDebug("Switch %s", GetState() ? "on" : "off");
   } else if (strcmp(topic, SWITCH_TOPIC "/query") == 0) {	// Query schedule
     client.publish(SWITCH_TOPIC "/schedule", GetSchedule());
   } else if (strcmp(topic, SWITCH_TOPIC "/network") == 0) {	// Query network parameters
-    sprintf(reply, "SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
-    client.publish(reply_topic, reply);
+    Debug("SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
   } else if (strcmp(topic, SWITCH_TOPIC "/program") == 0) {	// Set the schedule according to the string provided
     SetSchedule((char *)payload);
     client.publish(SWITCH_TOPIC "/schedule", "Ok");
@@ -296,13 +275,6 @@ void callback(char *topic, byte *payload, unsigned int length) {
     time_t t = sntp_get_current_timestamp();
     Debug("%04d-%02d-%02d %02d:%02d:%02d, tz %d",
       year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
-
-    // struct tm *tmp = localtime(&the_time);
-    // strftime(reply, sizeof(reply), "%F %T", tmp);
-    // char *p = reply + strlen(reply);
-    // int tz = sntp_get_timezone();
-    // sprintf(p, ", tz %d", tz);
-    // client.publish(reply_topic, reply);
   } else if (strcmp(topic, SWITCH_TOPIC "/reinit") == 0) {
     mySntpInit();
   } else {
@@ -312,16 +284,12 @@ void callback(char *topic, byte *payload, unsigned int length) {
 }
 
 void reconnect(void) {
-  char buffer[80];
-
   // Loop until we're reconnected
   while (!client.connected()) {
     // Attempt to connect
     if (client.connect(MQTT_CLIENT)) {
       // Get the time
       time_t t = mySntpInit();
-
-      tsnow = localtime(&t);
 
       // Once connected, publish an announcement...
       if (mqtt_initial) {
@@ -345,6 +313,8 @@ void reconnect(void) {
 
 bool IsDST(int day, int month, int dow)
 {
+  dow--;	// Convert this to POSIX convention (Day Of Week = 0-6, Sunday = 0)
+
   // January, february, and december are out.
   if (month < 3 || month > 10)
     return false;
@@ -462,7 +432,6 @@ char *GetSchedule() {
 }
 
 time_t mySntpInit() {
-  char buffer[80];	// just for debug
   time_t t;
 
   // Wait for a correct time, and report it
@@ -481,8 +450,7 @@ time_t mySntpInit() {
     sntp_stop();
     (void)sntp_set_timezone(MY_TIMEZONE + 1);
 
-    Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d, timezone %d",
-      day(t), month(t), dayOfWeek(t), _isdst, MY_TIMEZONE + 1);
+    // Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d, timezone %d", day(t), month(t), dayOfWeek(t), _isdst, MY_TIMEZONE + 1);
 
     // Re-initialize/fetch
     sntp_init();
@@ -492,15 +460,24 @@ time_t mySntpInit() {
       t = sntp_get_current_timestamp();
     }
 
-    Debug("Checkup : day %d month %d time %02d:%02d:%02d, timezone %d",
-      day(t), month(t), hour(t), minute(t), second(t), sntp_get_timezone());
+    // Debug("Checkup : day %d month %d time %02d:%02d:%02d, timezone %d", day(t), month(t), hour(t), minute(t), second(t), sntp_get_timezone());
   } else {
     t = sntp_get_current_timestamp();
-    Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d",
-      day(t), month(t), dayOfWeek(t), _isdst);
+    // Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d", day(t), month(t), dayOfWeek(t), _isdst);
   }
 
   return t;
+}
+
+// Send a line of debug info to MQTT
+void RelayDebug(const char *format, ...)
+{
+  char buffer[128];
+  va_list ap;
+  va_start(ap, format);
+  vsnprintf(buffer, 128, format, ap);
+  va_end(ap);
+  client.publish(relay_topic, buffer);
 }
 
 // Send a line of debug info to MQTT
