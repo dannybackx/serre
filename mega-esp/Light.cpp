@@ -155,11 +155,6 @@ int Light::getDuration() {
   return duration;
 }
 
-extern "C" {
-  void Debug(char *);
-  void DebugInt(int);
-}
-
 int Light::query() {
   if (sensorPin < 0)
     return -1;

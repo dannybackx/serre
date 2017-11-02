@@ -179,16 +179,9 @@ int Hatch::loop(int hr, int mn, int sec) {
   return _moving;
 }
 
-extern "C" {
-  void Debug(char *);
-  void DebugInt(int);
-}
-
 void Hatch::setSchedule(const char *desc) {
   const char *p;
   int count;
-
-  // Debug("setSchedule("); Debug(desc); Debug(")\n");
 
   // Count commas
   for (p=desc,count=0; *p; p++)
@@ -204,13 +197,10 @@ void Hatch::setSchedule(const char *desc) {
   nitems = (count + 1) / 2;
   items = (item *)malloc(sizeof(item) * nitems);
 
-  // DebugInt(count); Debug(" -> "); DebugInt(nitems); Debug(" items\n");
-
   // Convert CSV string into items
   p = desc;
   for (int i=0; i<nitems; i++) {
     int hr, min, val, nchars;
-    // Debug("sscanf("); Debug(p); Debug(")\n");
     sscanf(p, "%d:%d,%d%n", &hr, &min, &val, &nchars);
 
     p += nchars;

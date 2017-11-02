@@ -41,6 +41,7 @@ extern const int	loop_delay;
 
 extern void BMPInitialize();
 extern int BMPQuery();
+
 extern SFE_BMP180	*bmp;
 extern Hatch		*hatch;
 extern Light		*light;
@@ -139,6 +140,7 @@ extern char progmem_bfr[];
 extern "C" {
   const char *gpm(const char *p);
   char *strptime(const char *s, const char *format, struct tm *timeptr);
+  extern void Debug(const char *format, ...);
 }
 
 extern void mqttSend(const char *);
