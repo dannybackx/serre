@@ -189,7 +189,7 @@ void BMP180Query(char *topic, char *message) {
     c = newPressure;
 
     // Format the result
-    sprintf(reply, gpm(bmp_fmt), a, b, c);
+    sprintf(reply, "bmp (%2d.%02d, %d)", a, b, c);
  
   } else {
     sprintf(reply, "No sensor detected");
@@ -213,26 +213,26 @@ void DateTimeSet(char *topic, char *message) {
       long t = atol(q+1);
       t += 3600 * personal_timezone;	// This is it
       RTC.set(t);
-      Serial.print(gpm(setting_rtc));
+      Serial.print("Setting RTC ");
       Serial.print(q);
       Serial.print(" ");
       Serial.print(t);
       Serial.print(" ");
-      sprintf(buffer, gpm(timedate_fmt),
+      sprintf(buffer, "%02d:%02d:%02d %02d/%02d/%04d",
         hour(), minute(), second(), day(), month(), year());
       Serial.println(buffer);
-      mqtt.publish("/date", gpm(answer_ok));
+      mqtt.publish("/date", "Ok");
     }
 }
 
 void DateTimeQuery(char *topic, char *message) {
-  sprintf(buffer, gpm(timedate_fmt),
+  sprintf(buffer, "%02d:%02d:%02d %02d/%02d/%04d",
     hour(), minute(), second(), day(), month(), year());
   mqtt.publish("/date", buffer);
 }
 
 void BootTimeQuery(char *topic, char *message) {
-  sprintf(buffer, gpm(timedate_fmt),
+  sprintf(buffer, "%02d:%02d:%02d %02d/%02d/%04d",
     hour(boot_time), minute(boot_time), second(boot_time),
     day(boot_time), month(boot_time), year(boot_time));
   mqtt.publish("/boot", buffer);
@@ -243,14 +243,14 @@ void TimezoneSet(char *topic, char *message) {
 		*q = p + mqtt_callback_table[ix].len;
     int t = atoi(q);
     personal_timezone = t;
-    mqtt.publish("/timezone", gpm(answer_ok));
+    mqtt.publish("/timezone", "Ok");
 }
 
 void MaxTimeSet(char *topic, char *message) {
     const char	*p = message,
 		*q = p + mqtt_callback_table[ix].len;
     hatch->setMaxTime(atoi(q));
-    mqtt.publish("/maxtime", gpm(answer_ok));
+    mqtt.publish("/maxtime", "Ok");
 }
 
 void MaxTimeQuery(char *topic, char *message) {
@@ -264,25 +264,25 @@ void MaxTimeQuery(char *topic, char *message) {
  *                                                                              *
  ********************************************************************************/
 void HatchQuery(char *topic, char *message) {
-    // sprintf(reply, gpm(hatch_state_fmt), hatch->moving());
+    // sprintf(reply, "Hatch state %d", hatch->moving());
     sprintf(reply, "hatch motion %d position %d", hatch->moving(), hatch->getPosition());
     mqtt.publish("/hatch", reply);
 }
 
 void HatchUp(char *topic, char *message) {
     hatch->Up(hour(nowts), minute(nowts), second(nowts));
-    mqtt.publish("/hatch", gpm(answer_ok));
+    mqtt.publish("/hatch", "Ok");
 }
 
 void HatchDown(char *topic, char *message) {
     hatch->Down(hour(nowts), minute(nowts), second(nowts));
-    mqtt.publish("/hatch", gpm(answer_ok));
+    mqtt.publish("/hatch", "Ok");
 }
 
 void HatchStop(char *topic, char *message) {
     time_t t = now();
     hatch->Stop(hour(t), minute(t), second(t));
-    mqtt.publish("/hatch", gpm(answer_ok));
+    mqtt.publish("/hatch", "Ok");
 }
 
 /********************************************************************************
@@ -294,7 +294,7 @@ void LightDurationSet(char *topic, char *message) {
     const char	*p = message,
 		*q = p + mqtt_callback_table[ix].len;
     light->setDuration(atoi(q));
-    mqtt.publish("/light", gpm(answer_ok));
+    mqtt.publish("/light", "Ok");
 }
 
 void LightDurationQuery(char *topic, char *message) {
@@ -341,13 +341,13 @@ void ScheduleSet(char *topic, char *message) {
     const char *p = message,
          *q = p + mqtt_callback_table[ix].len;
     hatch->setSchedule(q);
-    // Serial.print(gpm(set_schedule_to));
+    // Serial.print("Schedule set to : ");
     // Serial.println(q);
-    mqtt.publish("/schedule", gpm(answer_ok));
+    mqtt.publish("/schedule", "Ok");
 }
 
 void ScheduleQuery(char *topic, char *message) {
-    // Serial.print(gpm(schedule));
+    // Serial.print("Schedule : ");
     char *sched = hatch->getSchedule();
     mqtt.publish("/schedule", sched);
     // Serial.println(sched);
@@ -358,7 +358,7 @@ void VersionQuery(char *topic, char *message) {
 #ifdef BUILT_BY_MAKE
   char *s = (char *)malloc(100);
   sprintf(s, "%s%s%s %s",
-    gpm(server_build),
+    "Server build ",
     _BuildInfo.src_filename,
     _BuildInfo.date,
     _BuildInfo.time);
@@ -366,7 +366,7 @@ void VersionQuery(char *topic, char *message) {
   Serial.println(s);
   free(s);
 #else
-  mqtt.publish("/version", gpm(no_info));
+  mqtt.publish("/version", "No version info available");
 #endif
 }
 

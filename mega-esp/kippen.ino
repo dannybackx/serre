@@ -85,15 +85,14 @@ void setup() {
   Serial.println("Yow !");
 
   // Display startup text
-  Serial.print(gpm(startup_text1));
-  Serial.print(", build ");
+  Serial.print("\nArduino Mega Wifi Chicken Hatch, build ");
   Serial.print(_BuildInfo.date);
   Serial.print(" ");
   Serial.println(_BuildInfo.time);
-  Serial.println(gpm(startup_text2));
+  Serial.println("(c) 2016-2017 by Danny Backx\n");
 
   // Start WiFi
-  Serial.println(gpm(starting_wifi));
+  Serial.println("\nStarting WiFi ...");
 
   esp.wifiCb.attach(WifiStatusCallback);
   while (! esp.Sync()) {
@@ -125,7 +124,7 @@ void setup() {
   NoIP(test);
 
   // BMP180 temperature and air pressure sensor
-  Serial.print(gpm(initializing_bmp180));
+  Serial.print("Initializing BMP180 ... ");
   BMPInitialize();
   Serial.println(bmp ? "ok" : "failed");
 
@@ -144,11 +143,11 @@ void setup() {
   // setSyncProvider(RTC.get);	// Set the function to get time from RTC
   setSyncProvider(mygettime);	// Set the function to get time from the ESP's esp-link
   if (timeStatus() != timeSet)
-    Serial.println(gpm(rtc_failure));
+    Serial.println("Unable to sync with the RTC");
   else {
     Serial.print("Clock ok, ");      
     boot_time = now();
-    sprintf(buffer, gpm(timedate_fmt),
+    sprintf(buffer, "%02d:%02d:%02d %02d/%02d/%04d",
       hour(), minute(), second(), day(), month(), year());
     Serial.println(buffer); 
 
@@ -222,7 +221,6 @@ void setup() {
 
   // Print several things to MQTT, re-use the current time from above.
   char *p = buffer + strlen(buffer);
-  // sprintf(buffer, gpm(ready_wifi), ip1, ip2, ip3, ip4);
   sprintf(p, ", IP address %d.%d.%d.%d, %s, build %s %s",
     ip1, ip2, ip3, ip4,
     test ? "test" : "production",

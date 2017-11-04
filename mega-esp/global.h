@@ -77,57 +77,14 @@ extern char	*sunset_latitude, *sunset_longitude;
 extern int	button_up, button_down;
 extern int	sensor_up, sensor_down;
 
-extern const char timedate_fmt[];
-extern const char bmp_fmt[];
-extern const char sensor_fmt[];
-extern const char setting_rtc[];
-extern const char initializing_bmp180[];
-extern const char starting_wifi[];
-extern const char startup_text1[];
-extern const char startup_text2[];
-extern const char unmatched_command[];
-
-extern const char hatch_use_motor[];
-extern const char hatch_state_fmt[];
-
-extern const char set_schedule_to[];
-extern const char schedule[];
-
-extern const char no_info[];
-extern const char server_build[];
-extern const char rtc_failure[];
-
-extern const char answer_ok[];
-extern const char ready[];
-extern const char ready_wifi[];
-extern const char boot[];
-
 extern const char ts_url[];
-extern const char ts_read_key[];
 extern const char ts_write_key[];
 extern const char test_ts_write_key[];
-extern const char ifttt_key[];
-extern const char ifttt_event[];
-
-extern const char ts_123[];
-extern const char ts_timeout[];
-extern const char ts_get_fail[];
-extern const char ts_feed[];
-extern const char ts_state_change[];
-extern const char ts_colon[];
-
-extern const char mqtt_123[];
-extern const char mqtt_123b[];
-extern char *mqtt_topic;
-
-extern const char out_of_memory[];
 extern const char noip_hostname[];
 extern const char test_noip_hostname[];
 extern const char noip_auth[];
 
-extern char progmem_bfr[];
 extern "C" {
-  const char *gpm(const char *p);
   char *strptime(const char *s, const char *format, struct tm *timeptr);
   extern void Debug(const char *format, ...);
 }

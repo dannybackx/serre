@@ -17,7 +17,7 @@
 SKETCH=		$(HOME)/src/sketchbook/mega-esp/kippen-mega/kippen.ino
 #EXTRA_DEFINES=	-DBUILT_BY_MAKE
 EXTRA_SRC=	personal.c Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
-		callback.cpp strings.c secrets.c Ifttt.cpp Light.cpp Dyndns.cpp \
+		callback.cpp secrets.c Ifttt.cpp Light.cpp Dyndns.cpp \
 		Sunset.cpp
 # EXTRA_SRC +=	AFMotor.cpp
 EXTRA_SRC +=	SimpleL298.cpp

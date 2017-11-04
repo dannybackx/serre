@@ -82,3 +82,8 @@ struct EspTestProduction {
   { "testkippen",	1 },
   { NULL,		0 }
 };
+
+/*
+ *
+ */
+const char ts_url[] = "api.thingspeak.com";

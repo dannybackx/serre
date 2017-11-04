@@ -46,13 +46,13 @@ ThingSpeak::ThingSpeak(int test) {
   lasttime = -1;
   delta = 600;				// FIXME 10 minutes
   rest = new ELClientRest(&esp);
-  int err = rest->begin(gpm(ts_url));
+  int err = rest->begin(ts_url);
   if (err != 0) {
     delete rest;
     rest = 0;
 
     Serial.print("ThingSpeak : could not initialize ");
-    Serial.print(gpm(ts_url));
+    Serial.print(ts_url);
     Serial.print(" , error code ");
     Serial.println(err);
   }
@@ -108,9 +108,9 @@ void ThingSpeak::loop(time_t nowts) {
 	      // Serial.print("TS success "); Serial.println(buffer);
 	    } else if (err == 0) {
 	      // timeout, but it's a phony one so ignore it !
-	      // Serial.print(gpm(ts_timeout)); Serial.println(sb);
+	      // Serial.print("ThingSpeak timeout "); Serial.println(sb);
 	    } else {
-	      Serial.print(gpm(ts_get_fail)); Serial.println(err);
+	      Serial.print("ThingSpeak GET failure "); Serial.println(err);
 	    }
 	  }
 
@@ -122,12 +122,12 @@ void ThingSpeak::loop(time_t nowts) {
 	  // Free the buffer
 	  free(sb);
 	} else {
-	  Serial.println(gpm(out_of_memory));
+	  Serial.println("Out of memory");
 	}
       } else {
         // No BMP but dial home anyway
 	char *sb = (char *)malloc(40);
-        sprintf(sb, gpm(mqtt_123b));
+        sprintf(sb, "kippen, no BMP sensor");
 	mqttSend(sb);
 	free(sb);
       }
@@ -139,7 +139,7 @@ void ThingSpeak::loop(time_t nowts) {
  * Report motor motion and hatch state
  */
 void ThingSpeak::changeState(int hr, int mn, int sec, int motion, int state, char *msg) {
-  // Serial.print(gpm(ts_state_change)); Serial.println(state);
+  // Serial.print("ThingSpeak state change to "); Serial.println(state);
 
   sprintf(buffer, "/update?api_key=%s&field3=%d&field5=%d" , write_key, motion, state);
   rest->get(buffer);
@@ -149,9 +149,9 @@ void ThingSpeak::changeState(int hr, int mn, int sec, int motion, int state, cha
     // Serial.print("TS success "); Serial.println(buffer);
   } else if (err == 0) {
     // timeout
-    Serial.print(gpm(ts_timeout)); Serial.println(buffer);
+    Serial.print("ThingSpeak timeout "); Serial.println(buffer);
   } else {
-    Serial.print(gpm(ts_get_fail)); Serial.println(err);
+    Serial.print("ThingSpeak GET failure "); Serial.println(err);
   }
 
   sprintf(buffer, "Time %02d:%02d:%02d motion %d, state %d (%s)",
