@@ -278,18 +278,7 @@ void Hatch::Up(int hr, int mn, int sec) {
   _moving = +1;
   ts->changeState(hr, mn, sec, _moving, _position);
 }
-#if 0
-void Hatch::Up() {
-  // Serial.print(__LINE__); Serial.println("Up()");
-  if (_position == 1)
-    return;
-  if (_moving)
-    return;
-  motor->run(BACKWARD);
-  _moving = +1;
-  ts->changeState(_moving, _position);
-}
-#endif
+
 void Hatch::Down(time_t ts) {
   int hr, min, sec;
   hr = hour(ts); min = minute(ts); sec = second(ts);
@@ -311,23 +300,14 @@ void Hatch::Down(int hr, int mn, int sec) {
   _moving = -1;
   ts->changeState(hr, mn, sec, _moving, _position);
 }
+
 #if 0
-void Hatch::Down() {
-  // Serial.print(__LINE__); Serial.println("Down()");
-  if (_position == -1)
-    return;
-  if (_moving)
-    return;
-  motor->run(FORWARD);
-  _moving = -1;
-  ts->changeState(_moving, _position);
-}
-#endif
 void Hatch::Stop() {
   motor->run(RELEASE);
   _moving = 0;
   ts->changeState(_moving, _position);
 }
+#endif
 
 void Hatch::Stop(int hr, int mn, int sec) {
   if (_moving == 0)
@@ -337,7 +317,9 @@ void Hatch::Stop(int hr, int mn, int sec) {
   sprintf(b, "Hatch stopped %02d:%02d:%02d\n", hr, mn, sec);
   Serial.println(b);
 
-  Stop();
+  motor->run(RELEASE);
+  _moving = 0;
+  ts->changeState(hr, mn, sec, _moving, _position);
 }
 
 void Hatch::reset() {

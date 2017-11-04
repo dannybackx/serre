@@ -32,8 +32,6 @@ public:
   ThingSpeak(int test);
   ~ThingSpeak();
   void loop(time_t);
-  void changeState(int);
-  void changeState(int, int);
   void changeState(int hr, int mn, int sec, int motion, int state);
 
 private:

@@ -327,7 +327,7 @@ void loop() {
     sensor_up = ReadPin(sensor_up_pin);
     if (oldvalue != sensor_up && sensor_up == 1) {
       // Stop moving the hatch
-      hatch->Stop();
+      hatch->Stop(hour(nowts), minute(nowts), second(nowts));
       hatch->IsUp();
     }
   }
@@ -336,7 +336,7 @@ void loop() {
     sensor_down = ReadPin(sensor_down_pin);
     if (oldvalue != sensor_down && sensor_down == 1) {
       // Stop moving the hatch
-      hatch->Stop();
+      hatch->Stop(hour(nowts), minute(nowts), second(nowts));
       hatch->IsDown();
     }
   }

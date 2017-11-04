@@ -317,7 +317,8 @@ void HatchDown(char *topic, char *message) {
 }
 
 void HatchStop(char *topic, char *message) {
-    hatch->Stop();
+    time_t t = now();
+    hatch->Stop(hour(t), minute(t), second(t));
     mqtt.publish("/hatch", gpm(answer_ok));
 }
 

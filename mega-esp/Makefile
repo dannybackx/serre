@@ -26,7 +26,7 @@ EXTRA_SRC +=	SimpleL298.cpp
 PRODUCTION_HOST=	kippen
 UPLOAD_HOST=	d1mini3
 
-UPLOAD_PORT=	/dev/ttyACM0
+UPLOAD_PORT=	/dev/ttyUSB0
 
 UPLOAD_WIRING=	wiring
 #UPLOAD_WIRING=	arduino
