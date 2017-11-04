@@ -156,16 +156,16 @@ void setup() {
   }
 
   // Sensors and buttons
-  ActivatePin(sensor_up_pin, gpm(sensor_up_string));
-  ActivatePin(sensor_down_pin, gpm(sensor_down_string));
-  ActivatePin(button_up_pin, gpm(button_up_string));
-  ActivatePin(button_down_pin, gpm(button_down_string));
+  ActivatePin(sensor_up_pin, "Sensor UP");
+  ActivatePin(sensor_down_pin, "Sensor DOWN");
+  ActivatePin(button_up_pin, "Button UP");
+  ActivatePin(button_down_pin, "Button DOWN");
 
   // Sunset query
   sunset = new Sunset();
   sunset->query(sunset_latitude, sunset_longitude);
 
-  ActivatePin(light_sensor_pin, gpm(light_sensor_string));
+  ActivatePin(light_sensor_pin, "Light sensor");
   light = new Light();
   light->setSensorPin(light_sensor_pin);
 

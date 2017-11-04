@@ -113,10 +113,6 @@ void mqConnected(void *response) {
   // Serial.println("MQTT connect");
 
   for (int i=0; mqtt_callback_table[i].token != NULL; i++) {
-#if 0
-    Serial.print("MQTT : register ");
-    Serial.println(mqtt_callback_table[i].token); delay(200);
-#endif
     if (mqtt_callback_table[i].len == 0)
       mqtt_callback_table[i].len = strlen(mqtt_callback_table[i].token);
 
@@ -132,14 +128,6 @@ void mqData(void *response) {
   ELClientResponse *res = (ELClientResponse *)response;
   String topic = res->popString();
   String data = res->popString();
-
-#if 0
-  Serial.print("MQTT query(");
-  Serial.print(topic);
-  Serial.print(") data (");
-  Serial.print(data);
-  Serial.println(")");
-#endif
 
   for (ix=0; mqtt_callback_table[ix].token; ix++)
     if (strncasecmp(topic.c_str(), mqtt_callback_table[ix].token,
@@ -204,38 +192,13 @@ void BMP180Query(char *topic, char *message) {
     sprintf(reply, gpm(bmp_fmt), a, b, c);
  
   } else {
-    sprintf(reply, gpm(no_sensor_string));
+    sprintf(reply, "No sensor detected");
   }
 
   Serial.print("BMP180: "); Serial.println(reply);
 
   mqtt.publish("/BMP180", reply);
 }
-
-#if 0
-void SensorQuery(char *topic, char *message) {
-  if (bmp == 0)
-    BMPInitialize();
-
-  if (bmp) {
-    BMPQuery();
-
-    int a, b, c;
-    // Temperature
-    a = (int) newTemperature;
-    double td = newTemperature - a;
-    b = 100 * td;
-    c = newPressure;
-
-    // Format the result
-    sprintf(reply, gpm(sensor_fmt), a, b, c, light->query());
- 
-  } else {
-    sprintf(reply, gpm(no_sensor_string));
-  }
-  mqtt.publish("/sensor", reply);
-}
-#endif
 
 void DateTimeSet(char *topic, char *message) {
     //

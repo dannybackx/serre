@@ -28,14 +28,8 @@ char		progmem_bfr[57];
 
 // Length limit (56 chars)      		"........................................................"
 const char timedate_fmt[] PROGMEM =		"%02d:%02d:%02d %02d/%02d/%04d";
-const char sensor_up_string[] PROGMEM =		"Sensor UP";
-const char sensor_down_string[] PROGMEM =	"Sensor DOWN";
-const char button_up_string[] PROGMEM =		"Button UP";
-const char button_down_string[] PROGMEM =	"Button DOWN";
-const char light_sensor_string[] PROGMEM =	"Light sensor";
 const char bmp_fmt[] PROGMEM =			"bmp (%2d.%02d, %d)";
 const char sensor_fmt[] PROGMEM =		"bmp (%2d.%02d, %d), light %d";
-const char no_sensor_string[] PROGMEM =		"No sensor detected";
 const char setting_rtc[] PROGMEM =		"Setting RTC ";
 const char initializing_bmp180[] PROGMEM =	"Initializing BMP180 ... ";
 const char starting_wifi[] PROGMEM =		"\nStarting WiFi ...";

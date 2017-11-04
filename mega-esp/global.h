@@ -78,14 +78,8 @@ extern int	button_up, button_down;
 extern int	sensor_up, sensor_down;
 
 extern const char timedate_fmt[];
-extern const char sensor_up_string[];
-extern const char sensor_down_string[];
-extern const char button_up_string[];
-extern const char button_down_string[];
-extern const char light_sensor_string[];
 extern const char bmp_fmt[];
 extern const char sensor_fmt[];
-extern const char no_sensor_string[];
 extern const char setting_rtc[];
 extern const char initializing_bmp180[];
 extern const char starting_wifi[];
