@@ -19,7 +19,6 @@ SKETCH=		$(HOME)/src/sketchbook/mega-esp/kippen-mega/kippen.ino
 EXTRA_SRC=	personal.c Hatch.cpp ThingSpeak.cpp SFE_BMP180.cpp \
 		callback.cpp secrets.c Ifttt.cpp Light.cpp Dyndns.cpp \
 		Sunset.cpp
-# EXTRA_SRC +=	AFMotor.cpp
 EXTRA_SRC +=	SimpleL298.cpp
 
 #UPLOAD_HOST=	testesp
