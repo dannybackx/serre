@@ -115,11 +115,6 @@ extern const char test_ts_write_key[];
 extern const char ifttt_key[];
 extern const char ifttt_event[];
 
-extern const char ts_1[];
-extern const char ts_2[];
-extern const char ts_3[];
-extern const char ts_4[];
-extern const char ts_45[];
 extern const char ts_123[];
 extern const char ts_timeout[];
 extern const char ts_get_fail[];

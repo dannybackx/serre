@@ -270,7 +270,6 @@ void ActivatePin(int pin, const char *name) {
       Serial.print(F(" is on pin "));
       Serial.println(pin);
       pinMode(sensor_up_pin, INPUT_PULLUP);
-      // pinMode(sensor_up_pin, INPUT);
     }
   } else {
     Serial.print(F("No "));

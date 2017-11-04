@@ -96,7 +96,8 @@ void ThingSpeak::loop(time_t nowts) {
         if (sb != NULL) {
 	  if (rest != 0) {
 	    // Format the result
-            sprintf(sb, gpm(ts_123), write_key, a, b, c, l);
+            sprintf(sb, "/update?api_key=%s&field1=%d.%02d&field2=%d&field4=%d",
+	      write_key, a, b, c, l);
 
 	    // Send to ThingSpeak
 	    rest->get(sb);
@@ -113,11 +114,9 @@ void ThingSpeak::loop(time_t nowts) {
 	    }
 	  }
 
-	  // Similar stuff via MQTT, formatted as CSV
-          // sprintf(sb, gpm(mqtt_123), a, b, c, l);
-	  char tfs[40];
-	  sprintf(tfs, gpm(timedate_fmt), hour(), minute(), second(), day(), month(), year());
-          sprintf(sb, "%s %d.%02d,%d,%d", tfs, a, b, c, l);
+          sprintf(sb, "%02d:%02d:%02d %02d/%02d/%04d %d.%02d,%d,%d",
+	    hour(), minute(), second(), day(), month(), year(),
+	    a, b, c, l);
 	  mqttSend(sb);
 
 	  // Free the buffer
@@ -139,10 +138,10 @@ void ThingSpeak::loop(time_t nowts) {
 /*
  * Report motor motion and hatch state
  */
-void ThingSpeak::changeState(int hr, int mn, int sec, int motion, int state) {
+void ThingSpeak::changeState(int hr, int mn, int sec, int motion, int state, char *msg) {
   // Serial.print(gpm(ts_state_change)); Serial.println(state);
 
-  sprintf(buffer, gpm(ts_45), write_key, motion, state);
+  sprintf(buffer, "/update?api_key=%s&field3=%d&field5=%d" , write_key, motion, state);
   rest->get(buffer);
 
   int err = rest->getResponse(buffer, buffer_size);
@@ -155,7 +154,7 @@ void ThingSpeak::changeState(int hr, int mn, int sec, int motion, int state) {
     Serial.print(gpm(ts_get_fail)); Serial.println(err);
   }
 
-  sprintf(buffer, "Time %02d:%02d:%02d motion %d, state %d",
-    hr, mn, sec, motion, state);
+  sprintf(buffer, "Time %02d:%02d:%02d motion %d, state %d (%s)",
+    hr, mn, sec, motion, state, (msg == NULL) ? "" : msg);
   mqttSend(buffer);
 }

@@ -32,7 +32,7 @@ public:
   ThingSpeak(int test);
   ~ThingSpeak();
   void loop(time_t);
-  void changeState(int hr, int mn, int sec, int motion, int state);
+  void changeState(int hr, int mn, int sec, int motion, int state, char *msg = NULL);
 
 private:
   time_t lasttime;

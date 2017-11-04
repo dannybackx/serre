@@ -103,9 +103,7 @@ bool Hatch::RunTooLong(int hr, int mn, int sec) {
 }
 
 int Hatch::loop(int hr, int mn, int sec) {
-  // Serial.print("Hatch "); Serial.print(hr); Serial.print(":"); Serial.print(mn); Serial.print(":"); Serial.print(sec); Serial.print(" moving "); Serial.print(_moving); Serial.print(" state "); Serial.println(_position);
-  // delay(500);
-
+  char *msg;
   initialPosition();
 
   // Stop if running for too long
@@ -113,14 +111,14 @@ int Hatch::loop(int hr, int mn, int sec) {
     if (RunTooLong(hr, mn, sec)) {
       // Assume we're up/down
       if (_moving < 0) {
-        Serial.println("Run Too Long : Hatch is down");
+        msg = "Run Too Long : Hatch is down";
         _position = -1;
       } else if (_moving > 0) {
-        Serial.println("Run Too Long : Hatch is up");
+        msg = "Run Too Long : Hatch is up";
 	_position = +1;
       }
 
-      Stop(hr, mn, sec);
+      Stop(hr, mn, sec, msg);
       return _moving;
     }
   }
@@ -131,8 +129,7 @@ int Hatch::loop(int hr, int mn, int sec) {
       int state = digitalRead(sensor_down_pin);
       if (state == 0) {
 	_position = -1;
-	Serial.println("Down sensor : stop hatch");
-	Stop(hr, mn, sec);
+	Stop(hr, mn, sec, "Down sensor : stop hatch");
       }
     }
     return _moving;
@@ -141,8 +138,7 @@ int Hatch::loop(int hr, int mn, int sec) {
       int state = digitalRead(sensor_up_pin);
       if (state == 0) {
 	_position = +1;
-	Serial.println("Up sensor : stop hatch");
-	Stop(hr, mn, sec);
+	Stop(hr, mn, sec, "Up sensor : stop hatch");
       }
     }
     return _moving;
@@ -301,25 +297,19 @@ void Hatch::Down(int hr, int mn, int sec) {
   ts->changeState(hr, mn, sec, _moving, _position);
 }
 
-#if 0
-void Hatch::Stop() {
-  motor->run(RELEASE);
-  _moving = 0;
-  ts->changeState(_moving, _position);
-}
-#endif
-
-void Hatch::Stop(int hr, int mn, int sec) {
+void Hatch::Stop(int hr, int mn, int sec, char *msg) {
   if (_moving == 0)
     return;
 
   char b[40];
-  sprintf(b, "Hatch stopped %02d:%02d:%02d\n", hr, mn, sec);
+  Serial.print("Hatch stopped (");
+  if (msg != NULL) Serial.print(msg);
+  sprintf(b, ") %02d:%02d:%02d\n", hr, mn, sec);
   Serial.println(b);
 
   motor->run(RELEASE);
   _moving = 0;
-  ts->changeState(hr, mn, sec, _moving, _position);
+  ts->changeState(hr, mn, sec, _moving, _position, msg);
 }
 
 void Hatch::reset() {
