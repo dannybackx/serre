@@ -39,7 +39,6 @@
 #include "ThingSpeak.h"
 #include "Sunset.h"
 #include "global.h"
-#include "AFMotor.h"
 
 Light::Light() {
   sensorPin = -1;

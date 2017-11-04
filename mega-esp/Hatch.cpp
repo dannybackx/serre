@@ -34,7 +34,6 @@
 #include "ThingSpeak.h"
 #include "Sunset.h"
 #include "global.h"
-#include "AFMotor.h"
 #include "SimpleL298.h"
 
 Hatch::Hatch() {
