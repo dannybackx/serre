@@ -42,10 +42,10 @@ public:
   void setMaxTime(int m);
   int getMaxTime();
 
-  void Up(int hr, int mn, int sec);
-  void Up(time_t);
-  void Down(int hr, int mn, int sec);
-  void Down(time_t);
+  void Up(int hr, int mn, int sec, char *msg = NULL);
+  void Up(time_t, char *msg = NULL);
+  void Down(int hr, int mn, int sec, char *msg = NULL);
+  void Down(time_t, char *msg = NULL);
   void Stop(int hr, int mn, int sec, char *msg = NULL);
   void reset();
 

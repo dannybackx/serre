@@ -252,13 +252,13 @@ int Hatch::moving() {
   return _moving;
 }
 
-void Hatch::Up(time_t ts) {
+void Hatch::Up(time_t ts, char *msg) {
   int hr, min, sec;
   hr = hour(ts); min = minute(ts); sec = second(ts);
-  Up(hr, min, sec);
+  Up(hr, min, sec, msg);
 }
 
-void Hatch::Up(int hr, int mn, int sec) {
+void Hatch::Up(int hr, int mn, int sec, char *msg) {
   char b[40];
   sprintf(b, "Hatch moving up %02d:%02d:%02d\n", hr, mn, sec);
   Serial.print(b);
@@ -271,16 +271,16 @@ void Hatch::Up(int hr, int mn, int sec) {
     return;
   motor->run(BACKWARD);
   _moving = +1;
-  ts->changeState(hr, mn, sec, _moving, _position);
+  ts->changeState(hr, mn, sec, _moving, _position, msg);
 }
 
-void Hatch::Down(time_t ts) {
+void Hatch::Down(time_t ts, char *msg) {
   int hr, min, sec;
   hr = hour(ts); min = minute(ts); sec = second(ts);
-  Down(hr, min, sec);
+  Down(hr, min, sec, msg);
 }
 
-void Hatch::Down(int hr, int mn, int sec) {
+void Hatch::Down(int hr, int mn, int sec, char *msg) {
   char b[40];
   sprintf(b, "Hatch moving down %02d:%02d:%02d\n", hr, mn, sec);
   Serial.print(b);
@@ -293,7 +293,7 @@ void Hatch::Down(int hr, int mn, int sec) {
     return;
   motor->run(FORWARD);
   _moving = -1;
-  ts->changeState(hr, mn, sec, _moving, _position);
+  ts->changeState(hr, mn, sec, _moving, _position, msg);
 }
 
 void Hatch::Stop(int hr, int mn, int sec, char *msg) {
@@ -339,7 +339,7 @@ void Hatch::initialPosition() {
     return;
   }
 
-  Serial.print("Hatch initial position");
+  // Serial.print("Hatch initial position");
 
   time_t nowts = now();
   enum lightState sun = sunset->loop(nowts);
@@ -348,12 +348,12 @@ void Hatch::initialPosition() {
   case LIGHT_MORNING:
   case LIGHT_DAY:
   Serial.println(" : moving up");
-    Up(nowts);
+    Up(nowts, "initialPosition");
     break;
   case LIGHT_EVENING:
   case LIGHT_NIGHT:
   Serial.println(" : moving down");
-    Down(nowts);
+    Down(nowts), "initialPosition";
     break;
   default:
     Serial.println(" : no action");
