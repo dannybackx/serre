@@ -226,6 +226,20 @@ time_t Sunset::String2DateTime(char *ts) {
 }
 
 /*
+ * Produce a readable version of a time in "seconds since midnight" form
+ * Warning : always the same memory location
+ */
+char *Sunset::Time2String(time_t tm) {
+  static char buffer[16];
+
+  int	a = tm / 3600L,
+  	b = (tm / 60L) % 60L,
+	c = tm % 60L;
+  sprintf(buffer, "%02d:%02d:%02d", a, b, c);
+  return buffer;
+}
+
+/*
  * Convert a standard time string such as
  *	    "sunrise":"2015-05-21T05:05:35+00:00",
  * to just the seconds since midnight.
@@ -312,4 +326,27 @@ enum lightState Sunset::loop(time_t t) {
 void Sunset::reset() {
   today = 123456789L;	// Causes re-query
   Serial.println("Sunset : reset");
+}
+
+/*
+ * Produce a human readable form of the times we currently work with
+ */
+void Sunset::getSchedule(char *buffer, int buflen) {
+  char *p;
+
+  if (buflen < 34) {
+    buffer[0] = 0;
+    return;
+  }
+
+  strcpy(buffer, "sunrise ");
+  p = buffer + strlen(buffer);
+
+  strcpy(p, Time2String(sunrise));
+  p = buffer + strlen(buffer);
+
+  strcpy(p, " sunset ");
+  p = buffer + strlen(buffer);
+
+  strcpy(p, Time2String(sunset));
 }

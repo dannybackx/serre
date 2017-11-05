@@ -34,6 +34,7 @@ public:
   void query(char *lat, char *lon, char *msg = NULL);
   enum lightState loop(time_t);
   void reset();
+  void getSchedule(char *buffer, int buflen);
 
 private:
   // State variables
@@ -45,6 +46,7 @@ private:
   // Function definitions
   time_t String2DateTime(char *);
   time_t String2Time(char *);
+  char *Time2String(time_t);
   byte daysInMonth(int yr, int m);
   bool isLeapYear(int yr);
   char *findData(char *, const char *);
