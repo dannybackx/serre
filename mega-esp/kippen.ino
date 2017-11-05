@@ -201,9 +201,6 @@ void setup() {
   // Serial.println("Starting ThingSpeak...");
   ts = new ThingSpeak(test);
 
-  // This is moved to Hatch::loop()
-  // hatch->initialPosition();
-
 #ifdef USE_IFTTT
   Ifttt *ifttt = new Ifttt();
   ifttt->sendEvent(gpm(ifttt_key), (char *)ifttt_event, "Boot");
