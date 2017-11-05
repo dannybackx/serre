@@ -39,9 +39,9 @@ char *schedule_string = "21:00,-1,07:35,1";
  */
 const int report_frequency_seconds = 900;
 
-int light_treshold_high =	700,	// Depends on components used.
-    light_treshold_low =	400,
-    light_min_duration =	500;	// 5 minutes
+int light_treshold_high =	400,	// Depends on components used.
+    light_treshold_low =	200,
+    light_min_duration =	120;	// 2 minutes
 
 const int hall_sensor_idle =	504;
 const int hall_sensor_trigger = 100;
