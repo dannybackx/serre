@@ -89,6 +89,7 @@ extern "C" {
   extern void Debug(const char *format, ...);
 }
 
+extern char *mqtt_topic;
 extern void mqttSend(const char *);
 
 extern ELClientMqtt mqtt;

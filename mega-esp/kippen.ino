@@ -304,9 +304,9 @@ void loop() {
 
   if (oldlight != newlight) {
     if (newlight == LIGHT_MORNING)
-      hatch->Up(hour(nowts), minute(nowts), second(nowts));
+      hatch->Up(hour(nowts), minute(nowts), second(nowts), "morning");
     else if (newlight == LIGHT_EVENING)
-      hatch->Down(hour(nowts), minute(nowts), second(nowts));
+      hatch->Down(hour(nowts), minute(nowts), second(nowts), "evening");
   }
 
   // Note the hatch->loop code will also trigger the motor

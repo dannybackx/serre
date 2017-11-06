@@ -45,6 +45,7 @@ public:
   void setDuration(int);
   int getDuration();
   int query();
+  char *Light2String(enum lightState l);
 
 private:
   // Configuration items

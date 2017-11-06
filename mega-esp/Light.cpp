@@ -46,7 +46,7 @@ Light::Light() {
   highTreshold = light_treshold_high;
   duration = light_min_duration;
 
-  lastChange = stableTime = 0;
+  stableTime = 0;
   stableValue = currentValue = LIGHT_NONE;
 }
 
@@ -87,9 +87,7 @@ enum lightState Light::loop(time_t t, enum lightState sun) {
       // Don't do anything
     } else if (sensorValue > highTreshold) {
       // It's light. Figure out if it's for real.
-      if (lastChange < 0) {
-        lastChange = t;
-      } else if (t - lastChange > duration) {	// Also for lastChange == 0
+      if (t - stableTime > duration) {
         // This is a real change !
         stableValue = LIGHT_DAY;
 	stableTime = t;
@@ -104,9 +102,7 @@ enum lightState Light::loop(time_t t, enum lightState sun) {
       // Don't do anything
     } else if (sensorValue < lowTreshold) {
       // It's dark. Figure out if it's for real.
-      if (lastChange < 0) {
-        lastChange = t;
-      } else if (t - lastChange > duration) {	// Also for lastChange == 0
+      if (t - stableTime > duration) {
         // This is a real change !
         stableValue = LIGHT_NIGHT;
 	stableTime = t;
@@ -159,4 +155,15 @@ int Light::query() {
     return -1;
 
   return analogRead(sensorPin);
+}
+
+char *Light::Light2String(enum lightState l) {
+  switch (l) {
+  case LIGHT_NONE:	return "none";
+  case LIGHT_NIGHT:	return "night";
+  case LIGHT_MORNING:	return "morning";
+  case LIGHT_DAY:	return "day";
+  case LIGHT_EVENING:	return "evening";
+  default:		return "??";
+  }
 }

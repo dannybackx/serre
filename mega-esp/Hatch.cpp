@@ -282,15 +282,21 @@ void Hatch::Down(time_t ts, char *msg) {
 
 void Hatch::Down(int hr, int mn, int sec, char *msg) {
   char b[40];
-  sprintf(b, "Hatch moving down %02d:%02d:%02d\n", hr, mn, sec);
+  sprintf(b, "Hatch moving down %02d:%02d:%02d ", hr, mn, sec);
   Serial.print(b);
+  if (msg) Serial.print(msg);
+  Serial.println();
 
   SetStartTime(hr, mn, sec);
 
-  if (_position == -1)
+  if (_position == -1) {
+    Serial.println("Hatch::Down position already -1");
     return;
-  if (_moving)
+  }
+  if (_moving) {
+    Serial.println("Hatch::Down already _moving");
     return;
+  }
   motor->run(FORWARD);
   _moving = -1;
   ts->changeState(hr, mn, sec, _moving, _position, msg);
@@ -302,7 +308,7 @@ void Hatch::Stop(int hr, int mn, int sec, char *msg) {
 
   char b[40];
   Serial.print("Hatch stopped (");
-  if (msg != NULL) Serial.print(msg);
+  if (msg) Serial.print(msg);
   sprintf(b, ") %02d:%02d:%02d\n", hr, mn, sec);
   Serial.println(b);
 

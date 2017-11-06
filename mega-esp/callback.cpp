@@ -73,6 +73,8 @@ void SensorsQuery(char *topic, char *message);
 void SunsetReset(char *topic, char *message);
 void SunsetGetSchedule(char *topic, char *message);
 
+void DebugLoop(char *topic, char *message);
+
 int ix;
 struct mqtt_callback_table {
   char		*token;
@@ -93,6 +95,7 @@ struct mqtt_callback_table {
   { "/sensor/query/",		SensorQuery,		0},
   { "/sunset/reset",		SunsetReset,		0},
   { "/sunset/query",		SunsetGetSchedule,	0},
+  { "/debug/loop",		DebugLoop,		0},
 #if 1
   { "/date/query",		DateTimeQuery,		0},
   { "/date/set/",		DateTimeSet,		0},
@@ -199,7 +202,7 @@ void BMP180Query(char *topic, char *message) {
 
   Serial.print("BMP180: "); Serial.println(reply);
 
-  mqtt.publish("/BMP180", reply);
+  mqtt.publish(mqtt_topic, reply);
 }
 
 void DateTimeSet(char *topic, char *message) {
@@ -223,21 +226,21 @@ void DateTimeSet(char *topic, char *message) {
       sprintf(buffer, "%02d:%02d:%02d %02d/%02d/%04d",
         hour(), minute(), second(), day(), month(), year());
       Serial.println(buffer);
-      mqtt.publish("/date", "Ok");
+      mqtt.publish(mqtt_topic, "Date ok");
     }
 }
 
 void DateTimeQuery(char *topic, char *message) {
-  sprintf(buffer, "%02d:%02d:%02d %02d/%02d/%04d",
+  sprintf(buffer, "Date %02d:%02d:%02d %02d/%02d/%04d",
     hour(), minute(), second(), day(), month(), year());
-  mqtt.publish("/date", buffer);
+  mqtt.publish(mqtt_topic, buffer);
 }
 
 void BootTimeQuery(char *topic, char *message) {
-  sprintf(buffer, "%02d:%02d:%02d %02d/%02d/%04d",
+  sprintf(buffer, "Boot %02d:%02d:%02d %02d/%02d/%04d",
     hour(boot_time), minute(boot_time), second(boot_time),
     day(boot_time), month(boot_time), year(boot_time));
-  mqtt.publish("/boot", buffer);
+  mqtt.publish(mqtt_topic, buffer);
 }
 
 void TimezoneSet(char *topic, char *message) {
@@ -245,19 +248,19 @@ void TimezoneSet(char *topic, char *message) {
 		*q = p + mqtt_callback_table[ix].len;
     int t = atoi(q);
     personal_timezone = t;
-    mqtt.publish("/timezone", "Ok");
+    mqtt.publish(mqtt_topic, "Timezone ok");
 }
 
 void MaxTimeSet(char *topic, char *message) {
     const char	*p = message,
 		*q = p + mqtt_callback_table[ix].len;
     hatch->setMaxTime(atoi(q));
-    mqtt.publish("/maxtime", "Ok");
+    mqtt.publish(mqtt_topic, "Maxtime ok");
 }
 
 void MaxTimeQuery(char *topic, char *message) {
-    sprintf(buffer, "%d", hatch->getMaxTime());
-    mqtt.publish("/maxtime", buffer);
+    sprintf(buffer, "Maxtime %d", hatch->getMaxTime());
+    mqtt.publish(mqtt_topic, buffer);
 }
 
 /********************************************************************************
@@ -268,23 +271,23 @@ void MaxTimeQuery(char *topic, char *message) {
 void HatchQuery(char *topic, char *message) {
     // sprintf(reply, "Hatch state %d", hatch->moving());
     sprintf(reply, "hatch motion %d position %d", hatch->moving(), hatch->getPosition());
-    mqtt.publish("/hatch", reply);
+    mqtt.publish(mqtt_topic, reply);
 }
 
 void HatchUp(char *topic, char *message) {
     hatch->Up(hour(nowts), minute(nowts), second(nowts));
-    mqtt.publish("/hatch", "Ok");
+    mqtt.publish(mqtt_topic, "Hatch ok");
 }
 
 void HatchDown(char *topic, char *message) {
     hatch->Down(hour(nowts), minute(nowts), second(nowts));
-    mqtt.publish("/hatch", "Ok");
+    mqtt.publish(mqtt_topic, "Hatch ok");
 }
 
 void HatchStop(char *topic, char *message) {
     time_t t = now();
     hatch->Stop(hour(t), minute(t), second(t));
-    mqtt.publish("/hatch", "Ok");
+    mqtt.publish(mqtt_topic, "Hatch ok");
 }
 
 /********************************************************************************
@@ -296,12 +299,12 @@ void LightDurationSet(char *topic, char *message) {
     const char	*p = message,
 		*q = p + mqtt_callback_table[ix].len;
     light->setDuration(atoi(q));
-    mqtt.publish("/light", "Ok");
+    mqtt.publish(mqtt_topic, "Light ok");
 }
 
 void LightDurationQuery(char *topic, char *message) {
-    sprintf(buffer, "%d", light->getDuration());
-    mqtt.publish("/light", buffer);
+    sprintf(buffer, "Light %d", light->getDuration());
+    mqtt.publish(mqtt_topic, buffer);
 }
 
 /********************************************************************************
@@ -310,13 +313,13 @@ void LightDurationQuery(char *topic, char *message) {
  *                                                                              *
  ********************************************************************************/
 void ButtonsQuery(char *topic, char *message) {
-    sprintf(buffer, "up %d down %d", button_up, button_down);
-    mqtt.publish("/button", buffer);
+    sprintf(buffer, "Button up %d down %d", button_up, button_down);
+    mqtt.publish(mqtt_topic, buffer);
 }
 
 void ButtonQuery(char *topic, char *message) {
-    sprintf(buffer, "%d", light->getDuration());
-    mqtt.publish("/button", buffer);
+    sprintf(buffer, "Button %d", light->getDuration());
+    mqtt.publish(mqtt_topic, buffer);
 }
 
 /********************************************************************************
@@ -325,13 +328,13 @@ void ButtonQuery(char *topic, char *message) {
  *                                                                              *
  ********************************************************************************/
 void SensorsQuery(char *topic, char *message) {
-    sprintf(buffer, "up %d down %d", sensor_up, sensor_down);
-    mqtt.publish("/sensors", buffer);
+    sprintf(buffer, "Sensors up %d down %d", sensor_up, sensor_down);
+    mqtt.publish(mqtt_topic, buffer);
 }
 
 void SensorQuery(char *topic, char *message) {
-    sprintf(buffer, "%d", light->getDuration());
-    mqtt.publish("/sensors", buffer);
+    sprintf(buffer, "Sensors %d", light->getDuration());
+    mqtt.publish(mqtt_topic, buffer);
 }
 
 /********************************************************************************
@@ -345,13 +348,13 @@ void ScheduleSet(char *topic, char *message) {
     hatch->setSchedule(q);
     // Serial.print("Schedule set to : ");
     // Serial.println(q);
-    mqtt.publish("/schedule", "Ok");
+    mqtt.publish(mqtt_topic, "Schedule ok");
 }
 
 void ScheduleQuery(char *topic, char *message) {
     // Serial.print("Schedule : ");
     char *sched = hatch->getSchedule();
-    mqtt.publish("/schedule", sched);
+    mqtt.publish(mqtt_topic, sched);
     // Serial.println(sched);
     free(sched);
 }
@@ -364,11 +367,11 @@ void VersionQuery(char *topic, char *message) {
     _BuildInfo.src_filename,
     _BuildInfo.date,
     _BuildInfo.time);
-  mqtt.publish("/version", s);
+  mqtt.publish(mqtt_topic, s);
   Serial.println(s);
   free(s);
 #else
-  mqtt.publish("/version", "No version info available");
+  mqtt.publish(mqtt_topic, "No version info available");
 #endif
 }
 
@@ -379,7 +382,7 @@ void VersionQuery(char *topic, char *message) {
  ********************************************************************************/
 void LightSensorQuery(char *topic, char *message) {
     sprintf(reply, "Light %d", light->query());
-    mqtt.publish("/light", reply);
+    mqtt.publish(mqtt_topic, reply);
     Serial.println(reply);
 }
 
@@ -433,6 +436,24 @@ void SunsetReset(char *topic, char *message) {
 void SunsetGetSchedule(char *topic, char *message) {
   char buffer[80];
   sunset->getSchedule(buffer, sizeof(buffer));
-  mqtt.publish("/sunset", buffer);
+  mqtt.publish(mqtt_topic, buffer);
 }
 
+/********************************************************************************
+ *                                                                              *
+ * Sunset                                                                       *
+ *                                                                              *
+ ********************************************************************************/
+void DebugLoop(char *topic, char *message) {
+  time_t nowts = now();
+  
+  // Query Sunset, feed value into Light
+  enum lightState sun = sunset->loop(nowts);
+
+  // Has the light changed ?
+  enum lightState newlight = light->loop(nowts, sun);
+
+  char buffer[80];
+  sprintf(buffer, "loop sun %s light %s", light->Light2String(sun), light->Light2String(newlight));
+  mqtt.publish(mqtt_topic, buffer);
+}
