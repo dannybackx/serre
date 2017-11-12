@@ -49,8 +49,8 @@ public:
   void Stop(int hr, int mn, int sec, char *msg = NULL);
   void reset();
 
-  void IsUp();
-  void IsDown();
+  void IsUp(char *);
+  void IsDown(char *);
   int getPosition();
 
 private:

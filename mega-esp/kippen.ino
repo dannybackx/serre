@@ -101,15 +101,13 @@ void setup() {
 
   // Query MQTT name, we'll use this to steer debug/production behaviour
   // Note this is in the ESP-link config so you can configure per device.
-
   Serial.print("MQTT client id : ");
-  char *mqtt_clientid = cmd.mqttGetClientId();
-  Serial.print(mqtt_clientid);
-  mqtt_topic = mqtt_clientid;
+  mqtt_topic = cmd.mqttGetClientId();
+  Serial.print(mqtt_topic);
 
   // Debug behaviour is defined in the table esplist, e.g. one is called "testesp".
   for (int i=0; esplist[i].name; i++)
-    if (strcmp(esplist[i].name, mqtt_clientid) == 0) {
+    if (strcmp(esplist[i].name, mqtt_topic) == 0) {
       test = esplist[i].test;
       break;
     }
@@ -187,16 +185,16 @@ void setup() {
 	|| ((hall_sensor_idle - x ) > hall_sensor_trigger) )
 
   if (HALL_ANALOG_SENSOR_ACTIVE(sensor_down))
-    hatch->IsDown();
+    hatch->IsDown("sensor down");
   if (HALL_ANALOG_SENSOR_ACTIVE(sensor_up))
-    hatch->IsUp();
+    hatch->IsUp("sensor up");
 
   if (button_up_pin >= 0)
     button_up = ReadPin(button_up_pin);
   if (button_down_pin >= 0)
     button_down = ReadPin(button_down_pin);
 
-  Debug("Button states : up %d down %d", button_up, button_down);
+  // Debug("Button states : up %d down %d", button_up, button_down);
 
   // Serial.println("Starting ThingSpeak...");
   ts = new ThingSpeak(test);

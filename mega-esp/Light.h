@@ -54,8 +54,7 @@ private:
   int duration;
 
   // Track state
-  time_t		lastChange,
-  			stableTime;
+  time_t		stableTime;
   enum lightState	stableValue,
   			currentValue;
 };

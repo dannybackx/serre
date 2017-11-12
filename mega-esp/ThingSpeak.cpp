@@ -75,63 +75,53 @@ void ThingSpeak::loop(time_t nowts) {
   int err;
 
   if (lasttime < 0 || (nowts - lasttime > delta)) {
-      lasttime = nowts;
+    char sb[96];
+    lasttime = nowts;
 
-      if (bmp == 0)
-        BMPInitialize();
+    if (bmp == 0)
+      BMPInitialize();
 
-      if (bmp) {
-        BMPQuery();
+    if (bmp) {
+      BMPQuery();
 
-        int a, b, c;
-        // Temperature
-        a = (int) newTemperature;
-        double td = newTemperature - a;
-        b = 100 * td;
-        c = newPressure;
+      int a, b, c;
+      // Temperature
+      a = (int) newTemperature;
+      double td = newTemperature - a;
+      b = 100 * td;
+      c = newPressure;
 
-	int l = light->query();
+      int l = light->query();
 
-	char *sb = (char *)malloc(96);
-        if (sb != NULL) {
-	  if (rest != 0) {
-	    // Format the result
-            sprintf(sb, "/update?api_key=%s&field1=%d.%02d&field2=%d&field4=%d",
-	      write_key, a, b, c, l);
+      if (rest != 0) {
+	// Format the result
+	sprintf(sb, "/update?api_key=%s&field1=%d.%02d&field2=%d&field4=%d",
+	  write_key, a, b, c, l);
 
-	    // Send to ThingSpeak
-	    rest->get(sb);
+	// Send to ThingSpeak
+	rest->get(sb);
 
-	    // This almost certainly gets a timeout because we didn't wait
-            err = rest->getResponse(sb, 96);
-	    if (err == HTTP_STATUS_OK) {
-	      // Serial.print("TS success "); Serial.println(buffer);
-	    } else if (err == 0) {
-	      // timeout, but it's a phony one so ignore it !
-	      // Serial.print("ThingSpeak timeout "); Serial.println(sb);
-	    } else {
-	      Serial.print("ThingSpeak GET failure "); Serial.println(err);
-	    }
-	  }
-
-          sprintf(sb, "%02d:%02d:%02d %02d/%02d/%04d %d.%02d,%d,%d",
-	    hour(), minute(), second(), day(), month(), year(),
-	    a, b, c, l);
-	  mqttSend(sb);
-
-	  // Free the buffer
-	  free(sb);
+	// This almost certainly gets a timeout because we didn't wait
+        err = rest->getResponse(sb, 96);
+	if (err == HTTP_STATUS_OK) {
+	  // Serial.print("TS success "); Serial.println(buffer);
+	} else if (err == 0) {
+	  // timeout, but it's a phony one so ignore it !
+	  // Serial.print("ThingSpeak timeout "); Serial.println(sb);
 	} else {
-	  Serial.println("Out of memory");
+	  Serial.print("ThingSpeak GET failure "); Serial.println(err);
 	}
-      } else {
-        // No BMP but dial home anyway
-	char *sb = (char *)malloc(40);
-        sprintf(sb, "kippen, no BMP sensor");
-	mqttSend(sb);
-	free(sb);
       }
-    
+
+      sprintf(sb, "%02d:%02d:%02d %02d/%02d/%04d %d.%02d,%d,%d",
+	hour(), minute(), second(), day(), month(), year(),
+	a, b, c, l);
+      mqttSend(sb);
+    } else {
+      // No BMP but dial home anyway
+      sprintf(sb, "kippen, no BMP sensor");
+      mqttSend(sb);
+    }
   }
 }
 

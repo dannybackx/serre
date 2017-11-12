@@ -321,11 +321,19 @@ void Hatch::reset() {
   _position = 0;
 }
 
-void Hatch::IsUp() {
+void Hatch::IsUp(char *msg) {
+  char buffer[80];
+  sprintf(buffer, "Hatch is up (%s)", msg);
+  mqtt.publish(mqtt_topic, buffer);
+
   _position = 1;
 }
 
-void Hatch::IsDown() {
+void Hatch::IsDown(char *msg) {
+  char buffer[80];
+  sprintf(buffer, "Hatch is down (%s)", msg);
+  mqtt.publish(mqtt_topic, buffer);
+
   _position = -1;
 }
 
