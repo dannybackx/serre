@@ -254,33 +254,46 @@ void loop() {
   }
 }
 
+/*
+ * Respond to MQTT queries.
+ * Only two types are subscribed to :
+ *   topic == "/switch"			payload contains subcommand
+ *   topic == "/switch/program"		payload contains new schedule
+ */
 void callback(char *topic, byte *payload, unsigned int length) {
-  char *pl = (char *)payload;
   char reply[80];
 
-         if (strcmp(topic, SWITCH_TOPIC "/on") == 0) {	// Turn the relay on
-    PinOn();
-  } else if (strcmp(topic, SWITCH_TOPIC "/off") == 0) {	// Turn the relay off
-    PinOff();
-  } else if (strcmp(topic, SWITCH_TOPIC "/state") == 0) {	// Query on/off state
-    RelayDebug("Switch %s", GetState() ? "on" : "off");
-  } else if (strcmp(topic, SWITCH_TOPIC "/query") == 0) {	// Query schedule
-    client.publish(SWITCH_TOPIC "/schedule", GetSchedule());
-  } else if (strcmp(topic, SWITCH_TOPIC "/network") == 0) {	// Query network parameters
-    Debug("SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
-  } else if (strcmp(topic, SWITCH_TOPIC "/program") == 0) {	// Set the schedule according to the string provided
+  char pl[80];
+  strncpy(pl, (const char *)payload, length);
+  pl[length] = 0;
+
+  // RelayDebug("Callback topic {%s} payload {%s}", topic, pl);
+
+  if (strcmp(topic, SWITCH_TOPIC) == 0) {
+           if (strcmp(pl, "on") == 0) {	// Turn the relay on
+      PinOn();
+    } else if (strcmp(pl, "off") == 0) {	// Turn the relay off
+      PinOff();
+    } else if (strcmp(pl, "state") == 0) {	// Query on/off state
+      RelayDebug("Switch %s", GetState() ? "on" : "off");
+    } else if (strcmp(pl, "query") == 0) {	// Query schedule
+      client.publish(SWITCH_TOPIC "/schedule", GetSchedule());
+    } else if (strcmp(pl, "network") == 0) {	// Query network parameters
+      Debug("SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
+    } else if (strcmp(pl, "time") == 0) {	// Query the device's current time
+      time_t t = sntp_get_current_timestamp();
+      Debug("%04d-%02d-%02d %02d:%02d:%02d, tz %d",
+        year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
+    } else if (strcmp(pl, "reinit") == 0) {
+      mySntpInit();
+    }
+    // else silently ignore
+  } else if (strcmp(topic, SWITCH_TOPIC "/program") == 0) {
+    // Set the schedule according to the string provided
     SetSchedule((char *)payload);
     client.publish(SWITCH_TOPIC "/schedule", "Ok");
-  } else if (strcmp(topic, SWITCH_TOPIC "/time") == 0) {	// Query the device's current time
-    time_t t = sntp_get_current_timestamp();
-    Debug("%04d-%02d-%02d %02d:%02d:%02d, tz %d",
-      year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
-  } else if (strcmp(topic, SWITCH_TOPIC "/reinit") == 0) {
-    mySntpInit();
-  } else {
-    // Silently ignore, this includes our own replies
   }
-
+  // Else silently ignore
 }
 
 void reconnect(void) {
@@ -303,7 +316,8 @@ void reconnect(void) {
       }
 
       // ... and (re)subscribe
-      client.subscribe(SWITCH_TOPIC "/#");
+      client.subscribe(SWITCH_TOPIC);
+      client.subscribe(SWITCH_TOPIC "/program");
     } else {
       // Wait 5 seconds before retrying
       delay(5000);
