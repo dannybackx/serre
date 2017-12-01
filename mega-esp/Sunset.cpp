@@ -146,6 +146,9 @@ void Sunset::query(char *lat, char *lon, char *msg) {
   }
   free(buf);
   buf = 0;
+
+  delete rest;
+  rest = 0;
 }
 
 void Sunset::DebugPrint(const char *prefix, time_t tm, const char *suffix) {
@@ -295,7 +298,9 @@ enum lightState Sunset::loop(time_t t) {
   int	h = hour(t), m = minute(t), s = second(t);
   int	dd = day(t), mm = month(t), yy = year(t);
 
-  if ((dd != day(today)) || (mm != month(today)) || (yy != year(today))) {
+  // To debug whether this causes the issue, delay this call until 3am
+  if (((dd != day(today)) || (mm != month(today)) || (yy != year(today)))
+     && (h > 3)) {
     char _today[32];
     sprintf(_today, "%04d-%02d-%02d, %02d:%02d", yy, mm, dd, h, m);
     query(lat, lon, _today);

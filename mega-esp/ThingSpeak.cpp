@@ -104,12 +104,23 @@ void ThingSpeak::loop(time_t nowts) {
 	// This almost certainly gets a timeout because we didn't wait
         err = rest->getResponse(sb, 96);
 	if (err == HTTP_STATUS_OK) {
+	  char buffer[80];
+	  sprintf(buffer, "TS ok %s", sb);
+	  mqttSend(buffer);
 	  // Serial.print("TS success "); Serial.println(buffer);
 	} else if (err == 0) {
 	  // timeout, but it's a phony one so ignore it !
 	  // Serial.print("ThingSpeak timeout "); Serial.println(sb);
+#if 1
+	  char buffer[80];
+	  sprintf(buffer, "TS timeout %s", sb);
+	  mqttSend(buffer);
+#endif
 	} else {
-	  Serial.print("ThingSpeak GET failure "); Serial.println(err);
+	  char buffer[80];
+	  sprintf(buffer, "TS GET fail %s %s", err, sb);
+	  mqttSend(buffer);
+	  // Serial.print("ThingSpeak GET failure "); Serial.println(err);
 	}
       }
 

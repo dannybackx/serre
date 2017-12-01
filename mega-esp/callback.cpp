@@ -92,11 +92,10 @@ struct mqtt_callback_table {
   { "/buttons/query",		ButtonsQuery,		0},
   { "/button/query/",		ButtonQuery,		0},
   { "/sensors/query",		SensorsQuery,		0},
-  { "/sensor/query/",		SensorQuery,		0},
+  { "/sensor/query",		SensorQuery,		0},
   { "/sunset/reset",		SunsetReset,		0},
   { "/sunset/query",		SunsetGetSchedule,	0},
   { "/debug/loop",		DebugLoop,		0},
-#if 1
   { "/date/query",		DateTimeQuery,		0},
   { "/date/set/",		DateTimeSet,		0},
   { "/boot/query",		BootTimeQuery,		0},
@@ -109,11 +108,14 @@ struct mqtt_callback_table {
   // { "/sensor/query",		SensorQuery,		0},
   { "/version/query",		VersionQuery,		0},
   // { "/esp-link/kippen/1",	ProcessCallback,	0},	// test
-#endif
   { "/motor/set/",		TestMotor,	0},	// test
   { NULL, NULL}
 };
 
+/*
+ * Create the lengths in the table
+ * Only subscribe to one topic : "kippen". Everything else is in the message.
+ */
 void mqConnected(void *response) {
   // Serial.println("MQTT connect");
 
@@ -121,8 +123,10 @@ void mqConnected(void *response) {
     if (mqtt_callback_table[i].len == 0)
       mqtt_callback_table[i].len = strlen(mqtt_callback_table[i].token);
 
-    mqtt.subscribe(mqtt_callback_table[i].token);
+    // mqtt.subscribe(mqtt_callback_table[i].token);
   }
+
+  mqtt.subscribe("kippen");
 }
 
 void mqDisconnected(void *response) {
@@ -134,8 +138,14 @@ void mqData(void *response) {
   String topic = res->popString();
   String data = res->popString();
 
+  // Debug("MQTT topic {%s} message {%s}", topic.c_str(), data.c_str());
+
+  // Shouldn't be necessary, we're only subscribed to this.
+  if (strncasecmp(topic.c_str(), "kippen", 6) != 0)
+    return;
+
   for (ix=0; mqtt_callback_table[ix].token; ix++)
-    if (strncasecmp(topic.c_str(), mqtt_callback_table[ix].token,
+    if (strncasecmp(data.c_str(), mqtt_callback_table[ix].token,
           mqtt_callback_table[ix].len) == 0) {
       mqtt_callback_table[ix].f((char *)topic.c_str(), (char *)data.c_str());
     }

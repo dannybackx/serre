@@ -80,7 +80,7 @@ char SFE_BMP180::begin()
 	  delay(100);
 	}
 
-	Serial.print("BMPx80 : n "); Serial.print(n); Serial.print(" chipid "); Serial.println(chipid);
+	Serial.print("(BMPx80 : n "); Serial.print(n); Serial.print(" chipid "); Serial.print(chipid); Serial.print(") ");
 	// Debug("BMPx80 chip id is %d", chipid);
 
 	if (n != 1)
