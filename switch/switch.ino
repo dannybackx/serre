@@ -4,8 +4,6 @@
  * Copyright (c) 2017 by Danny Backx
  */
 
-#define	PRODUCTION
-
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <TimeLib.h>
@@ -50,13 +48,8 @@ PubSubClient	client(espClient);
 const char* mqtt_server = MQTT_HOST;
 const int mqtt_port = MQTT_PORT;
 
-#ifdef PRODUCTION
 #define	SWITCH_TOPIC	"/switch"
 #define OTA_ID		"OTA-Switch"
-#else
-#define	SWITCH_TOPIC	"/testswitch"
-#define OTA_ID		"OTA-TestSwitch"
-#endif
 
 const char *mqtt_topic = SWITCH_TOPIC;
 const char *reply_topic = SWITCH_TOPIC "/reply";
@@ -78,6 +71,7 @@ void Debug(const char *format, ...);
 int		verbose = 0;
 String		ips, gws;
 int		state = 0;
+int		manual = 0;
 
 // Schedule
 struct item {
@@ -165,7 +159,6 @@ void setup() {
   ArduinoOTA.setPort(8266);
   ArduinoOTA.setHostname(OTA_ID);
   WiFi.hostname(OTA_ID);
-  // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.begin();
 
@@ -183,17 +176,19 @@ void setup() {
   PinOff();
 
   // Default schedule
-  SetSchedule("21:00,1,22:35,0,06:45,1,07:35,0");
+  SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:45,1,07:35,0");
 }
 
 void PinOn() {
   state = 1;
+  manual = 1;
   digitalWrite(SSR_PIN, 1);
   digitalWrite(LED_PIN, 0);
 }
 
 void PinOff() {
   state = 0;
+  manual = 1;
   digitalWrite(SSR_PIN, 0);
   digitalWrite(LED_PIN, 1);
 }
@@ -241,6 +236,29 @@ void loop() {
       int t1 = items[i-1].hour * 60 + items[i-1].minute;
       int t2 = items[i].hour * 60 + items[i].minute;
 
+#if 1
+      // On the exact hour, turn off manual mode
+      if (t1 == tn && manual == 1) {
+        manual = 0;
+
+	if (items[i-1].state == 1 && state == 0) {
+	  PinOn();
+	  RelayDebug("%02d:%02d : %s", newhour, newminute, "on");
+	} else if (items[i-1].state == 0 && state == 1) {
+	  PinOff();
+	  RelayDebug("%02d:%02d : %s", newhour, newminute, "off");
+	}
+      } else if (t1 <= tn && tn < t2 && manual == 0) {
+        // Between the hours, only change state if not manual
+	if (items[i-1].state == 1 && state == 0) {
+	  PinOn();
+	  RelayDebug("%02d:%02d : %s", newhour, newminute, "on");
+	} else if (items[i-1].state == 0 && state == 1) {
+	  PinOff();
+	  RelayDebug("%02d:%02d : %s", newhour, newminute, "off");
+	}
+      }
+#else
       if (t1 <= tn && tn < t2) {
 	if (items[i-1].state == 1 && state == 0) {
 	  PinOn();
@@ -250,6 +268,7 @@ void loop() {
 	  RelayDebug("%02d:%02d : %s", newhour, newminute, "off");
 	}
       }
+#endif
     }
   }
 }
@@ -290,7 +309,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
     // else silently ignore
   } else if (strcmp(topic, SWITCH_TOPIC "/program") == 0) {
     // Set the schedule according to the string provided
-    SetSchedule((char *)payload);
+    SetSchedule((char *)pl);
     client.publish(SWITCH_TOPIC "/schedule", "Ok");
   }
   // Else silently ignore
@@ -396,6 +415,8 @@ void SetSchedule(const char *desc) {
   items[nitems-1].minute = 0;
   items[nitems-1].state = items[nitems-2].state;
 
+  // for (int i=0; i<nitems; i++) Debug("SetSchedule %d (%d:%d) %d", i, items[i].hour, items[i].minute, items[i].state);
+
   // Sort the damn thing
   for (int i=1; i<nitems; i++) {
     int m=i;
@@ -415,6 +436,9 @@ void SetSchedule(const char *desc) {
       items[m] = xx;
     }
   }
+
+  // for (int i=0; i<nitems; i++) Debug("Sorted schedule %d (%d:%d) %d", i, items[i].hour, items[i].minute, items[i].state);
+
 }
 
 char *GetSchedule() {
