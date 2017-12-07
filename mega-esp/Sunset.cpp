@@ -87,21 +87,24 @@ void Sunset::query(char *lat, char *lon, char *msg) {
   this->lat = lat;
   this->lon = lon;
 
-  rest = new ELClientRest(&esp);
   if (rest == 0) {
-    Serial.println("Sunset : could not create REST api");
-    return;
-  }
-  int err = rest->begin(ss_url);
-  if (err != 0) {
-    delete rest;
-    rest = 0;
+    rest = new ELClientRest(&esp);
+    if (rest == 0) {
+      Serial.println("Sunset : could not create REST api");
+      return;
+    }
+    int err = rest->begin(ss_url);
+    if (err != 0) {
+      delete rest;
+      rest = 0;
 
-    Serial.print("Sunset : could not initialize ");
-    Serial.print(ss_url);
-    Serial.print(" , error code ");
-    Serial.println(err);
-  } else {
+      Serial.print("Sunset : could not initialize ");
+      Serial.print(ss_url);
+      Serial.print(" , error code ");
+      Serial.println(err);
+      return;
+    }
+
     Serial.print("Sunset : initialized ");
     if (msg != NULL) {
       Serial.print("(");
@@ -111,7 +114,8 @@ void Sunset::query(char *lat, char *lon, char *msg) {
     Serial.println(ss_url);
   }
 
-  buf = (char *)malloc(bufsiz);
+  if (buf == 0)
+    buf = (char *)malloc(bufsiz);
 
   sprintf(buf, ss_template, lat, lon);
   rest->get(buf);
@@ -119,7 +123,7 @@ void Sunset::query(char *lat, char *lon, char *msg) {
   uint16_t totalLen = 0, packetLen = 0;
   memset(buf, 0, bufsiz);
   char *ptr = buf;
-  err = rest->waitResponse2(ptr, bufsiz-1, &totalLen, &packetLen);
+  int err = rest->waitResponse2(ptr, bufsiz-1, &totalLen, &packetLen);
   while (totalLen) {
     ptr += packetLen;
     err = rest->waitResponse2(ptr, bufsiz-1, &totalLen, &packetLen);
@@ -144,11 +148,12 @@ void Sunset::query(char *lat, char *lon, char *msg) {
   } else {
     Serial.print("Sunset GET failure" ); Serial.println(err);
   }
-  free(buf);
-  buf = 0;
 
-  delete rest;
-  rest = 0;
+  // free(buf);
+  // buf = 0;
+
+  // delete rest;
+  // rest = 0;
 }
 
 void Sunset::DebugPrint(const char *prefix, time_t tm, const char *suffix) {
