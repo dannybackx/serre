@@ -79,6 +79,7 @@ int _isdst = 0;
 
 // Forward
 bool IsDST(int day, int month, int dow);
+bool IsDST2(int day, int month, int dow, int hr);
 char *GetSchedule();
 void SetSchedule(const char *desc);
 void PinOff();
@@ -195,7 +196,9 @@ void setup() {
   PinOff();
 
   // Default schedule
-  SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:45,1,07:35,0");
+  // SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
+  // SetSchedule("21:00,1,22:35,0,06:58,1,07:25,0");	// Late winter
+  SetSchedule("22:00,1,22:45,0");	// Summer
 }
 
 void PinOn() {
@@ -289,6 +292,19 @@ void loop() {
       }
 #endif
     }
+
+    // On the beginning of the hour, check DST
+    if (newminute == 0) {
+      int the_day = day(the_time);
+      int the_month = month(the_time);
+      int the_dow = dayOfWeek(the_time);
+
+      bool newdst = IsDST2(the_day, the_month, the_dow, newhour);
+      if (_isdst != newdst) {
+        mySntpInit();
+	_isdst = newdst;
+      }
+    }
   }
 }
 
@@ -377,9 +393,40 @@ bool IsDST(int day, int month, int dow)
 
   int previousSunday = day - dow;
 
-  // In march, we are DST if our previous sunday was on or after the 8th.
+  // In march, we are DST if our previous sunday was on or after the 25th.
   if (month == 3)
-    return previousSunday >= 8;
+    return previousSunday >= 25;
+
+  // In november we must be before the first sunday to be dst.
+  // That means the previous sunday must be before the 1st.
+  return previousSunday <= 0;
+}
+
+bool IsDST2(int day, int month, int dow, int hr)
+{
+  dow--;	// Convert this to POSIX convention (Day Of Week = 0-6, Sunday = 0)
+
+  // January, february, and december are out.
+  if (month < 3 || month > 10)
+    return false;
+
+  // April to October are in
+  if (month > 3 && month < 10)
+    return true;
+
+  int previousSunday = day - dow;
+
+  // In march, we are DST if our previous sunday was on or after the 25th.
+  if (month == 3) {
+    if (previousSunday < 25)
+      return false;
+    if (dow > 0)
+      return true;
+    if (hr < 3)
+      return false;
+    return true;
+    // return previousSunday >= 25;
+  }
 
   // In november we must be before the first sunday to be dst.
   // That means the previous sunday must be before the 1st.
