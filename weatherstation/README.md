@@ -20,3 +20,8 @@ and provide this functionality :
 - software update possible via OTA
 - also MQTT support (logging to my server, remote query and reboot).
 
+You can point to your MQTT server via a tunnel in your router, by using a service
+such as no-ip.com to point to an external address. This allows you to use another
+network than your home WiFi and still log data both on Wunderground and locally.
+
+
