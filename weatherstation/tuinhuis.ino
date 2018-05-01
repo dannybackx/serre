@@ -1,24 +1,38 @@
 /*
-   This software, the ideas and concepts is Copyright (c) David Bird 2018. All rights to this software are reserved.
- 
- Any redistribution or reproduction of any part or all of the contents in any form is prohibited other than the following:
- 1. You may print or download to a local hard disk extracts for your personal and non-commercial use only.
- 2. You may copy the content to individual third parties for their personal use, but only if you acknowledge the author David Bird as the source of the material.
- 3. You may not, except with my express written permission, distribute or commercially exploit the content.
- 4. You may not transmit it or store it in any other website or other form of electronic retrieval system for commercial purposes.
+ * I borrowed the idea and a couple of lines of code from David Birds work.
+ * The rest is (c) Danny Backx 2018.
+ */
 
- The above copyright ('as annotated') notice and this permission notice shall be included in all copies or substantial portions of the Software and where the
- software use is visible to an end-user.
- 
- THE SOFTWARE IS PROVIDED "AS IS" FOR PRIVATE USE ONLY, IT IS NOT FOR COMMERCIAL USE IN WHOLE OR PART OR CONCEPT. FOR PERSONAL USE IT IS SUPPLIED WITHOUT WARRANTY 
- OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- See more at http://www.dsbird.org.uk
-*/
+/*
+ * This software, the ideas and concepts is Copyright (c) David Bird 2018.
+ * All rights to this software are reserved.
+ * 
+ * Any redistribution or reproduction of any part or all of the contents in any form
+ * is prohibited other than the following:
+ * 1. You may print or download to a local hard disk extracts for your personal and
+ *    non-commercial use only.
+ * 2. You may copy the content to individual third parties for their personal use,
+ *    but only if you acknowledge the author David Bird as the source of the material.
+ * 3. You may not, except with my express written permission, distribute or commercially
+ *    exploit the content.
+ * 4. You may not transmit it or store it in any other website or other form of
+ *    electronic retrieval system for commercial purposes.
+ *
+ * The above copyright ('as annotated') notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software and where the software use is
+ * visible to an end-user.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS" FOR PRIVATE USE ONLY, IT IS NOT FOR COMMERCIAL USE IN
+ * WHOLE OR PART OR CONCEPT. FOR PERSONAL USE IT IS SUPPLIED WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * See more at http://www.dsbird.org.uk
+ */
   
-// #define USE_ADAFRUIT_BME
-
 #ifdef ESP32
   #include <WiFi.h>
 #else
@@ -33,7 +47,6 @@
 // Prepare for OTA software installation
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
-static int OTAprev;
 
 struct Wunderground {
   float		sensor_humidity,
@@ -65,7 +78,7 @@ boolean ok;
 
 void setup() {
   Serial.begin(115200);
-  Serial.print("\nPersonal weather station\n(c) 2018 Danny Backx\n");
+  Serial.print("\nPersonal weather station\n(c) 2018 Danny Backx, based on work by David Bird (c) 2018\n");
 
   SetupWifi();
   Wire.begin();
@@ -94,17 +107,16 @@ void setup() {
 }
 
 void loop() {
-  if (! ok)
-    return;
-
   ArduinoOTA.handle();
-  Wunderground *data = ReadSensorInformation();
 
-  if (data == 0)
-    return;
+  if (ok) {
+    Wunderground *data = ReadSensorInformation();
 
-  if (!UploadDataToWU(data))
-    Serial.println("Error uploading to Weather Underground, trying next time");
+    if (data) {
+      if (!UploadDataToWU(data))
+        Serial.println("Error uploading to Weather Underground, trying next time");
+    }
+  }
 
   delay(UpdateInterval);
 }
@@ -130,7 +142,7 @@ boolean UploadDataToWU(Wunderground *wup) {
 
   String dewptf		= String(dewpt*9/5+32);
   String humidity	= String(wup->sensor_humidity,2);
-  String baromin	= String(wup->sensor_pressure,4);
+  String baromin	= String(wup->sensor_pressure,5);
 
 
   String url =
@@ -206,7 +218,7 @@ Wunderground *ReadSensorInformation() {
   data->sensor_humidity		= h;
   data->sensor_temperature	= t;
   data->sensor_tempf		= t * 9/5+32;
-  data->sensor_pressure		= p * 0.0002953;
+  data->sensor_pressure		= p * 0.000295300586;	// www.unitconverters.net
 
   int ta, tb, pa, tfa, pia, pib;
   ta = t;
@@ -214,9 +226,9 @@ Wunderground *ReadSensorInformation() {
   pa = p;
   tfa = data->sensor_tempf;
   pia = data->sensor_pressure;
-  pib = 10000 * (data->sensor_pressure - pia);
+  pib = 1000000 * (data->sensor_pressure - pia);
 
-  Serial.printf("Sensor read %d.%01d°C, %d hPa (imperial units : %d°F, pressure 0.%04d)\n",
+  Serial.printf("Sensor read %d.%01d°C, %d hPa (imperial units : %d°F, pressure 0.%06d)\n",
     ta, tb, pa,
     tfa, pib);
 
@@ -308,26 +320,19 @@ void spiRead(uint8_t *p_data, uint8_t data_size) {
 }
 
 void SetupOTA() {
-  ArduinoOTA.onStart([]() {
-    Serial.print("OTA ");
-  });
+  Serial.printf("Set up OTA (id %s) at port %d ... ", OTA_ID, OTA_PORT);
+  ArduinoOTA.onStart([]() { Serial.print("OTA "); });
 
-  ArduinoOTA.onEnd([]() {
-    Serial.print("\nOTA complete\n");
-  });
+  ArduinoOTA.onEnd([]() { Serial.print("\nOTA complete\n"); });
 
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.print(".");
-  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) { Serial.print("."); });
 
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.print("\nOTA Error\n");
-  });
+  ArduinoOTA.onError([](ota_error_t error) { Serial.print("\nOTA Error\n"); });
 
-  Serial.printf("Set up OTA (id %s) at port %d\n", OTA_ID, OTA_PORT);
   ArduinoOTA.setPort(OTA_PORT);
   ArduinoOTA.setHostname(OTA_ID);
   WiFi.hostname(OTA_ID);
 
   ArduinoOTA.begin();
+  Serial.println(" done");
 }

@@ -16,6 +16,16 @@
 # User editable area
 #====================================================================================
 
+# GitHub :
+# ESP_ROOT	= /home/danny/src/github/esp8266/arduino-esp8266
+
+# 2.4.1
+# ESP_ROOT	= ${ESP}/hardware/esp8266/2.4.1
+# LD_STD_LIBS	= -lm -lgcc -lhal -lphy -lnet80211 -llwip -lwpa -lmain -lpp -lsmartconfig -lwps -lcrypto -laxtls ${LIBCPP} -lc_orig
+# BUILD_ROOT	= buildroot-2.4.1
+
+# 2.3.0
+
 ESP		= /home/danny/.arduino15/packages/esp8266
 ESP_TOOLS	= ${ESP}/tools
 ESP_ROOT	= ${ESP}/hardware/esp8266/2.3.0
