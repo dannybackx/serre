@@ -31,7 +31,7 @@ ESP_TOOLS	= ${ESP}/tools
 ESP_ROOT	= ${ESP}/hardware/esp8266/2.3.0
 ESP_LIBS	= $(ESP_ROOT)/libraries
 BUILD_ROOT	= buildroot-2.3.0
-LIBCPP=-lstdc++
+LIBCPP		= -lstdc++
 
 EspStackTraceDecoder=/home/danny/src/github/EspStackTraceDecoder/EspStackTraceDecoder.jar
 
@@ -52,18 +52,11 @@ MYLIBS = $(HOME)/src/sketchbook/esp8266/libraries
 
 LIBS = $(ESP_LIBS)/ESP8266WiFi \
 	$(ESP_LIBS)/Wire \
-	$(ESP_LIBS)/SPI \
 	$(ESP_LIBS)/ArduinoOTA \
 	$(ESP_LIBS)/ESP8266mDNS \
 	${MYLIBS}/BoschSensortec/BMP280 \
 	${MYLIBS}/ElektorLabs/bme280 \
-	${MYLIBS}/pubsubclient \
-	${MYLIBS}/Timezone
-
-#	${MYLIBS}/Adafruit/Adafruit_BME280 \
-#	${MYLIBS}/Adafruit/Adafruit_BMP280 \
-#	${MYLIBS}/Adafruit/Adafruit_Sensor \
-#	${MYLIBS}/BoschSensortec/BME280 \
+	${MYLIBS}/pubsubclient
 
 #=== Project specific definitions: sketch and list of needed libraries
 

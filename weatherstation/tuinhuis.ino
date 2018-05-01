@@ -1,6 +1,16 @@
 /*
  * I borrowed the idea and a couple of lines of code from David Birds work.
  * The rest is (c) Danny Backx 2018.
+ *
+ * Intention is to use stuff I have around :
+ * - use a esp8266 (a Wemos D1 Mini)
+ * - put in a small almost sealed box
+ * - couple with an old Nokia 5V power supply, and a capacitor
+ * - attach a BME280 sensor
+ * and provide this functionality :
+ * - feed Wunderground
+ * - software update possible via OTA
+ * - also MQTT support (logging to my server, remote query and reboot).
  */
 
 /*
@@ -43,6 +53,7 @@
 #include <Wire.h>             // Built-in 
 #include "secret.h"
 #include <time.h>
+#include <PubSubClient.h>
 
 // Prepare for OTA software installation
 #include <ESP8266mDNS.h>
@@ -52,7 +63,8 @@ struct Wunderground {
   float		sensor_humidity,
 		sensor_temperature,
 		sensor_tempf,
-		sensor_pressure;
+		sensor_pressure,
+		sensor_pressurem;
 };
 
 void SetupWifi();
@@ -67,14 +79,27 @@ BMP280 *bmp280 = 0;
 #include <BME280.h>
 BME280 *bme280 = 0;
 
-#define	WU_UPDATE_HOST	"rtupdate.wunderground.com"
-#define	HTTPS_PORT	443
+/* MQTT */
+const char *mqtt_server	= MQTT_HOST;
+const int mqtt_port	= MQTT_PORT;
+const char *mqtt_topic	= MQTT_TOPIC;
+const char *reply_topic	= MQTT_TOPIC "/reply";
+int mqtt_initial	= 1;		// Initial message ?
+
+WiFiClient	espClient;
+PubSubClient	client(espClient);
+void reconnect(void);
+void callback(char * topic, byte *payload, unsigned int length);
+void ReportToMqtt(Wunderground *);
 
 // Delay between updates, in milliseconds
 // WU allows 500 requests per-day maximum, this sets the time to 30-mins
 const unsigned long  UpdateInterval     = 30L*60L*1000L;
 
 boolean ok;
+
+// Is this device indoors or outside
+const int indoor = 1;
 
 void setup() {
   Serial.begin(115200);
@@ -83,6 +108,10 @@ void setup() {
   SetupWifi();
   Wire.begin();
   SetupOTA();
+
+  // MQTT initialisation. Beware : needs a bit of time before it's active.
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
 
   // Detect sensor presence
 
@@ -115,6 +144,14 @@ void loop() {
     if (data) {
       if (!UploadDataToWU(data))
         Serial.println("Error uploading to Weather Underground, trying next time");
+
+      // MQTT
+      if (!client.connected())
+        reconnect();
+      if (!client.loop())
+        reconnect();
+
+      ReportToMqtt(data);
     }
   }
 
@@ -136,21 +173,16 @@ boolean UploadDataToWU(Wunderground *wup) {
   float dewpt = wup->sensor_temperature - (100 - wup->sensor_humidity) / 5.0;
 
   // Put info in the right (String) variables
-  String indoortempf	= String(wup->sensor_tempf);
-
-  // String tempf		= String(wup->sensor_tempf);
-
+  String tempf		= String(wup->sensor_tempf);
   String dewptf		= String(dewpt*9/5+32);
   String humidity	= String(wup->sensor_humidity,2);
   String baromin	= String(wup->sensor_pressure,5);
-
 
   String url =
     "/weatherstation/updateweatherstation.php?ID=" + String(WU_MY_STATION_ID)
     + "&PASSWORD=" + String(WU_MY_STATION_PASS)
     + "&dateutc=" + "now"
-    + "&indoortempf=" + indoortempf
-//    + "&tempf=" + tempf
+    + (indoor ? "&indoortempf=" : "&tempf=") + tempf
     + "&humidity=" + humidity
     + "&dewptf=" + dewptf
     + "&baromin=" + baromin
@@ -218,15 +250,16 @@ Wunderground *ReadSensorInformation() {
   data->sensor_humidity		= h;
   data->sensor_temperature	= t;
   data->sensor_tempf		= t * 9/5+32;
-  data->sensor_pressure		= p * 0.000295300586;	// www.unitconverters.net
+  data->sensor_pressure		= p;
+  data->sensor_pressurem	= p * 0.000295300586;	// www.unitconverters.net
 
   int ta, tb, pa, tfa, pia, pib;
   ta = t;
   tb = 10 * (t-ta);
   pa = p;
   tfa = data->sensor_tempf;
-  pia = data->sensor_pressure;
-  pib = 1000000 * (data->sensor_pressure - pia);
+  pia = data->sensor_pressurem;
+  pib = 1000000 * (data->sensor_pressurem - pia);
 
   Serial.printf("Sensor read %d.%01d°C, %d hPa (imperial units : %d°F, pressure 0.%06d)\n",
     ta, tb, pa,
@@ -335,4 +368,67 @@ void SetupOTA() {
 
   ArduinoOTA.begin();
   Serial.println(" done");
+}
+
+void reconnect(void) {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    // Attempt to connect
+    if (client.connect(MQTT_CLIENT)) {
+      if (mqtt_initial) {
+      // Once connected, publish an announcement...
+	mqtt_initial = 0;
+      } else {
+      }
+
+      // ... and (re)subscribe
+      client.subscribe(MQTT_TOPIC "/#");
+    } else {
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+
+/*
+ * Respond to MQTT queries.
+ * Only two types are subscribed to :
+ *   topic == "/weather"		This is our own message
+ *   topic == "/weather/reboot"		This is a request
+ *   topic == "/weather/query"		This is a request
+ */
+void callback(char *topic, byte *payload, unsigned int length) {
+  char reply[80];
+
+  char pl[80];
+  strncpy(pl, (const char *)payload, length);
+  pl[length] = 0;
+
+  if (strcmp(topic, MQTT_TOPIC) == 0) {
+    ;	// Silently ignore
+  } else if (strcmp(topic, MQTT_TOPIC "/reboot") == 0) {
+  } else if (strcmp(topic, MQTT_TOPIC "/query") == 0) {
+    // Set the schedule according to the string provided
+    // SetSchedule((char *)pl);
+    client.publish(MQTT_TOPIC "/reply", "Ok");
+  }
+  // Else silently ignore
+}
+
+void ReportToMqtt(Wunderground *data) {
+  char line[80];
+
+  int ta, tb, pa;
+  ta = data->sensor_temperature;
+  tb = 10 * (data->sensor_temperature - ta);
+  pa = data->sensor_pressure;
+
+  if (indoor)
+    sprintf(line, "indoor %d.%01d°C, %d hPa", ta, tb, pa);
+  else
+    sprintf(line, "sensor %d.%01d°C, %d hPa", ta, tb, pa);
+
+  if (client.connected())
+    client.publish(MQTT_TOPIC, line);
+  Serial.printf("MQTT : %s\n", line);
 }
