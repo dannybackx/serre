@@ -44,7 +44,7 @@ HWTYPE=	nodemcu
 # LIBCPP=
 
 SKETCH = $(HOME)/src/sketchbook/esp8266/tuinhuis/tuinhuis.ino
-EXTRA_SRC = BMP280.cpp
+EXTRA_SRC = BMP280.cpp strftime.c
 
 UPLOAD_AVAHI_NAME = OTA-GardenSensor.local
 
@@ -56,7 +56,8 @@ LIBS = $(ESP_LIBS)/ESP8266WiFi \
 	$(ESP_LIBS)/ESP8266mDNS \
 	${MYLIBS}/BoschSensortec/BMP280 \
 	${MYLIBS}/ElektorLabs/bme280 \
-	${MYLIBS}/pubsubclient
+	${MYLIBS}/pubsubclient \
+	${MYLIBS}/Timezone
 
 #=== Project specific definitions: sketch and list of needed libraries
 

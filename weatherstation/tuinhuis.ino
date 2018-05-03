@@ -43,17 +43,18 @@
  * See more at http://www.dsbird.org.uk
  */
   
-#ifdef ESP32
-  #include <WiFi.h>
-#else
-  #include <ESP8266WiFi.h>
-#endif
-
+#include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <Wire.h>             // Built-in 
 #include "secret.h"
 #include <time.h>
 #include <PubSubClient.h>
+#include <TimeLib.h>
+
+extern "C" {
+  #include <sntp.h>
+  #include <time.h>
+}
 
 // Prepare for OTA software installation
 #include <ESP8266mDNS.h>
@@ -65,12 +66,19 @@ struct Wunderground {
 		sensor_tempf,
 		sensor_pressure,
 		sensor_pressurem;
+  time_t	time;
 };
 
 void SetupWifi();
 void SetupOTA();
 Wunderground *ReadSensorInformation();
 boolean UploadDataToWU(Wunderground *);
+time_t mySntpInit();
+bool IsDST(int day, int month, int dow);
+bool IsDST2(int day, int month, int dow, int hr);
+void reconnect(void);
+void callback(char * topic, byte *payload, unsigned int length);
+void ReportToMqtt(Wunderground *);
 
 #include <BMP280.h>
 BMP280 *bmp280 = 0;
@@ -85,12 +93,10 @@ const int mqtt_port	= MQTT_PORT;
 const char *mqtt_topic	= MQTT_TOPIC;
 const char *reply_topic	= MQTT_TOPIC "/reply";
 int mqtt_initial	= 1;		// Initial message ?
+int _isdst = 0;
 
 WiFiClient	espClient;
 PubSubClient	client(espClient);
-void reconnect(void);
-void callback(char * topic, byte *payload, unsigned int length);
-void ReportToMqtt(Wunderground *);
 
 // Delay between updates, in milliseconds
 // WU allows 500 requests per-day maximum, this sets the time to 30-mins
@@ -112,6 +118,15 @@ void setup() {
   // MQTT initialisation. Beware : needs a bit of time before it's active.
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
+
+  // Set up real time clock
+  // Note : DST processing comes later
+  (void)sntp_set_timezone(MY_TIMEZONE);
+  sntp_init();
+  sntp_setservername(0, (char *)"ntp.scarlet.be");
+  sntp_setservername(1, (char *)"ntp.belnet.be");
+
+  mySntpInit();
 
   // Detect sensor presence
 
@@ -141,7 +156,16 @@ void loop() {
   if (ok) {
     Wunderground *data = ReadSensorInformation();
 
+    time_t the_time = sntp_get_current_timestamp();
+    bool newdst = IsDST2(day(the_time), month(the_time), dayOfWeek(the_time), hour(the_time));
+    if (_isdst != newdst) {
+      mySntpInit();
+      _isdst = newdst;
+    }
+
     if (data) {
+      data->time = the_time;
+
       if (!UploadDataToWU(data))
         Serial.println("Error uploading to Weather Underground, trying next time");
 
@@ -416,19 +440,114 @@ void callback(char *topic, byte *payload, unsigned int length) {
 }
 
 void ReportToMqtt(Wunderground *data) {
-  char line[80];
+  char line[80], tbuf[32];
 
   int ta, tb, pa;
   ta = data->sensor_temperature;
   tb = 10 * (data->sensor_temperature - ta);
   pa = data->sensor_pressure;
 
+  struct tm *tmp = localtime(&data->time);
+  strftime(tbuf, sizeof(tbuf), "%F %R", tmp);
+
   if (indoor)
-    sprintf(line, "indoor %d.%01d°C, %d hPa", ta, tb, pa);
+    sprintf(line, "%s, indoor %d.%01d°C, %d hPa", tbuf, ta, tb, pa);
   else
-    sprintf(line, "sensor %d.%01d°C, %d hPa", ta, tb, pa);
+    sprintf(line, "%s, sensor %d.%01d°C, %d hPa", tbuf, ta, tb, pa);
 
   if (client.connected())
     client.publish(MQTT_TOPIC, line);
   Serial.printf("MQTT : %s\n", line);
+}
+
+time_t mySntpInit() {
+  time_t t;
+
+  // Wait for a correct time, and report it
+
+  t = sntp_get_current_timestamp();
+  while (t < 0x1000) {
+    delay(1000);
+    t = sntp_get_current_timestamp();
+  }
+
+  // DST handling
+  if (IsDST(day(t), month(t), dayOfWeek(t))) {
+    _isdst = 1;
+
+    // Set TZ again
+    sntp_stop();
+    (void)sntp_set_timezone(MY_TIMEZONE + 1);
+
+    // Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d, timezone %d", day(t), month(t), dayOfWeek(t), _isdst, MY_TIMEZONE + 1);
+
+    // Re-initialize/fetch
+    sntp_init();
+    t = sntp_get_current_timestamp();
+    while (t < 0x1000) {
+      delay(1000);
+      t = sntp_get_current_timestamp();
+    }
+
+    // Debug("Checkup : day %d month %d time %02d:%02d:%02d, timezone %d", day(t), month(t), hour(t), minute(t), second(t), sntp_get_timezone());
+  } else {
+    t = sntp_get_current_timestamp();
+    // Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d", day(t), month(t), dayOfWeek(t), _isdst);
+  }
+
+  return t;
+}
+
+bool IsDST(int day, int month, int dow)
+{
+  dow--;	// Convert this to POSIX convention (Day Of Week = 0-6, Sunday = 0)
+
+  // January, february, and december are out.
+  if (month < 3 || month > 10)
+    return false;
+
+  // April to October are in
+  if (month > 3 && month < 10)
+    return true;
+
+  int previousSunday = day - dow;
+
+  // In march, we are DST if our previous sunday was on or after the 25th.
+  if (month == 3)
+    return previousSunday >= 25;
+
+  // In november we must be before the first sunday to be dst.
+  // That means the previous sunday must be before the 1st.
+  return previousSunday <= 0;
+}
+
+bool IsDST2(int day, int month, int dow, int hr)
+{
+  dow--;	// Convert this to POSIX convention (Day Of Week = 0-6, Sunday = 0)
+
+  // January, february, and december are out.
+  if (month < 3 || month > 10)
+    return false;
+
+  // April to October are in
+  if (month > 3 && month < 10)
+    return true;
+
+  int previousSunday = day - dow;
+
+  // In march, we are DST if our previous sunday was on or after the 25th.
+  if (month == 3) {
+    if (previousSunday < 25)
+      return false;
+    if (dow > 0)
+      return true;
+    if (hr < 3)
+      return false;
+    return true;
+    // return previousSunday >= 25;
+  }
+
+  // In november we must be before the first sunday to be dst.
+  // That means the previous sunday must be before the 1st.
+  return previousSunday <= 0;
 }
