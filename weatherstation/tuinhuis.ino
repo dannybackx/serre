@@ -279,7 +279,7 @@ Wunderground *ReadSensorInformation() {
   data->sensor_temperature	= t;
   data->sensor_tempf		= t * 9/5+32;
   data->sensor_pressure		= p;
-  data->sensor_pressurem	= p * 0.000295300586;	// www.unitconverters.net
+  data->sensor_pressurem	= p * 0.0295300586;	// www.unitconverters.net
 
   int ta, tb, pa, tfa, pia, pib;
   ta = t;
@@ -289,9 +289,9 @@ Wunderground *ReadSensorInformation() {
   pia = data->sensor_pressurem;
   pib = 1000000 * (data->sensor_pressurem - pia);
 
-  Serial.printf("Sensor read %d.%01d°C, %d hPa (imperial units : %d°F, pressure 0.%06d)\n",
+  Serial.printf("Sensor read %d.%01d°C, %d hPa (imperial units : %d°F, pressure %d.%06d)\n",
     ta, tb, pa,
-    tfa, pib);
+    tfa, pia, pib);
 
   return data;
 }
