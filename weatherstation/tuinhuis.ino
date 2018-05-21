@@ -200,7 +200,7 @@ boolean UploadDataToWU(Wunderground *wup) {
   String tempf		= String(wup->sensor_tempf);
   String dewptf		= String(dewpt*9/5+32);
   String humidity	= String(wup->sensor_humidity,2);
-  String baromin	= String(wup->sensor_pressure,5);
+  String baromin	= String(wup->sensor_pressurem,5);
 
   String url =
     "/weatherstation/updateweatherstation.php?ID=" + String(WU_MY_STATION_ID)
@@ -263,6 +263,10 @@ Wunderground *ReadSensorInformation() {
   } else {
     return 0;
   }
+
+  // Safeguard against sensor communication failure
+  if (t == 0 && p == 0)
+    return 0;
 
   Wunderground *data = (Wunderground *)malloc(sizeof(Wunderground));
   if (! data) {
