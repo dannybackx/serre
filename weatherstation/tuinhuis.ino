@@ -80,12 +80,9 @@ void reconnect(void);
 void callback(char * topic, byte *payload, unsigned int length);
 void ReportToMqtt(Wunderground *);
 
-#include <BMP280.h>
-BMP280 *bmp280 = 0;
-
-// ElektorLabs
-#include <BME280.h>
-BME280 *bme280 = 0;
+// The FiniteStudio driver works for both BMP280 and BME280.
+#include <BME280I2C.h>
+BME280I2C *bme280 = 0;
 
 /* MQTT */
 const char *mqtt_server	= MQTT_HOST;
@@ -129,25 +126,15 @@ void setup() {
   mySntpInit();
 
   // Detect sensor presence
-
-  bmp280 = new BMP280();
-  ok = bmp280->begin();  
-  if (! ok) {
-    delete bmp280;
-    bmp280 = 0;
-  }
-
-  bme280 = new BME280();
+  bme280 = new BME280I2C();
   ok = bme280->begin();
-  if (! ok) {
-    delete bme280;
-    bme280 = 0;
-  }
 
   if (!ok) {
     Serial.println("Could not find a valid BME280 / BMP280 sensor");
     return;
   }
+
+  Serial.printf("Sensor is a %s\n", (bme280->chipModel() == BME280::ChipModel_BMP280) ? "bmp280" : "bme280");
 }
 
 void loop() {
@@ -212,7 +199,9 @@ boolean UploadDataToWU(Wunderground *wup) {
     + "&baromin=" + baromin
     + "&action=updateraw&realtime=1&rtfreq=60";
 
-  // Serial.println("Requesting      : "+url);
+  boolean ok = true;
+
+  Serial.println("Requesting      : "+url);
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + WU_UPDATE_HOST + "\r\n" +
                "User-Agent: Danny Backx Garden Sensor\r\n" +
@@ -227,7 +216,6 @@ boolean UploadDataToWU(Wunderground *wup) {
   }
   String line = client.readStringUntil('\n');
 
-  boolean ok = true;
   // if (line == "success") line = "Server confirmed all data received";
   if (line == "INVALIDPASSWORDID|Password or key and/or id are incorrect") {
     line = "Invalid PWS/User data entered in the ID and PASSWORD or GET parameters";
@@ -249,20 +237,12 @@ boolean UploadDataToWU(Wunderground *wup) {
 Wunderground *ReadSensorInformation() {
   double t, h, p;
 
-  if (bmp280) {
-    char d3 = bmp280->startMeasurement();
-    delay(d3);
-    char d4 = bmp280->getTemperatureAndPressure(t, p);
-    if (d4 == 0) { // Error communicating with device
-      Serial.printf("BMP180 : communication error (pressure)\n");
-      return 0;
-    }
-    h = 100.0;
-  } else if (bme280) {
-  #warning bme280
-  } else {
+  if (bme280 == 0)
     return 0;
-  }
+
+  p = bme280->pres();
+  h = bme280->hum();
+  t = bme280->temp();
 
   // Safeguard against sensor communication failure
   if (t == 0 && p == 0)
@@ -292,6 +272,11 @@ Wunderground *ReadSensorInformation() {
   Serial.printf("Sensor read %d.%01d°C, %d hPa (imperial units : %d°F, pressure %d.%06d)\n",
     ta, tb, pa,
     tfa, pia, pib);
+
+  int ha, hb;
+  ha = h;
+  hb = (h - ha) * 100;
+  Serial.printf("Humidity %d.%02d%%\n", ha, hb);
 
   return data;
 }

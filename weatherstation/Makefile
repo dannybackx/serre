@@ -52,10 +52,10 @@ MYLIBS = $(HOME)/src/sketchbook/esp8266/libraries
 
 LIBS = $(ESP_LIBS)/ESP8266WiFi \
 	$(ESP_LIBS)/Wire \
+	$(ESP_LIBS)/SPI \
 	$(ESP_LIBS)/ArduinoOTA \
 	$(ESP_LIBS)/ESP8266mDNS \
-	${MYLIBS}/BoschSensortec/BMP280 \
-	${MYLIBS}/ElektorLabs/bme280 \
+	${MYLIBS}/finitespace/bme280 \
 	${MYLIBS}/pubsubclient \
 	${MYLIBS}/Timezone
 
