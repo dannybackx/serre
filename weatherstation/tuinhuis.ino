@@ -201,7 +201,7 @@ boolean UploadDataToWU(Wunderground *wup) {
 
   boolean ok = true;
 
-  Serial.println("Requesting      : "+url);
+  // Serial.println("Requesting      : "+url);
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + WU_UPDATE_HOST + "\r\n" +
                "User-Agent: Danny Backx Garden Sensor\r\n" +
