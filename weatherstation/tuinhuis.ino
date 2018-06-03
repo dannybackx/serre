@@ -269,14 +269,14 @@ Wunderground *ReadSensorInformation() {
   pia = data->sensor_pressurem;
   pib = 1000000 * (data->sensor_pressurem - pia);
 
-  Serial.printf("Sensor read %d.%01d°C, %d hPa (imperial units : %d°F, pressure %d.%06d)\n",
-    ta, tb, pa,
-    tfa, pia, pib);
-
   int ha, hb;
   ha = h;
   hb = (h - ha) * 100;
-  Serial.printf("Humidity %d.%02d%%\n", ha, hb);
+
+  Serial.printf(
+    "Sensor read %d.%01d°C, %d hPa, hum %d%% (imperial : %d°F, pressure %d.%06d)\n",
+    ta, tb, pa, ha,
+    tfa, pia, pib);
 
   return data;
 }
@@ -431,18 +431,19 @@ void callback(char *topic, byte *payload, unsigned int length) {
 void ReportToMqtt(Wunderground *data) {
   char line[80], tbuf[32];
 
-  int ta, tb, pa;
+  int ta, tb, pa, h;
   ta = data->sensor_temperature;
   tb = 10 * (data->sensor_temperature - ta);
   pa = data->sensor_pressure;
+  h = data->sensor_humidity;
 
   struct tm *tmp = localtime(&data->time);
   strftime(tbuf, sizeof(tbuf), "%F %R", tmp);
 
   if (indoor)
-    sprintf(line, "%s, indoor %d.%01d°C, %d hPa", tbuf, ta, tb, pa);
+    sprintf(line, "%s, indoor %d.%01d°C, %d hPa, %d%%", tbuf, ta, tb, pa, h);
   else
-    sprintf(line, "%s, sensor %d.%01d°C, %d hPa", tbuf, ta, tb, pa);
+    sprintf(line, "%s, sensor %d.%01d°C, %d hPa, %d%%", tbuf, ta, tb, pa, h);
 
   if (client.connected())
     client.publish(MQTT_TOPIC, line);
