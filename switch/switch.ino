@@ -1,7 +1,8 @@
+#undef	DEBUG
 /*
  * Power switch, controlled by MQTT
  *
- * Copyright (c) 2016, 2017 Danny Backx
+ * Copyright (c) 2016, 2017, 2019 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -57,6 +58,9 @@ struct mywifi {
 #ifdef MY_SSID_4
   { MY_SSID_4, MY_WIFI_PASSWORD_4 },
 #endif
+#ifdef MY_SSID_5
+  { MY_SSID_5, MY_WIFI_PASSWORD_5 },
+#endif
   { NULL, NULL}
 };
 
@@ -66,9 +70,6 @@ PubSubClient	client(espClient);
 
 const char* mqtt_server = MQTT_HOST;
 const int mqtt_port = MQTT_PORT;
-
-#define	SWITCH_TOPIC	"/switch"
-#define OTA_ID		"OTA-Switch"
 
 const char *mqtt_topic = SWITCH_TOPIC;
 const char *reply_topic = SWITCH_TOPIC "/reply";
@@ -101,6 +102,17 @@ struct item {
 int nitems = 0;
 item *items;
 
+struct dates {
+  short		month, day;
+  const char	*schedule;
+} date_table [] = {
+  { 11, 1,	"16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0" },	// Winter
+  { 2, 20,	"21:00,1,22:35,0,06:58,1,07:25,0" },					// Late winter
+  { 4, 1,	"21:00,1,22:35,0" },							// Spring
+  { 6, 15,	"22:00,1,22:45,0" },							// Summer
+  { 0, 0,	0 }
+};
+
 #define	VERBOSE_OTA	0x01
 #define	VERBOSE_VALVE	0x02
 #define	VERBOSE_BMP	0x04
@@ -110,9 +122,12 @@ item *items;
 void callback(char * topic, byte *payload, unsigned int length);
 void reconnect(void);
 time_t mySntpInit();
+void SetDefaultSchedule(time_t);
 
 // Arduino setup function
 void setup() {
+  Serial.begin(76800);
+  Serial.printf("Starting switch");
   // Try to connect to WiFi
   WiFi.mode(WIFI_STA);
 
@@ -120,7 +135,7 @@ void setup() {
   for (int ix = 0; wcr != WL_CONNECTED && mywifi[ix].ssid != NULL; ix++) {
     int wifi_tries = 3;
     while (wifi_tries-- >= 0) {
-      // Serial.printf("\nTrying (%d %d) %s %s .. ", ix, wifi_tries, mywifi[ix].ssid, mywifi[ix].pass);
+      Serial.printf("\nTrying (%d %d) %s %s .. ", ix, wifi_tries, mywifi[ix].ssid, mywifi[ix].pass);
       WiFi.begin(mywifi[ix].ssid, mywifi[ix].pass);
       wcr = WiFi.waitForConnectResult();
       if (wcr == WL_CONNECTED)
@@ -133,6 +148,7 @@ void setup() {
     delay(2000);
     ESP.restart();
   }
+  Serial.printf("Connected\n");
 
   IPAddress ip = WiFi.localIP();
   ips = ip.toString();
@@ -143,13 +159,16 @@ void setup() {
   // Note : DST processing comes later
   (void)sntp_set_timezone(MY_TIMEZONE);
   sntp_init();
-  sntp_setservername(0, (char *)"ntp.scarlet.be");
+  sntp_setservername(0, (char *)"ntp.telenet.be");
   sntp_setservername(1, (char *)"ntp.belnet.be");
 
   ArduinoOTA.onStart([]() {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
+#ifdef DEBUG
+      Serial.printf("OTA start\n");
+#endif
       client.publish(reply_topic, "OTA start");
     }
   });
@@ -158,6 +177,9 @@ void setup() {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
+#ifdef DEBUG
+      Serial.printf("OTA complete\n");
+#endif
       client.publish(reply_topic, "OTA complete");
     }
   });
@@ -172,6 +194,9 @@ void setup() {
     if (verbose & VERBOSE_OTA) {
       if (!client.connected())
         reconnect();
+#ifdef DEBUG
+      Serial.printf("OTA error\n");
+#endif
       client.publish(reply_topic, "OTA Error");
     }
   });
@@ -195,10 +220,16 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   PinOff();
 
+#if 0
   // Default schedule
-  // SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
+  SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
   // SetSchedule("21:00,1,22:35,0,06:58,1,07:25,0");	// Late winter
-  SetSchedule("22:00,1,22:45,0");	// Summer
+  // SetSchedule("21:00,1,22:35,0");	// Spring
+  // SetSchedule("22:00,1,22:45,0");	// Summer
+#else
+  SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
+  SetDefaultSchedule(sntp_get_current_timestamp());
+#endif
 }
 
 void PinOn() {
@@ -253,57 +284,48 @@ void loop() {
       return;
     }
 
+    int the_day = day(the_time);
+    int the_month = month(the_time);
+    int the_year = year(the_time);
+    int the_dow = dayOfWeek(the_time);
+
     int tn = newhour * 60 + newminute;
     for (int i=1; i<nitems; i++) {
       int t1 = items[i-1].hour * 60 + items[i-1].minute;
       int t2 = items[i].hour * 60 + items[i].minute;
 
-#if 1
       // On the exact hour, turn off manual mode
       if (t1 == tn && manual == 1) {
         manual = 0;
 
 	if (items[i-1].state == 1 && state == 0) {
 	  PinOn();
-	  RelayDebug("%02d:%02d : %s", newhour, newminute, "on");
+	  RelayDebug("%04d.%02d.02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "on");
 	} else if (items[i-1].state == 0 && state == 1) {
 	  PinOff();
-	  RelayDebug("%02d:%02d : %s", newhour, newminute, "off");
+	  RelayDebug("%04d.%02d.02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "off");
 	}
       } else if (t1 <= tn && tn < t2 && manual == 0) {
         // Between the hours, only change state if not manual
 	if (items[i-1].state == 1 && state == 0) {
 	  PinOn();
-	  RelayDebug("%02d:%02d : %s", newhour, newminute, "on");
+	  RelayDebug("%04d.%02d.02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "on");
 	} else if (items[i-1].state == 0 && state == 1) {
 	  PinOff();
-	  RelayDebug("%02d:%02d : %s", newhour, newminute, "off");
+	  RelayDebug("%04d.%02d.02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "off");
 	}
       }
-#else
-      if (t1 <= tn && tn < t2) {
-	if (items[i-1].state == 1 && state == 0) {
-	  PinOn();
-	  RelayDebug("%02d:%02d : %s", newhour, newminute, "on");
-	} else if (items[i-1].state == 0 && state == 1) {
-	  PinOff();
-	  RelayDebug("%02d:%02d : %s", newhour, newminute, "off");
-	}
-      }
-#endif
     }
 
     // On the beginning of the hour, check DST
     if (newminute == 0) {
-      int the_day = day(the_time);
-      int the_month = month(the_time);
-      int the_dow = dayOfWeek(the_time);
-
       bool newdst = IsDST2(the_day, the_month, the_dow, newhour);
       if (_isdst != newdst) {
         mySntpInit();
 	_isdst = newdst;
       }
+    } else if (newminute == 1 && newhour == 1) {
+      SetDefaultSchedule(the_time);
     }
   }
 }
@@ -331,6 +353,9 @@ void callback(char *topic, byte *payload, unsigned int length) {
     } else if (strcmp(pl, "state") == 0) {	// Query on/off state
       RelayDebug("Switch %s", GetState() ? "on" : "off");
     } else if (strcmp(pl, "query") == 0) {	// Query schedule
+#ifdef DEBUG
+      Serial.printf("%s %s %s\n", SWITCH_TOPIC, "/schedule", GetSchedule());
+#endif
       client.publish(SWITCH_TOPIC "/schedule", GetSchedule());
     } else if (strcmp(pl, "network") == 0) {	// Query network parameters
       Debug("SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
@@ -338,6 +363,8 @@ void callback(char *topic, byte *payload, unsigned int length) {
       time_t t = sntp_get_current_timestamp();
       Debug("%04d-%02d-%02d %02d:%02d:%02d, tz %d",
         year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
+    } else if (strcmp(pl, "reboot") == 0) {
+      ESP.restart();
     } else if (strcmp(pl, "reinit") == 0) {
       mySntpInit();
     }
@@ -441,6 +468,8 @@ bool IsDST2(int day, int month, int dow, int hr)
 void SetSchedule(const char *desc) {
   const char *p;
   int count;
+
+  RelayDebug("SetSchedule(%s)", desc);
 
   // Count commas
   for (p=desc,count=0; *p; p++)
@@ -582,6 +611,9 @@ void RelayDebug(const char *format, ...)
   vsnprintf(buffer, 128, format, ap);
   va_end(ap);
   client.publish(relay_topic, buffer);
+#ifdef DEBUG
+  Serial.printf("%s\n", buffer);
+#endif
 }
 
 // Send a line of debug info to MQTT
@@ -593,4 +625,17 @@ void Debug(const char *format, ...)
   vsnprintf(buffer, 128, format, ap);
   va_end(ap);
   client.publish(reply_topic, buffer);
+#ifdef DEBUG
+  Serial.printf("%s\n", buffer);
+#endif
+}
+
+void SetDefaultSchedule(time_t the_time) {
+  int i;
+
+  for (i=0; date_table[i].schedule; i++)
+    if (date_table[i].month == month(the_time) && date_table[i].day == day(the_time)) {
+      SetSchedule(date_table[i].schedule);
+      return;
+    }
 }

@@ -179,6 +179,11 @@ $(MAIN_EXE): $(CORE_LIB) $(USER_OBJ)
 upload: all
 	$(ESP_TOOL) $(UPLOAD_VERB) -cd $(HWTYPE) -cb $(UPLOAD_SPEED) -cp $(UPLOAD_PORT) -ca 0x00000 -cf $(MAIN_EXE)
 
+debug:
+	miniterm.py ${UPLOAD_PORT} 76800
+
+run:	upload debug
+
 ota: all showotaip
 	$(UPLOAD_OTA_TOOL) -i $(UPLOAD_AVAHI_IP) -p $(UPLOAD_AVAHI_PORT) -f $(MAIN_EXE)
 

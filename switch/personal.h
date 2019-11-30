@@ -24,7 +24,15 @@
  */
 
 /* Personal configuration that are not secrets, so moved from secrets.h */
-#define MQTT_CLIENT	"esp switch"
+#ifdef DEBUG
+# define MQTT_CLIENT	"esp switch debug"
+# define SWITCH_TOPIC	"/testswitch"
+# define OTA_ID		"OTA-Switch-debug"
+#else
+# define MQTT_CLIENT	"esp switch"
+# define SWITCH_TOPIC	"/switch"
+# define OTA_ID		"OTA-Switch"
+#endif
 
 #define	SSR_PIN		D3
 #define	LED_PIN		D4
