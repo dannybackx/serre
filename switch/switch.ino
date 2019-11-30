@@ -300,19 +300,19 @@ void loop() {
 
 	if (items[i-1].state == 1 && state == 0) {
 	  PinOn();
-	  RelayDebug("%04d.%02d.02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "on");
+	  RelayDebug("%04d.%02d.%02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "on");
 	} else if (items[i-1].state == 0 && state == 1) {
 	  PinOff();
-	  RelayDebug("%04d.%02d.02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "off");
+	  RelayDebug("%04d.%02d.%02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "off");
 	}
       } else if (t1 <= tn && tn < t2 && manual == 0) {
         // Between the hours, only change state if not manual
 	if (items[i-1].state == 1 && state == 0) {
 	  PinOn();
-	  RelayDebug("%04d.%02d.02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "on");
+	  RelayDebug("%04d.%02d.%02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "on");
 	} else if (items[i-1].state == 0 && state == 1) {
 	  PinOff();
-	  RelayDebug("%04d.%02d.02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "off");
+	  RelayDebug("%04d.%02d.%02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "off");
 	}
       }
     }
