@@ -361,7 +361,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
       Debug("SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
     } else if (strcmp(pl, "time") == 0) {	// Query the device's current time
       time_t t = sntp_get_current_timestamp();
-      Debug("%04d-%02d-%02d %02d:%02d:%02d, tz %d",
+      Debug("%04d.%02d.%02d %02d:%02d:%02d, tz %d",
         year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
     } else if (strcmp(pl, "reboot") == 0) {
       ESP.restart();
@@ -387,12 +387,12 @@ void reconnect(void) {
 
       // Once connected, publish an announcement...
       if (mqtt_initial) {
-	Debug("boot %04d-%02d-%02d %02d:%02d:%02d, timezone is set to %d",
+	Debug("boot %04d.%02d.%02d %02d:%02d:%02d, timezone is set to %d",
 	  year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
 
 	mqtt_initial = 0;
       } else {
-        Debug("reconnect %04d-%02d-%02d %02d:%02d:%02d",
+        Debug("reconnect %04d.%02d.%02d %02d:%02d:%02d",
 	  year(t), month(t), day(t), hour(t), minute(t), second(t));
       }
 
