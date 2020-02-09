@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (c) 2004 Apple Computer, Inc. All rights reserved.
  *
@@ -665,3 +666,4 @@ doswitch:
 	}
 	/* NOTREACHED */
 }
+#endif
