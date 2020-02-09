@@ -570,7 +570,7 @@ time_t mySntpInit() {
   // Wait for a correct time, and report it
 
   t = sntp_get_current_timestamp();
-  while (t < 10000) {
+  while (t < 100000) {
     delay(1000);
     t = sntp_get_current_timestamp();
   }
