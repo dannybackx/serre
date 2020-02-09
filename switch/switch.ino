@@ -2,7 +2,7 @@
 /*
  * Power switch, controlled by MQTT
  *
- * Copyright (c) 2016, 2017, 2019 Danny Backx
+ * Copyright (c) 2016, 2017, 2019, 2020 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -107,7 +107,7 @@ struct dates {
   const char	*schedule;
 } date_table [] = {
   { 11, 1,	"16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0" },	// Winter
-  { 2, 20,	"21:00,1,22:35,0,06:58,1,07:25,0" },					// Late winter
+  { 2, 10,	"21:00,1,22:35,0,06:58,1,07:25,0" },					// Late winter
   { 4, 1,	"21:00,1,22:35,0" },							// Spring
   { 6, 15,	"22:00,1,22:45,0" },							// Summer
   { 0, 0,	0 }
@@ -570,7 +570,7 @@ time_t mySntpInit() {
   // Wait for a correct time, and report it
 
   t = sntp_get_current_timestamp();
-  while (t < 0x1000) {
+  while (t < 10000) {
     delay(1000);
     t = sntp_get_current_timestamp();
   }
