@@ -1,0 +1,111 @@
+menu "Configuration for ESP32-Kippen"
+
+config OTA_URL
+  string "Secure boot file URL"
+
+config FTP_WEBSERVER_IP
+  string "IP Address of our webserver"
+
+config FTP_WEBSERVER_PATH
+  string "Path to served files"
+
+config FTP_WEBSERVER_FTPUSER
+  string "Userid for the FTP server"
+
+config FTP_WEBSERVER_FTPPASS
+  string "Password for the FTP server"
+
+config ACME_EMAIL_ADDRESS
+  string "Email address passed to ACME server"
+
+config ACME_SERVER_URL
+  string "ACME server URL"
+
+config ACME_USER_KEY_FILE
+  string "ACME user key file"
+
+config WEBSERVER_PORT
+  int "port number for the web server"
+
+config FTP_USER
+  string "userid for the FTP server"
+
+config CHECK_LOCALCERTIFICATES
+  boolean "Do we check based on local certificates ?"
+
+config JSON_SERVERPORT
+  int "port"
+
+config TIMEZONE
+  string "timezone"
+
+config FS_BASEDIR
+  string "Base dir of the fs"
+
+config USE_LITTLEFS
+  boolean "Do we use LittleFS ?"
+
+config DYNDNS_ENABLED
+  boolean "Do we run DynDNS ?"
+
+config DYNDNS_URL
+  string "URL of the server"
+
+config DYNDNS_AUTH
+  string "Authentication for DYNDNS"
+
+config ACME_ENABLED
+  boolean "Do we run ACME ?"
+
+config I2C_SDA_PIN
+  int "I2C : pin for SDA"
+
+config I2C_SCL_PIN
+  int "I2C : pin for SCL"
+
+config ACME_DOMAIN
+  string "The domain for which we'll manage a certificate"
+
+config ACME_EMAIL
+  string "Email address of the maintainer"
+
+config ACME_ACCOUNT_FN
+  string "Local file holding acount information"
+
+config ACME_ORDER_FN
+  string "Local file holding order information"
+
+config ACME_ACCOUNT_KEY_FN
+  string "Local file holding the account private key"
+
+config CERT_KEY_FN
+  string "Local file holding the certificate private key"
+
+config ACME_CERTIFICATE_FN
+  string "Local file holding the certificate"
+
+config SENSOR_DOWN_PIN
+  int "Pin on which the low sensor (e.g. hall effect) for the door/hatch is connected"
+
+config SENSOR_UP_PIN
+  int "Pin on which the high sensor (e.g. hall effect) for the door/hatch is connected"
+
+config L298_CHANNEL_A_SPEED_PIN
+  int "Pin to drive L298's speed on motor A"
+
+config L298_CHANNEL_A_DIR1_PIN
+  int "Pin to drive motor direction 1, motor channel A"
+
+config L298_CHANNEL_A_DIR2_PIN
+  int "Pin to drive motor direction 2, motor channel A"
+
+config L298_CHANNEL_B_SPEED_PIN
+  int "Pin to drive L298's speed on motor B"
+
+config L298_CHANNEL_B_DIR1_PIN
+  int "Pin to drive motor direction 1, motor channel B"
+
+config L298_CHANNEL_B_DIR2_PIN
+  int "Pin to drive motor direction 2, motor channel B"
+
+endmenu
