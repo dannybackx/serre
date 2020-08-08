@@ -43,3 +43,15 @@ You can query all kinds of things like this :
   mosquitto_pub -h pi4 -t kippen -m /light/query
   mosquitto_pub -h pi4 -t kippen -m /boot/query
   mosquitto_pub -h pi4 -t kippen -m /BMP180/query
+
+Libraries and components :
+- acmeclient
+- Adafruit_MCP9808
+- Adafruit_Sensor
+- arduinojson
+- ftpclient
+*** Timezone
+
+- arduino
+- esp_littlefs
+- littlefs

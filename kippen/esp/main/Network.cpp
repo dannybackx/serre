@@ -58,23 +58,27 @@ struct mywifi {
   const char *ssid, *pass, *bssid;
   bool nat;
   bool discard;
+  const char *eap_identity, *eap_password;
 } mywifi[] = {
-#ifdef MY_SSID_1
-  { MY_SSID_1, MY_WIFI_PASSWORD_1, MY_WIFI_BSSID_1, MY_WIFI_NAT_1, false },
+#ifdef WIFI_1_SSID
+  { WIFI_1_SSID, WIFI_1_PASSWORD, WIFI_1_BSSID, WIFI_1_NAT, false, WIFI_1_EAP_IDENTITY, WIFI_1_EAP_PASSWORD },
 #endif
-#ifdef MY_SSID_2
-  { MY_SSID_2, MY_WIFI_PASSWORD_2, MY_WIFI_BSSID_2, MY_WIFI_NAT_2, false },
+#ifdef WIFI_2_SSID
+  { WIFI_2_SSID, WIFI_2_PASSWORD, WIFI_2_BSSID, WIFI_2_NAT, false, WIFI_2_EAP_IDENTITY, WIFI_2_EAP_PASSWORD },
 #endif
-#ifdef MY_SSID_3
-  { MY_SSID_3, MY_WIFI_PASSWORD_3, MY_WIFI_BSSID_3, MY_WIFI_NAT_3, false },
+#ifdef WIFI_3_SSID
+  { WIFI_3_SSID, WIFI_3_PASSWORD, WIFI_3_BSSID, WIFI_3_NAT, false, WIFI_3_EAP_IDENTITY, WIFI_3_EAP_PASSWORD },
 #endif
-#ifdef MY_SSID_4
-  { MY_SSID_4, MY_WIFI_PASSWORD_4, MY_WIFI_BSSID_4, MY_WIFI_NAT_4, false },
+#ifdef WIFI_4_SSID
+  { WIFI_4_SSID, WIFI_4_PASSWORD, WIFI_4_BSSID, WIFI_4_NAT, false, WIFI_4_EAP_IDENTITY, WIFI_4_EAP_PASSWORD },
 #endif
-#ifdef MY_SSID_5
-  { MY_SSID_5, MY_WIFI_PASSWORD_5, MY_WIFI_BSSID_5, MY_WIFI_NAT_5, false },
+#ifdef WIFI_5_SSID
+  { WIFI_5_SSID, WIFI_5_PASSWORD, WIFI_5_BSSID, WIFI_5_NAT, false, WIFI_5_EAP_IDENTITY, WIFI_5_EAP_PASSWORD },
 #endif
-  { NULL, NULL, NULL, false, false}
+#ifdef WIFI_6_SSID
+  { WIFI_6_SSID, WIFI_6_PASSWORD, WIFI_6_BSSID, WIFI_6_NAT, false, WIFI_6_EAP_IDENTITY, WIFI_6_EAP_PASSWORD },
+#endif
+  { NULL,        NULL,            NULL,         false,      false, NULL,                NULL }
 };
 
 const char *snetwork_tag = "Network static";
@@ -222,60 +226,71 @@ void Network::SetupWifi(void)
 
 void Network::WaitForWifi(void)
 {
-  ESP_LOGD(network_tag, "Waiting for wifi");
+  ESP_LOGI(network_tag, "Waiting for wifi");
  
   wifi_config_t wifi_config;
   for (int ix = 0; mywifi[ix].ssid != 0; ix++) {
+    ESP_LOGI(network_tag, "Wifi %d, ssid [%s]", ix, mywifi[ix].ssid);
     if (mywifi[ix].discard) {
       ESP_LOGD(network_tag, "Discarded SSID \"%s\"", mywifi[ix].ssid);
       continue;
     }
-    memset(&wifi_config, 0, sizeof(wifi_config));
-    strcpy((char *)wifi_config.sta.ssid, mywifi[ix].ssid);
-    strcpy((char *)wifi_config.sta.password, mywifi[ix].pass);
-    if (mywifi[ix].bssid) {
-      int r = sscanf(mywifi[ix].bssid, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", 
-        &wifi_config.sta.bssid[0],
-        &wifi_config.sta.bssid[1],
-        &wifi_config.sta.bssid[2],
-        &wifi_config.sta.bssid[3],
-        &wifi_config.sta.bssid[4],
-        &wifi_config.sta.bssid[5]);
-      wifi_config.sta.bssid_set = true;
-      if (r != 6) {
-	ESP_LOGE(network_tag, "Could not convert MAC %s into acceptable format", mywifi[ix].bssid);
-	memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
-	wifi_config.sta.bssid_set = false;
-      }
-    } else
-      memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
 
     /*
-     * Set the Wifi to STAtion mode on the network specified by SSID (and optionally BSSID).
+     * Normal version : use WPA
      */
-    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_STA);
-    if (err != ESP_OK) {
-      ESP_LOGE(network_tag, "Failed to set wifi mode to STA");
-      // FIXME
-      return;
-    }
-    err = esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
-    if (err != ESP_OK) {
-      ESP_LOGE(network_tag, "Failed to set wifi config");
-      // FIXME
-      return;
-    }
-    ESP_LOGD(network_tag, "Try wifi ssid [%s]", wifi_config.sta.ssid);
-    err = esp_wifi_start();
-    if (err != ESP_OK) {
+    if (mywifi[ix].pass) {
+      ESP_LOGI(network_tag, "Wifi %d, ssid [%s], has WPA config", ix, mywifi[ix].ssid);
+
+      memset(&wifi_config, 0, sizeof(wifi_config));
+      strcpy((char *)wifi_config.sta.ssid, mywifi[ix].ssid);
+      strcpy((char *)wifi_config.sta.password, mywifi[ix].pass);
+      if (mywifi[ix].bssid) {
+	int r = sscanf(mywifi[ix].bssid, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", 
+	  &wifi_config.sta.bssid[0],
+	  &wifi_config.sta.bssid[1],
+	  &wifi_config.sta.bssid[2],
+	  &wifi_config.sta.bssid[3],
+	  &wifi_config.sta.bssid[4],
+	  &wifi_config.sta.bssid[5]);
+	wifi_config.sta.bssid_set = true;
+	if (r != 6) {
+	  ESP_LOGE(network_tag, "Could not convert MAC %s into acceptable format", mywifi[ix].bssid);
+	  memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
+	  wifi_config.sta.bssid_set = false;
+	}
+      } else
+	memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
+
       /*
-       * FIX ME
-       * usually the code survives this (ESP_OK happens) but an event gets fired into
-       * wifi_event_handler().
+       * Set the Wifi to STAtion mode on the network specified by SSID (and optionally BSSID).
        */
-      ESP_LOGE(network_tag, "Failed to start wifi");
-      // FIXME
-      return;
+      esp_err_t err = esp_wifi_set_mode(WIFI_MODE_STA);
+      if (err != ESP_OK) {
+	ESP_LOGE(network_tag, "Failed to set wifi mode to STA");		// FIXME
+	return;
+      }
+      err = esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
+      if (err != ESP_OK) {
+	ESP_LOGE(network_tag, "Failed to set wifi config");		// FIXME
+	return;
+      }
+      ESP_LOGI(network_tag, "Try wifi ssid [%s]", wifi_config.sta.ssid);
+      err = esp_wifi_start();
+      if (err != ESP_OK) {
+	/*
+	 * FIX ME
+	 * usually the code survives this (ESP_OK happens) but an event gets fired into
+	 * wifi_event_handler().
+	 */
+	ESP_LOGE(network_tag, "Failed to start wifi");			// FIXME
+	return;
+      }
+    } else if (mywifi[ix].eap_password) {
+      ESP_LOGE(network_tag, "Auch, can't treat EAP yet (SSID %s)", mywifi[ix].ssid);
+    } else {
+      mywifi[ix].discard = true;
+      continue;
     }
 
     if (status == NS_SETUP_DONE) {
