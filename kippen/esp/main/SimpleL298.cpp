@@ -62,14 +62,14 @@ static void example(void *arg) {
     vTaskDelay(2000 / portTICK_RATE_MS);
   }
 
-  ESP_LOGE(sl298_tag, "Stopping task ...");
+  ESP_LOGI(sl298_tag, "Stopping task ...");
   vTaskDelay(100 / portTICK_RATE_MS);
   vTaskDelete(0);
 }
 
 
 SimpleL298::SimpleL298(int dir_pin1, int dir_pin2, int speed_pin) {
-  ESP_LOGE(l298_tag, "SimpleL298(dir1 %d, dir2 %d, sp %d)", dir_pin1, dir_pin2, speed_pin);
+  ESP_LOGI(l298_tag, "SimpleL298(dir1 %d, dir2 %d, sp %d)", dir_pin1, dir_pin2, speed_pin);
 
   dirPin1 = dir_pin1;
   dirPin2 = dir_pin2;
@@ -100,7 +100,7 @@ SimpleL298::SimpleL298(int dir_pin1, int dir_pin2, int speed_pin) {
 void SimpleL298::motorForward() {
   float duty_cycle = speed;
 
-  ESP_LOGE(l298_tag, "forward");
+  ESP_LOGI(l298_tag, "forward");
   mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B);
   mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, duty_cycle);
   mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0);
@@ -109,7 +109,7 @@ void SimpleL298::motorForward() {
 void SimpleL298::motorBackward() {
   float duty_cycle = speed;
 
-  ESP_LOGE(l298_tag, "backward");
+  ESP_LOGI(l298_tag, "backward");
   mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B);
   mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
   mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, duty_cycle);
@@ -117,7 +117,7 @@ void SimpleL298::motorBackward() {
 }
 
 void SimpleL298::motorStop() {
-  ESP_LOGE(l298_tag, "stop");
+  ESP_LOGI(l298_tag, "stop");
   mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B);
   mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
   mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B);
