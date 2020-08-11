@@ -1,7 +1,7 @@
 /*
- * Secure keypad : one that doesn't need unlock codes
+ * Global class and variables for the chicken coop project
  *
- * Copyright (c) 2018, 2019 Danny Backx
+ * Copyright (c) 2018, 2019, 2020 Danny Backx
  *
  * License (GNU Lesser General Public License) :
  *
@@ -42,6 +42,7 @@ extern const char		*build;
 class Kippen {
 private:
   boolean mqttSubscribed;
+  bool		sntp_up;
 
   esp_mqtt_client_config_t mqtt_config;
   esp_mqtt_client_handle_t mqtt;

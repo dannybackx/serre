@@ -325,7 +325,9 @@ bool Kippen::Report(const char *msg) {
 void Kippen::NetworkConnected(void *ctx, system_event_t *event) {
   ESP_LOGD(kippen_tag, "Network connected, ip %s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
 
-  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  if (! sntp_up)
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_up = true;
   sntp_init();
   sntp_setservername(0, (char *)NTP_SERVER_0);
   sntp_setservername(1, (char *)NTP_SERVER_1);
@@ -348,6 +350,7 @@ void Kippen::NetworkConnected(void *ctx, system_event_t *event) {
 
 void Kippen::NetworkDisconnected(void *ctx, system_event_t *event) {
   sntp_stop();
+  sntp_up = false;
 }
 
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
@@ -356,9 +359,10 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
 
   switch (event->event_id) {
   case MQTT_EVENT_CONNECTED:
-    ESP_LOGD(kippen_tag, "mqtt connected");
+    ESP_LOGI(kippen_tag, "mqtt connected");
     network->mqttConnected();
     kippen->mqttConnected = true;
+    kippen->mqttSubscribe();
     break;
   case MQTT_EVENT_DISCONNECTED:
     ESP_LOGE(kippen_tag, "mqtt disconnected");
@@ -370,20 +374,21 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
     network->mqttSubscribed();
     break;
   case MQTT_EVENT_UNSUBSCRIBED:
-    ESP_LOGE(kippen_tag, "mqtt subscribed");
+    ESP_LOGE(kippen_tag, "mqtt unsubscribed");
     network->mqttUnsubscribed();
     break;
   case MQTT_EVENT_PUBLISHED:
     break;
   case MQTT_EVENT_DATA:
+    // No need to ignore own replies if we don't wildcard-subscribe
     // Ignore our own replies
-    if (strncmp(topic, "/kippen/reply", 12) == 0)
-      return ESP_OK;
+    // if (strncmp(topic, "/kippen/reply", 12) == 0)
+    //   return ESP_OK;
 
     // Indicate that we just got a message so we're still alive
     network->gotMqttMessage();
 
-    ESP_LOGD(kippen_tag, "MQTT topic %.*s message %.*s",
+    ESP_LOGI(kippen_tag, "MQTT topic %.*s message %.*s",
       event->topic_len, event->topic, event->data_len, event->data);
 
     // Make safe copies, then call business logic handler
@@ -423,9 +428,13 @@ void Kippen::mqttReconnect() {
     (err == ESP_OK) ? "ok" : (err == ESP_FAIL) ? "fail" : "?");
 }
 
+/*
+ * Note : don't wildcard-subscribe, this means you don't have to filter away own replies in 
+ * mqtt_event_handler():MQTT_EVENT_DATA
+ */
 void Kippen::mqttSubscribe() {
   if (mqttConnected) {
-    esp_mqtt_client_subscribe(mqtt, "/kippen", 0);
+    esp_mqtt_client_subscribe(mqtt, "/kippen", 0);	// Note no wildcard "/kippen/#"
   }
 }
 
@@ -433,6 +442,7 @@ Kippen::Kippen() {
   mqttConnected = false;
   mqttSubscribed = false;
   nowts = boot_time = 0;
+  sntp_up = false;
 }
 
 char *Kippen::HandleQueryAuthenticated(const char *query, const char *caller) {

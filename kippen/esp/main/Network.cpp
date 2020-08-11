@@ -296,11 +296,11 @@ void Network::WaitForWifi(void)
   ESP_LOGI(network_tag, "Waiting for wifi");
  
   for (int ix = 0; mywifi[ix].ssid != 0; ix++) {
-    ESP_LOGI(network_tag, "Wifi %d, ssid [%s]", ix, mywifi[ix].ssid);
     if (mywifi[ix].discard) {
       ESP_LOGD(network_tag, "Discarded SSID \"%s\"", mywifi[ix].ssid);
       continue;
     }
+    ESP_LOGI(network_tag, "Wifi %d, ssid [%s]", ix, mywifi[ix].ssid);
 
     // Discard an entry if we've unsuccesfully tried it several times ...
     if (mywifi[ix].counter++ >= 3) {
@@ -316,24 +316,50 @@ void Network::WaitForWifi(void)
       int r = sscanf(mywifi[ix].bssid, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", 
 	&wifi_config.sta.bssid[0], &wifi_config.sta.bssid[1], &wifi_config.sta.bssid[2],
 	&wifi_config.sta.bssid[3], &wifi_config.sta.bssid[4], &wifi_config.sta.bssid[5]);
-      wifi_config.sta.bssid_set = true;
-      if (r != 6) {
+      if (r == 6) {
+	wifi_config.sta.bssid_set = true;
+	ESP_LOGI(network_tag, "Selecting BSSID %s", mywifi[ix].bssid);
+      } else {
 	ESP_LOGE(network_tag, "Could not convert MAC %s into acceptable format", mywifi[ix].bssid);
 	memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
 	wifi_config.sta.bssid_set = false;
       }
-    } else
+    } else {
       memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
+      wifi_config.sta.bssid_set = false;
+    }
 
+#if 0
     /*
-     * Normal version : use WPA
+     * Set the Wifi to STAtion mode on the network specified by SSID (and optionally BSSID).
      */
-    if (mywifi[ix].pass) {
-      ESP_LOGI(network_tag, "Wifi %d, ssid [%s], has WPA config, pwd [%s]",
-        ix, mywifi[ix].ssid, mywifi[ix].pass);
-
-      strcpy((char *)wifi_config.sta.password, mywifi[ix].pass);
-    } else if (mywifi[ix].eap_password && strlen(mywifi[ix].eap_password) > 0) {
+    err = esp_wifi_set_mode(WIFI_MODE_STA);
+    if (err != ESP_OK) {
+      ESP_LOGE(network_tag, "Failed to set wifi mode to STA");		// FIXME
+      return;
+    }
+    err = esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
+    if (err != ESP_OK) {
+      ESP_LOGE(network_tag, "Failed to set wifi config");		// FIXME
+      return;
+    }
+#endif
+    if (mywifi[ix].eap_password && strlen(mywifi[ix].eap_password) > 0) {
+#if 1
+    /*
+     * Set the Wifi to STAtion mode on the network specified by SSID (and optionally BSSID).
+     */
+    err = esp_wifi_set_mode(WIFI_MODE_STA);
+    if (err != ESP_OK) {
+      ESP_LOGE(network_tag, "Failed to set wifi mode to STA");		// FIXME
+      return;
+    }
+    err = esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
+    if (err != ESP_OK) {
+      ESP_LOGE(network_tag, "Failed to set wifi config");		// FIXME
+      return;
+    }
+#endif
       /*
        * WPA2
        */
@@ -371,14 +397,22 @@ void Network::WaitForWifi(void)
       }
     } else {
       /*
-       * This should be allowed anyway (use counter to limit attempts) : an example is a public
-       * hotspot without password.
+       * Normal version : use WPA
        */
-      ESP_LOGI(network_tag, "Wifi %d, ssid [%s], WPA, no pwd", ix, mywifi[ix].ssid);
-      // mywifi[ix].discard = true;
-      continue;
-    }
+      if (mywifi[ix].pass) {
+	ESP_LOGI(network_tag, "Wifi %d, ssid [%s], has WPA config, pwd [%s]",
+	  ix, mywifi[ix].ssid, mywifi[ix].pass);
 
+	strcpy((char *)wifi_config.sta.password, mywifi[ix].pass);
+      } else {
+	/*
+	 * This should be allowed anyway (use counter to limit attempts) : an example is a public
+	 * hotspot without password.
+	 */
+	ESP_LOGI(network_tag, "Wifi %d, ssid [%s], WPA, no pwd", ix, mywifi[ix].ssid);
+	// mywifi[ix].discard = true;
+      }
+#if 1
     /*
      * Set the Wifi to STAtion mode on the network specified by SSID (and optionally BSSID).
      */
@@ -392,7 +426,23 @@ void Network::WaitForWifi(void)
       ESP_LOGE(network_tag, "Failed to set wifi config");		// FIXME
       return;
     }
-
+#endif
+    }
+#if 0
+    /*
+     * Set the Wifi to STAtion mode on the network specified by SSID (and optionally BSSID).
+     */
+    err = esp_wifi_set_mode(WIFI_MODE_STA);
+    if (err != ESP_OK) {
+      ESP_LOGE(network_tag, "Failed to set wifi mode to STA");		// FIXME
+      return;
+    }
+    err = esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
+    if (err != ESP_OK) {
+      ESP_LOGE(network_tag, "Failed to set wifi config");		// FIXME
+      return;
+    }
+#endif
     ESP_LOGI(network_tag, "Try wifi ssid [%s]", wifi_config.sta.ssid);
     err = esp_wifi_start();
     if (err != ESP_OK) {
