@@ -30,6 +30,7 @@
 #include "Dyndns.h"
 #include "Temperature.h"
 #include "SimpleL298.h"
+#include "Sunset.h"
 
 #include <esp_littlefs.h>
 
@@ -44,6 +45,7 @@ Acme		*acme = 0;
 Dyndns		*dyndns = 0;
 Temperature	*temperature = 0;
 SimpleL298	*simple = 0;
+Sunset		*sunset = 0;
 
 time_t		dyndns_last = 0;
 bool		ftp_started = false;
@@ -238,6 +240,8 @@ void setup(void) {
   simple = new SimpleL298(CONFIG_L298_CHANNEL_A_DIR1_PIN,	// 16
   			CONFIG_L298_CHANNEL_A_DIR2_PIN,		// 23
 			CONFIG_L298_CHANNEL_A_SPEED_PIN);	// 17
+
+  sunset = new Sunset();
 }
 
 void loop()
@@ -346,6 +350,8 @@ void Kippen::NetworkConnected(void *ctx, system_event_t *event) {
     ESP_LOGI(kippen_tag, "MQTT Client Start ok");
   else
     ESP_LOGE(kippen_tag, "MQTT Client Start failure : %d", err);
+
+  sunset->query("50.9", "4.67");
 }
 
 void Kippen::NetworkDisconnected(void *ctx, system_event_t *event) {

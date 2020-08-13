@@ -78,7 +78,7 @@ struct mywifi {
   bool discard;
   int counter;
 } mywifi[] = {
-#ifdef WIFI_1_SSIDx
+#ifdef WIFI_1_SSID
   { WIFI_1_SSID, WIFI_1_PASSWORD, WIFI_1_BSSID, WIFI_1_EAP_IDENTITY, WIFI_1_EAP_PASSWORD, WIFI_1_NAT, false, 0 },
 #endif
 #ifdef WIFI_2_SSID
