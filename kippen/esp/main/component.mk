@@ -77,4 +77,4 @@ build.h:	${MY_COMPONENT_OBJS}
 
 $(COMPONENT_LIBRARY):	$(COMPONENT_BUILD_DIR)/build_date.o
 
-# build_date.o: build.h
+build_date.o: build.h

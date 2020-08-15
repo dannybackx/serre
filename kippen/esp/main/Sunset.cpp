@@ -55,6 +55,15 @@
 Sunset::Sunset() {
   last_call = 0;
   stable = LIGHT_NONE;
+
+  memset(&http_config, 0, sizeof(http_config));
+
+  sunrise =  sunset =  twilight_begin =  twilight_end = 0;
+  lat =  lon = 0;
+
+  buf = 0;
+  last_query = 0;
+  last_error = 0;
 }
 
 Sunset::~Sunset() {
@@ -66,8 +75,14 @@ void Sunset::query(const char *lat, const char *lon, char *msg) {
   char *query = (char *)malloc(strlen(ss_template) + strlen(lat) + strlen(lon));
   sprintf(query, ss_template, lat, lon);
 
+  memset(&http_config, 0, sizeof(http_config));
   http_config.url = query;
   http_client = esp_http_client_init(&http_config);
+  if (http_client == 0) {
+    ESP_LOGE(sunset_tag, "Failed to open http client to %s", query);
+    free(query); query = 0; http_config.url = 0;
+    return;
+  }
 
   ESP_LOGD(sunset_tag, "Querying .. {%s}", query);
 

@@ -172,13 +172,13 @@ void WebServer::SendPage(httpd_req_t *req) {
     "<TITLE>ESP32 %s controller</TITLE>\r\n"
     "<BODY>"
     "<H1>General</h1>\r\n"
-    "<p>Node name %s"
+    "<p>Node name ss"
     "<p>Time %s"
     "<H1>Environment</H1>\r\n"
-    "<p>Weather %d"
-    "<p>Temperature %c&deg;C"
-    "<p>Pressure %p mb"
-    "<p>Wind %w km/h\r\n";
+    "<p>Weather dd"
+    "<p>Temperature cc&deg;C"
+    "<p>Pressure pp mb"
+    "<p>Wind ww km/h\r\n";
   const char *reply_template2 =
     "<P>\r\n"
 #ifdef WEB_SERVER_IS_SECURE
@@ -196,16 +196,20 @@ void WebServer::SendPage(httpd_req_t *req) {
   char *buf2 = (char *)malloc(strlen(reply_template1) + 70);
   
   char ts[20];
-  // _clock->timeString("%F %R", ts, sizeof(ts));
+  struct timeval tv;
+  gettimeofday(&tv, 0);
+  struct tm *now = localtime(&tv.tv_sec);
+  strftime(ts, sizeof(ts)-1, "%F %R", now);
 
-  // weather->strfweather(buf1, 250, reply_template1);
-  buf1[0] = 0;
+  sprintf(buf2, reply_template1, "kippen", ts);
+#if 0
+  weather->strfweather(buf1, 250, reply_template1);
   sprintf(buf2, buf1,
     "kippen",		// Node name, in the title
     "kippen",		// Node name, in page body
     ts				// time
     );
-
+#endif
   // No response code set, assumption that this is a succesfull call
   httpd_resp_send_chunk(req, buf2, strlen(buf2));
   free(buf1);

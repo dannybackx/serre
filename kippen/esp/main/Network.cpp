@@ -1,3 +1,4 @@
+#undef	DO_MDNS
 /*
  * This module manages unexpected disconnects (and recovery) from the network.
  *
@@ -35,6 +36,7 @@
 
 #include <esp_event_legacy.h>
 #include "esp_wpa2.h"
+#include "mdns.h"
 
 WebServer		*ws;
 
@@ -102,7 +104,7 @@ struct mywifi {
   { NULL,        NULL,            NULL,         NULL,                NULL,                false,      false, 0 }
 };
 
-const char *snetwork_tag = "Network static";
+const char *snetwork_tag = "Network";
 
 extern void ftp_init();
 
@@ -168,9 +170,12 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
       esp_wifi_connect();
       break;
 
+    case SYSTEM_EVENT_STA_CONNECTED:
+      tcpip_adapter_create_ip6_linklocal(TCPIP_ADAPTER_IF_STA);
+      break;
+
     case SYSTEM_EVENT_GOT_IP6:
-      ESP_LOGI(snetwork_tag, "We have an IPv6 address");
-      // FIXME
+      ESP_LOGI(snetwork_tag, "IPv6 : %s", ip6addr_ntoa(&event->event_info.got_ip6.ip6_info.ip));
       break;
 
     case SYSTEM_EVENT_STA_GOT_IP:
@@ -221,6 +226,7 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 
 	// Trigger next try
 	network->setStatus(NS_SETUP_DONE);
+	// esp_wifi_connect();
 	network->SetupWifi();
         network->WaitForWifi();
       } else {
@@ -529,6 +535,19 @@ void Network::NetworkConnected(void *ctx, system_event_t *event) {
 
   ESP_LOGI(network_tag, "Starting JSON Server");
   security->NetworkConnected(ctx, event);
+
+#ifdef DO_MDNS
+  esp_err_t err = mdns_init();
+  if (err != ESP_OK) {
+    ESP_LOGE(network_tag, "mdns init failed (%d %s)", err, esp_err_to_name(err));
+  } else {
+    mdns_hostname_set("kippen.local");
+    mdns_instance_name_set("kippen esp32");
+    ESP_LOGI(network_tag, "mdns : %s", "kippen");
+  }
+#else
+  ESP_LOGE(network_tag, "mDNS not configured");
+#endif
 }
 
 void Network::NetworkDisconnected(void *ctx, system_event_t *event) {

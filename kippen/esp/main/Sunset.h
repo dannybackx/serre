@@ -76,4 +76,6 @@ private:
 
   static const int	delay_queries = 25 * 60 * 60;
 };
+
+extern Sunset *sunset;
 #endif
