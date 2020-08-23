@@ -98,7 +98,7 @@ esp_err_t PcpClient::NetworkConnected(void *ctx, system_event_t *event) {
 void PcpClient::sendPacket(const char *packet, const int len) {
   if (sock < 0) {
     sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-    ESP_LOGI("pcp", "sendPacket: socket %d", sock);
+    ESP_LOGD("pcp", "sendPacket: socket %d", sock);
 
     struct sockaddr_in ls;
     memset((char *)&ls, 0, sizeof(ls));
@@ -109,10 +109,10 @@ void PcpClient::sendPacket(const char *packet, const int len) {
     if (bind(sock, (sockaddr *)&ls, sizeof(ls)) < 0) {
       ESP_LOGE("pcp", "sendPacket: bind to port %d failed %d %s", pcp_client_port, errno, strerror(errno));
     } else
-      ESP_LOGI("pcp", "sendPacket: bind to port %d ok", pcp_client_port);
+      ESP_LOGD("pcp", "sendPacket: bind to port %d ok", pcp_client_port);
 
   }
-
+#if 0
   {
     char s[64], a[10];
     for (int i=0; i<len; i++) {
@@ -130,7 +130,7 @@ void PcpClient::sendPacket(const char *packet, const int len) {
       ESP_LOGI("pcp", "send %s", s);
     }
   }
-
+#endif
   struct sockaddr_in dest;
   dest.sin_family = AF_INET;
   dest.sin_port = ntohs(pcp_server_port);
@@ -140,15 +140,7 @@ void PcpClient::sendPacket(const char *packet, const int len) {
   if (r <= 0)
     ESP_LOGE("pcp", "sendto -> %d (errno %d %s)", r, errno, strerror(errno));
   else
-    ESP_LOGI("pcp", "sendto -> %d", r);
-}
-
-void PcpClient::queryRouterExternalAddress() {
-  struct PcpPacketExternalAddressRequest p;
-  p.version = p.opcode = 0;
-  memset(&external, 0, sizeof(external));
-
-  sendPacket((const char *)&p, sizeof(p));
+    ESP_LOGD("pcp", "sendto -> %d", r);
 }
 
 in_addr_t PcpClient::getRouterExternalAddress() {
@@ -156,7 +148,7 @@ in_addr_t PcpClient::getRouterExternalAddress() {
 }
 
 void PcpClient::addPort(int16_t localport, int16_t remoteport, int8_t protocol, int32_t lifetime) {
-  ESP_LOGI("pcp", "PCP addPort %d %d %d %d", (int)localport, (int)remoteport, protocol, lifetime);
+  ESP_LOGI("pcp", "PCP addPort %d %d proto %d lifetime %d", 0xFFFF & localport, 0xFFFF & remoteport, protocol, lifetime);
 
   struct PcpPacket	p;
   memset(&p, 0, sizeof(p));
@@ -170,7 +162,7 @@ void PcpClient::addPort(int16_t localport, int16_t remoteport, int8_t protocol, 
   p.rh.client_ip[2] = htonl(0x0000FFFF);			// FIXME, looks like "IPv4 follows"
   p.rh.client_ip[3] = local;					// ESP
 
-  p.mof.nonce[0] = p.mof.nonce[1] = p.mof.nonce[2] = 0;		// FIXME
+  p.mof.nonce.initialize();
   p.mof.protocol = protocol;					// e.g. IPPROTO_TCP; 0 = all protocols
   p.mof.reserved[0] = p.mof.reserved[1] = p.mof.reserved[2] = 0;
   p.mof.internal_port = htons(localport);
@@ -179,6 +171,19 @@ void PcpClient::addPort(int16_t localport, int16_t remoteport, int8_t protocol, 
   p.mof.external_ip[0] = p.mof.external_ip[1] = p.mof.external_ip[2] = p.mof.external_ip[3] = 0;
 
   sendPacket((const char *)&p, sizeof(p));
+
+  PcpMappingInventory inv;
+  inv.result_code = -1;				// Our own code to indicate it's been requested
+  inv.lifetime = lifetime;
+  inv.nonce.copy(p.mof.nonce);
+  inv.protocol = protocol;
+  inv.internal_port = localport;
+  inv.external_port = remoteport;
+  inv.external_ip[0] = inv.external_ip[1] = inv.external_ip[2] = inv.external_ip[3] = 0;
+
+  requests.push_front(inv);
+
+  ESP_LOGE("pcp", "Requests list count %d", requests.size());
 }
 
 void PcpClient::deletePort(int16_t localport, int8_t protocol) {
@@ -216,7 +221,7 @@ void pcp_task(void *ptr) {
     struct sockaddr_in sender;
     socklen_t	sl = sizeof(sender);
 
-    if (pcp->sock < 0) {
+    if (pcp == 0 || pcp->sock < 0) {
       vTaskDelay(2000 / portTICK_PERIOD_MS);
       continue;
     }
@@ -272,15 +277,15 @@ void PcpClient::PcpReplyMapping(struct PcpPacket *rp) {
   ESP_LOGI("pcp", "ReplyMapping received, decoding ...");
   // FIXME check nonce ?
   if (rp->rh.result_code == PCP_RESULT_SUCCESS) {
-    ESP_LOGI("pcp", "Mapping succeeded : int %04x ext %04x, ext ip %s",
-      rp->mof.internal_port, rp->mof.external_port,
+    ESP_LOGI("pcp", "Mapping succeeded : int %d ext %d, ext ip %s",
+      0xFFFF & ntohs(rp->mof.internal_port), 0xFFFF & ntohs(rp->mof.external_port),
       inet_ntoa(rp->mof.external_ip[3]));
   } else {
     ESP_LOGE("pcp", "PCP mapping failed : %s", resultCode2String(rp->rh.result_code));
   }
 }
 
-char *PcpClient::resultCode2String(int rc) {
+const char *PcpClient::resultCode2String(int rc) {
   switch (rc) {
   case PCP_RESULT_SUCCESS:			return "success";
   case PCP_RESULT_UNSUPP_VERSION:		return "Unsupported version";
@@ -301,41 +306,29 @@ char *PcpClient::resultCode2String(int rc) {
 }
 
 #if 0
-void PcpClient::catchRouterExternalAddress(uint16_t len, char *data) {
-  if (len == sizeof(PcpPacketExternalAddressReply)) {
-    PcpPacketExternalAddressReply *p = (PcpPacketExternalAddressReply *)data;
-    if (p->opcode != 0x80)
-      return;
-    if (p->version != 0 && p->version != 2)	// NAT-PMP & PCP
-      return;
-    // Looks right now
-    external = p->address;
-  } else
-    return; // silently
-
-  // Success, so switch ourselves off
-}
-#endif
-
-#if 0
-void PcpClient::catchAddPort(uint16_t len, char *data) {
-  if (len == sizeof(PcpPacketMappingReply)) {
-    PcpPacketMappingReply *p = (PcpPacketMappingReply *)data;
-    if (p->opcode != 0x81 && p->opcode != 0x82)
-      return;
-    if (p->version != 0 && p->version != 2)	// NAT-PMP & PCP
-      return;
-    // Looks right now
-    // Nothing to do really
-  } else
-    return; // silently
-}
-#endif
-
-#if 0
 void PcpClient::catchDeletePort(uint16_t len, char *data) {
   // Nothing to do ?
 
   // Success, so switch ourselves off
 }
 #endif
+
+void PcpNonce::initialize() {
+  a = 0;
+  if (pcp)
+    a = pcp->local;
+  struct timeval tv;
+  gettimeofday(&tv, 0);
+  b = tv.tv_sec;
+  c = tv.tv_usec;
+}
+
+bool PcpNonce::isEqual(PcpNonce other) {
+  return (a == other.a) && (b == other.b) && (c == other.c);
+}
+
+void PcpNonce::copy(PcpNonce other) {
+  a = other.a;
+  b = other.b;
+  c = other.c;
+}

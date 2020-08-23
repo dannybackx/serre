@@ -27,6 +27,20 @@
 #include <sys/socket.h>
 #include <esp_event.h>
 
+#include <list>
+using namespace std;
+
+class PcpNonce {
+  public:
+    void initialize();
+    bool isEqual(PcpNonce other);
+    void copy(PcpNonce other);
+
+  private:
+    uint32_t	a, b, c;
+};
+struct PcpMappingInventory;
+
 class PcpClient {
 public:
   PcpClient();
@@ -41,7 +55,7 @@ public:
   void deletePort(int16_t localport, int8_t protocol);
 
   esp_err_t NetworkConnected(void *ctx, system_event_t *event);
-  char *resultCode2String(int rc);
+  const char *resultCode2String(int rc);
 
 private:
   in_addr_t	local,
@@ -51,6 +65,7 @@ private:
 
   int		sock;
   friend void pcp_task(void *ptr);	// to access sock
+  friend void PcpNonce::initialize();
 
   const int	pcp_client_port = 5350,
   		pcp_server_port = 5351;
@@ -58,19 +73,18 @@ private:
   void sendPacket(const char *packet, const int len);
   TaskHandle_t task;
   void PcpReplyMapping(struct PcpPacket *);
+
+  list<PcpMappingInventory> requests;
 };
 
-struct PcpPacketExternalAddressRequest {
-  uint8_t version;		// 0
-  uint8_t opcode;		// 0
-};
-
-struct PcpPacketExternalAddressReply {
-  uint8_t version;		// 0
-  uint8_t opcode;		// Reply should be 128
-  uint16_t result;
-  uint32_t seconds;
-  uint32_t address;
+struct PcpMappingInventory {
+  uint8_t	result_code;
+  uint32_t	lifetime;
+  PcpNonce	nonce;
+  uint8_t	protocol;
+  uint16_t	internal_port;
+  uint16_t	external_port;
+  uint32_t	external_ip[4];
 };
 
 struct PcpRequestHeader {
@@ -82,14 +96,8 @@ struct PcpRequestHeader {
   uint32_t client_ip[4];
 };
 
-struct PcpOptionsHeader {
-  uint8_t	option_code;
-  uint8_t	reserved;
-  uint16_t	option_length;
-};
-
 struct PcpMappingOpcodeFields {
-  uint32_t	nonce[3];	// 96 bits of nonce
+  PcpNonce	nonce;		// 96 bits of nonce
   uint8_t	protocol;
   uint8_t	reserved[3];	// 24 bits
   uint16_t	internal_port;
@@ -98,7 +106,7 @@ struct PcpMappingOpcodeFields {
 };
 
 struct PcpPeerOpcodeFields {
-  uint32_t	nonce[3];	// Mapping nonce, 96 bits
+  PcpNonce	nonce;		// Mapping nonce, 96 bits
   uint8_t	protocol;	// Protocol
   uint8_t	reserved[3];	// Reserved, 24 bits
   uint16_t	internal_port;	// Internal Port
@@ -111,7 +119,6 @@ struct PcpPeerOpcodeFields {
 
 struct PcpPacket {
   struct PcpRequestHeader	rh;
-  // struct PcpOptionsHeader	mo;
   struct PcpMappingOpcodeFields	mof;
 };
 
