@@ -173,7 +173,7 @@ void PcpClient::addPort(int16_t localport, int16_t remoteport, int8_t protocol, 
   sendPacket((const char *)&p, sizeof(p));
 
   PcpMappingInventory inv;
-  inv.result_code = -1;				// Our own code to indicate it's been requested
+  inv.result_code = 0xFF;					// Our own code to indicate it's been requested
   inv.lifetime = lifetime;
   inv.nonce.copy(p.mof.nonce);
   inv.protocol = protocol;
@@ -233,7 +233,7 @@ void pcp_task(void *ptr) {
         vTaskDelete(0);		// current task
       continue;
     } else {
-      ESP_LOGE("pcp", "Received msg len %d", len);
+      ESP_LOGD("pcp", "Received msg len %d", len);
 
     if ((rx.pcp.rh.opcode & 0x80) == 0) {
       ESP_LOGE("pcp", "Packet is not a reply, discarding");
@@ -274,15 +274,36 @@ void pcp_task(void *ptr) {
 }
 
 void PcpClient::PcpReplyMapping(struct PcpPacket *rp) {
+  bool found = false;
   ESP_LOGI("pcp", "ReplyMapping received, decoding ...");
-  // FIXME check nonce ?
-  if (rp->rh.result_code == PCP_RESULT_SUCCESS) {
-    ESP_LOGI("pcp", "Mapping succeeded : int %d ext %d, ext ip %s",
-      0xFFFF & ntohs(rp->mof.internal_port), 0xFFFF & ntohs(rp->mof.external_port),
-      inet_ntoa(rp->mof.external_ip[3]));
-  } else {
-    ESP_LOGE("pcp", "PCP mapping failed : %s", resultCode2String(rp->rh.result_code));
+
+  // Check nonce
+  list<PcpMappingInventory>::iterator i;
+  for (i = requests.begin(); i != requests.end(); i++) {
+    if (i->nonce.isEqual(rp->mof.nonce)) {
+      if (i->result_code == 0xFF && rp->rh.result_code == PCP_RESULT_SUCCESS) {
+	ESP_LOGI("pcp", "Found matching nonce");
+	found = true;
+
+	// Register result code and timestamp
+	i->result_code = PCP_RESULT_SUCCESS;
+	struct timeval tv;
+	gettimeofday(&tv, 0);
+	i->timestamp = tv.tv_sec;
+
+	// Copy external address
+	for (int ix = 0; ix<4; ix++)
+	  i->external_ip[ix] = rp->mof.external_ip[ix];
+
+	ESP_LOGI("pcp", "Mapping succeeded : int %d ext %d, ext ip %s",
+	  0xFFFF & ntohs(rp->mof.internal_port), 0xFFFF & ntohs(rp->mof.external_port),
+	  inet_ntoa(rp->mof.external_ip[3]));
+      }
+    }
   }
+
+  if (! found)
+    ESP_LOGE("pcp", "PCP mapping failed : %s", resultCode2String(rp->rh.result_code));
 }
 
 const char *PcpClient::resultCode2String(int rc) {

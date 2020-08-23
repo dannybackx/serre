@@ -85,6 +85,7 @@ struct PcpMappingInventory {
   uint16_t	internal_port;
   uint16_t	external_port;
   uint32_t	external_ip[4];
+  time_t	timestamp;
 };
 
 struct PcpRequestHeader {
