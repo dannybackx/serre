@@ -36,20 +36,26 @@
 esp_err_t alarm_handler(httpd_req_t *req);
 esp_err_t index_handler(httpd_req_t *req);
 esp_err_t wildcard_handler(httpd_req_t *req);
+esp_err_t WsNetworkConnected(void *ctx, system_event_t *event);
+esp_err_t WsNetworkDisconnected(void *ctx, system_event_t *event);
 
-const static char *swebserver_tag = "WebServer static";
+const static char *swebserver_tag = "WebServer";
 
 WebServer::WebServer() {
+  network->RegisterModule(webserver_tag, WsNetworkConnected, WsNetworkDisconnected);
+}
+
+void WebServer::Start() {
+  int			sp = CONFIG_WEBSERVER_PORT;
   esp_err_t		err;
   httpd_config_t	cfg = HTTPD_DEFAULT_CONFIG();
-  int			sp = CONFIG_WEBSERVER_PORT;
 
   if (sp < 0)		// Only start if configured
     return;
 
-  cfg.server_port = sp;
-
   ESP_LOGD(webserver_tag, "Start webserver(%d)", cfg.server_port);
+
+  cfg.server_port = sp;
 
   if ((err = httpd_start(&server, &cfg)) != ESP_OK) {
     ESP_LOGE(webserver_tag, "failed to start %s (%d)", esp_err_to_name(err), err);
@@ -78,8 +84,6 @@ WebServer::WebServer() {
   uri_hdl_def.uri = "/alarm";
   uri_hdl_def.handler = alarm_handler;
   httpd_register_uri_handler(server, &uri_hdl_def);
-
-  return;
 }
 
 WebServer::~WebServer() {
@@ -256,4 +260,22 @@ esp_err_t index_handler(httpd_req_t *req) {
  */
 httpd_handle_t WebServer::getServer() {
   return server;
+}
+
+esp_err_t WsNetworkConnected(void *ctx, system_event_t *event) {
+  ESP_LOGI(swebserver_tag, "Starting WebServer");
+  // ws = new WebServer();
+  ws->Start();
+  if (acme) acme->setWebServer(ws->getServer());
+  return ESP_OK;
+}
+
+esp_err_t WsNetworkDisconnected(void *ctx, system_event_t *event) {
+  if (ws && ws->getServer())
+    httpd_stop(ws->getServer());
+  if (ws) {
+    delete ws;
+    ws = 0;
+  }
+  return ESP_OK;
 }

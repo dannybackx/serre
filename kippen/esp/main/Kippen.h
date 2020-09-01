@@ -42,28 +42,30 @@ extern const char		*build;
 class Kippen {
 private:
   boolean mqttSubscribed;
-  bool		sntp_up;
+  bool			sntp_up;
+  time_t		nowts, boot_time;
 
   esp_mqtt_client_config_t mqtt_config;
   esp_mqtt_client_handle_t mqtt;
 
   const char *reply_topic = "/kippen/reply";
 
+  friend esp_err_t KippenNetworkConnected(void *ctx, system_event_t *event);
+  friend esp_err_t KippenNetworkDisconnected(void *ctx, system_event_t *event);
+
 public:
   bool Report(const char *msg);
   char *HandleQueryAuthenticated(const char *query, const char *caller);
 
   Kippen();
+  void loop();
 
   void mqttReconnect();
   void mqttSubscribe();
-  void NetworkConnected(void *ctx, system_event_t *event);
-  void NetworkDisconnected(void *ctx, system_event_t *event);
 
-  void HandleMqtt(char *topic, char *payload);
+  void HandleMqtt(char *topic, char *payload);		// Public to be able to call from event handler
 
   boolean mqttConnected;
-  time_t			nowts, boot_time;
   time_t 	getCurrentTime();
 };
 

@@ -1,4 +1,4 @@
-#undef	DO_MDNS
+#define	DO_MDNS
 /*
  * This module manages unexpected disconnects (and recovery) from the network.
  *
@@ -26,7 +26,7 @@
 #include "secrets.h"
 #include "Acme.h"
 #include "Network.h"
-#include "WebServer.h"
+#include "PcpClient.h"
 
 #include <esp_wifi.h>
 #include <esp_event_loop.h>
@@ -38,8 +38,6 @@
 #include "esp_wpa2.h"
 #include "mdns.h"
 
-WebServer		*ws;
-
 Network::Network() {
   reconnect_interval = 30;
 
@@ -48,13 +46,18 @@ Network::Network() {
   last_mqtt_message_received = 0;
 
   restart_time = 0;
-  ws = 0;
+}
+
+Network::Network(const char *name,
+    esp_err_t (*nc)(void *, system_event_t *),
+    esp_err_t (*nd)(void *, system_event_t *)) {
+  Network();
+  struct module_registration *mr = new module_registration(name, nc, nd);
+  RegisterModule(mr);
 }
 
 // Not really needed
 Network::~Network() {
-  if (ws)
-    delete ws;
 }
 
 /*
@@ -162,7 +165,7 @@ static const char *WifiReason2String(int r) {
   }
 }
 
-static esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
+esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
   ESP_LOGE(snetwork_tag, "wifi_event_handler(%d,%s)", event->event_id, EventId2String(event->event_id));
 
   switch (event->event_id) {
@@ -180,11 +183,30 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 
     case SYSTEM_EVENT_STA_GOT_IP:
       ESP_LOGI(snetwork_tag, "SYSTEM_EVENT_STA_GOT_IP");
+      ESP_LOGI(snetwork_tag, "Network connected, ip %s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
 
       network->setWifiOk(true);
 
+  {
+    list<module_registration>::iterator mp;
+    ESP_LOGI(snetwork_tag, "Network Connected : %d modules", network->modules.size());
+
+      // int i=0;
+      for (mp = network->modules.begin(); mp != network->modules.end(); mp++) {
+	// ESP_LOGI(snetwork_tag, "Network Connected module %d is %s", ++i, mp->module);
+	if (mp->NetworkConnected != 0) {
+	  ESP_LOGI(snetwork_tag, "Network Connected : call module %s", mp->module);
+
+	  // FIX ME how to treat
+	  mp->result = mp->NetworkConnected(ctx, event);
+	}
+      }
+  }
+
       if (network) network->NetworkConnected(ctx, event);
-      if (kippen) kippen->NetworkConnected(ctx, event);
+      // if (pcp) pcp->NetworkConnected(ctx, event);
+      // if (kippen) kippen->NetworkConnected(ctx, event);
+
       if (acme && ! network->NetworkIsNatted()) {
         // Note only start running ACME if we're *not* in a NATted environment
         acme->NetworkConnected(ctx, event);
@@ -195,6 +217,7 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
           acme->CreateNewOrder();
         }
       }
+
       break;
 
     case SYSTEM_EVENT_STA_DISCONNECTED:
@@ -236,7 +259,7 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 	 */
         ESP_LOGI(snetwork_tag, "STA_DISCONNECTED, restarting");
 
-	if (kippen) kippen->NetworkDisconnected(ctx, event);
+	// if (kippen) kippen->NetworkDisconnected(ctx, event);
 	if (acme) acme->NetworkDisconnected(ctx, event);
 	if (network) network->NetworkDisconnected(ctx, event);
 
@@ -476,13 +499,11 @@ void Network::StopWifi() {
 void Network::disconnected(const char *fn, int line) {
   switch (status) {
   case NS_RUNNING:
-    // char msg[200];
-    // sprintf(msg, "Network is not connected (caller: %s line %d)", fn, line);
-    // ESP_LOGE(network_tag, (char *)msg);
-    ESP_LOGE(network_tag, "Network is not connected (caller: %s line %d)", fn, line);
+    ESP_LOGE(network_tag, "Network is not connected (caller: %s line %d)", __FUNCTION__, __LINE__);
 
     if (strcmp(fn, "mqtt_event_handler") == 0) {
 #if 1
+      ESP_LOGE(network_tag, "Network:disconnected (mqtt) -> ScheduleRestartWifi (%s line %d)", __FUNCTION__, __LINE__);
       ScheduleRestartWifi();
 #else
       status = NS_FAILED;
@@ -520,18 +541,22 @@ void Network::disconnected(const char *fn, int line) {
     }
   }
 #else
+  ESP_LOGE(network_tag, "Network:disconnected -> ScheduleRestartWifi (%s line %d)", __FUNCTION__, __LINE__);
   ScheduleRestartWifi();
 #endif
 }
 
 void Network::eventDisconnected(const char *fn, int line) {
-    ESP_LOGE(network_tag, "Disconnect event (caller: %s line %d)", fn, line);
+    ESP_LOGE(network_tag, "Disconnect event (caller: %s line %d)", __FUNCTION__, __LINE__);
 }
 
+mdns_txt_item_t serviceTxtData[3] = {
+        {(char *)"board",(char *)"esp32"},
+        {(char *)"u",(char *)"user"},
+        {(char *)"p",(char *)"password"}
+    };
+
 void Network::NetworkConnected(void *ctx, system_event_t *event) {
-  ESP_LOGI(network_tag, "Starting WebServer");
-  ws = new WebServer();
-  if (acme) acme->setWebServer(ws->getServer());
 
   ESP_LOGI(network_tag, "Starting JSON Server");
   security->NetworkConnected(ctx, event);
@@ -544,6 +569,7 @@ void Network::NetworkConnected(void *ctx, system_event_t *event) {
     mdns_hostname_set("kippen.local");
     mdns_instance_name_set("kippen esp32");
     ESP_LOGI(network_tag, "mdns : %s", "kippen");
+    mdns_service_add("kippen-ws", "_http", "_tcp", 80, serviceTxtData, 3);
   }
 #else
   ESP_LOGE(network_tag, "mDNS not configured");
@@ -552,10 +578,6 @@ void Network::NetworkConnected(void *ctx, system_event_t *event) {
 
 void Network::NetworkDisconnected(void *ctx, system_event_t *event) {
   ESP_LOGE(network_tag, "Network disconnect ...");
-  if (ws) {
-    delete ws;
-    ws = 0;
-  }
   security->NetworkDisconnected(ctx, event);
 
 #if 0
@@ -589,7 +611,7 @@ bool Network::isConnected() {
 }
 
 void Network::GotDisconnected(const char *fn, int line) {
-  ESP_LOGE(network_tag, "Network is not connected (caller: %s line %d)", fn, line);
+  ESP_LOGE(network_tag, "Network is not connected (caller: %s line %d)", __FUNCTION__, __LINE__);
   status = NS_NONE;
 }
 
@@ -618,6 +640,7 @@ void Network::mqttDisconnected() {
   mqtt_message++;
 
   // FIX ME do something
+  ESP_LOGE(network_tag, "Network:mqttDisconnected -> ScheduleRestartWifi (%s line %d)", __FUNCTION__, __LINE__);
   ScheduleRestartWifi();
 }
 
@@ -647,17 +670,24 @@ void Network::ScheduleRestartWifi() {
 }
 
 void Network::LoopRestartWifi(time_t now) {
+#if 0
   if (restart_time == 0)
     return;
   if (restart_time <= now) {
+    ESP_LOGE(network_tag, "LoopRestartWifi -> ScheduleRestartWifi (%s line %d)", __FUNCTION__, __LINE__);
+    ESP_LOGE(network_tag, "LoopRestartWifi restart_time %ld now %ld", restart_time, now);
     RestartWifi();
     restart_time = 0;			// FIX ME maybe we should have a 2nd timeout to verify
   }
+#else
+# warning "LoopRestartWifi empty"
+#endif
 }
 
 void Network::RestartWifi() {
   ESP_LOGI(network_tag, "RestartWifi");
 
+  esp_wifi_stop();
   SetupWifi();
   WaitForWifi();
 }
@@ -681,4 +711,36 @@ void Network::setReason(int r) {
 void Network::DiscardCurrentNetwork() {
   ESP_LOGE(network_tag, "Discarding network \"%s\"", mywifi[network].ssid);
   mywifi[network].discard = true;
+}
+
+void Network::RegisterModule(module_registration *mp) {
+  // ESP_LOGE(network_tag, "RegisterModule(%s,%p,%p)", mp->module, mp->NetworkConnected, mp->NetworkDisconnected);
+  modules.push_back(*mp);
+}
+
+void Network::RegisterModule(module_registration m) {
+  modules.push_back(m);
+}
+
+module_registration::module_registration() {
+  module = 0;
+  NetworkConnected = 0;
+  NetworkDisconnected = 0;
+}
+
+module_registration::module_registration(const char *name,
+  esp_err_t NetworkConnected(void *, system_event_t *),
+  esp_err_t NetworkDisconnected(void *, system_event_t *))
+{
+  this->module = (char *)name;
+  this->NetworkConnected = NetworkConnected;
+  this->NetworkDisconnected = NetworkDisconnected;
+}
+
+void Network::RegisterModule(const char *name,
+    esp_err_t nc(void *, system_event_t *),
+    esp_err_t nd(void *, system_event_t *)) {
+  struct module_registration *mr = new module_registration(name, nc, nd);
+
+  RegisterModule(mr);
 }

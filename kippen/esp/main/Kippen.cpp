@@ -1,3 +1,4 @@
+#define	DO_MQTT
 /*
  * Main program to manage the door to a chicken coop.
  *
@@ -31,11 +32,16 @@
 #include "Temperature.h"
 #include "SimpleL298.h"
 #include "Sunset.h"
+#include "mdns.h"
+#include "PcpClient.h"
+#include "WebServer.h"
 
 #include <esp_littlefs.h>
 
 static const char *kippen_tag = "kippen";
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event);
+esp_err_t KippenNetworkConnected(void *ctx, system_event_t *event);
+esp_err_t KippenNetworkDisconnected(void *ctx, system_event_t *event);
 
 Kippen		*kippen = 0;
 Ota		*ota = 0;
@@ -46,6 +52,8 @@ Dyndns		*dyndns = 0;
 Temperature	*temperature = 0;
 SimpleL298	*simple = 0;
 Sunset		*sunset = 0;
+PcpClient	*pcp = 0;
+WebServer	*ws = 0;
 
 time_t		dyndns_last = 0;
 bool		ftp_started = false;
@@ -66,7 +74,7 @@ void setup(void) {
   ESP_LOGD(kippen_tag, "Free heap : %d", ESP.getFreeHeap());
 
   /* Network */
-  network = new Network();
+  network = new Network(kippen_tag, &KippenNetworkConnected, &KippenNetworkDisconnected);
   security = new Secure();	// Needs to be active before config
 
   /* Print chip information */
@@ -241,10 +249,17 @@ void setup(void) {
   			CONFIG_L298_CHANNEL_A_DIR2_PIN,		// 23
 			CONFIG_L298_CHANNEL_A_SPEED_PIN);	// 17
 
-  sunset = new Sunset();
+  ws = new WebServer();
+  // sunset = new Sunset();
+  pcp = new PcpClient();
 }
 
-void loop()
+void loop() {
+  if (kippen)
+    kippen->loop();
+}
+
+void Kippen::loop()
 {
   struct timeval tv;
   gettimeofday(&tv, 0);
@@ -258,6 +273,7 @@ void loop()
     struct tm *tmp = localtime(&kippen->boot_time);
     strftime(ts, sizeof(ts), "%Y-%m-%d %T", tmp);
     sprintf(msg, "Kippen controller boot at %s", ts);
+    ESP_LOGI(kippen_tag, "%s", msg);
 
     if (!kippen->Report(msg)) {
       ESP_LOGE(kippen_tag, "Could not report boot time");
@@ -326,42 +342,50 @@ bool Kippen::Report(const char *msg) {
   return false;
 }
 
-void Kippen::NetworkConnected(void *ctx, system_event_t *event) {
-  ESP_LOGD(kippen_tag, "Network connected, ip %s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
+esp_err_t KippenNetworkConnected(void *ctx, system_event_t *event) {
+  ESP_LOGI(kippen_tag, "Network connected, ip %s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
 
-  if (! sntp_up)
+  delay(1000);
+  if (! kippen->sntp_up)
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
-  sntp_up = true;
+  kippen->sntp_up = true;
   sntp_init();
   sntp_setservername(0, (char *)NTP_SERVER_0);
   sntp_setservername(1, (char *)NTP_SERVER_1);
+  delay(1000);
+  ESP_LOGI(kippen_tag, "SNTP configured");
 
-
+#ifdef	DO_MQTT
   ESP_LOGI(kippen_tag, "Initializing MQTT");
-  memset(&mqtt_config, 0, sizeof(mqtt_config));
-  mqtt_config.uri = MQTT_URI;
-  mqtt_config.event_handle = mqtt_event_handler;
+  memset(&kippen->mqtt_config, 0, sizeof(kippen->mqtt_config));
+  kippen->mqtt_config.uri = MQTT_URI;
+  kippen->mqtt_config.event_handle = mqtt_event_handler;
 
   // Note Tuan's MQTT component starts a separate task for event handling
-  mqtt = esp_mqtt_client_init(&mqtt_config);
-  esp_err_t err = esp_mqtt_client_start(mqtt);
+  kippen->mqtt = esp_mqtt_client_init(&kippen->mqtt_config);
+  esp_err_t err = esp_mqtt_client_start(kippen->mqtt);
 
   if (err == ESP_OK)
     ESP_LOGI(kippen_tag, "MQTT Client Start ok");
   else
     ESP_LOGE(kippen_tag, "MQTT Client Start failure : %d", err);
+#endif
 
-  sunset->query("50.9", "4.67");
+  if (sunset)
+    sunset->query("50.9", "4.67");
+
+  return ESP_OK;
 }
 
-void Kippen::NetworkDisconnected(void *ctx, system_event_t *event) {
+esp_err_t KippenNetworkDisconnected(void *ctx, system_event_t *event) {
   sntp_stop();
-  sntp_up = false;
+  kippen->sntp_up = false;
+
+  return ESP_OK;
 }
 
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
   char topic[80], message[80];				// FIX ME limitation
-  void HandleMqtt(char *topic, char *payload);
 
   switch (event->event_id) {
   case MQTT_EVENT_CONNECTED:
@@ -387,14 +411,11 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
     break;
   case MQTT_EVENT_DATA:
     // No need to ignore own replies if we don't wildcard-subscribe
-    // Ignore our own replies
-    // if (strncmp(topic, "/kippen/reply", 12) == 0)
-    //   return ESP_OK;
 
     // Indicate that we just got a message so we're still alive
     network->gotMqttMessage();
 
-    ESP_LOGI(kippen_tag, "MQTT topic %.*s message %.*s",
+    ESP_LOGD(kippen_tag, "MQTT topic %.*s message %.*s",
       event->topic_len, event->topic, event->data_len, event->data);
 
     // Make safe copies, then call business logic handler
@@ -426,8 +447,6 @@ void Kippen::mqttReconnect() {
   mqtt_config.uri = MQTT_URI;
   mqtt_config.event_handle = mqtt_event_handler;
 
-  // Note Tuan's MQTT component starts a separate task for event handling
-  // mqtt = esp_mqtt_client_init(&mqtt_config);
   esp_err_t err = esp_mqtt_client_start(mqtt);
 
   ESP_LOGD(kippen_tag, "MQTT Client Start : %d %s", (int)err,
@@ -441,10 +460,16 @@ void Kippen::mqttReconnect() {
 void Kippen::mqttSubscribe() {
   if (mqttConnected) {
     esp_mqtt_client_subscribe(mqtt, "/kippen", 0);	// Note no wildcard "/kippen/#"
+    esp_mqtt_client_subscribe(mqtt, "/kippen/system/#", 0);
+    esp_mqtt_client_subscribe(mqtt, "/kippen/schedule/#", 0);
+    esp_mqtt_client_subscribe(mqtt, "/kippen/network/#", 0);
+    esp_mqtt_client_subscribe(mqtt, "/kippen/state/#", 0);
+    esp_mqtt_client_subscribe(mqtt, "/kippen/mdns/#", 0);
   }
 }
 
 Kippen::Kippen() {
+  mqtt = 0;
   mqttConnected = false;
   mqttSubscribed = false;
   nowts = boot_time = 0;
@@ -455,7 +480,144 @@ char *Kippen::HandleQueryAuthenticated(const char *query, const char *caller) {
   return 0;
 }
 
+static const char * if_str[] = {"STA", "AP", "ETH", "MAX"};
+static const char * ip_protocol_str[] = {"V4", "V6", "MAX"};
+
+static void mdns_print_results(mdns_result_t * results){
+    mdns_result_t * r = results;
+    mdns_ip_addr_t * a = NULL;
+    int i = 1, t;
+    while(r){
+        printf("%d: Interface: %s, Type: %s\n", i++, if_str[r->tcpip_if], ip_protocol_str[r->ip_protocol]);
+        if(r->instance_name){
+            printf("  PTR : %s\n", r->instance_name);
+        }
+        if(r->hostname){
+            printf("  SRV : %s.local:%u\n", r->hostname, r->port);
+        }
+        if(r->txt_count){
+            printf("  TXT : [%u] ", r->txt_count);
+            for(t=0; t<r->txt_count; t++){
+                printf("%s=%s; ", r->txt[t].key, r->txt[t].value?r->txt[t].value:"NULL");
+            }
+            printf("\n");
+        }
+        a = r->addr;
+        while(a){
+            if(a->addr.type == IPADDR_TYPE_V6){
+                printf("  AAAA: " IPV6STR "\n", IPV62STR(a->addr.u_addr.ip6));
+            } else {
+                printf("  A   : " IPSTR "\n", IP2STR(&(a->addr.u_addr.ip4)));
+            }
+            a = a->next;
+        }
+        r = r->next;
+    }
+
+}
+
+static void query_mdns_service(const char * service_name, const char * proto)
+{
+    ESP_LOGI(kippen_tag, "Query PTR: %s.%s.local", service_name, proto);
+
+    mdns_result_t * results = NULL;
+    esp_err_t err = mdns_query_ptr(service_name, proto, 3000, 20,  &results);
+    if(err){
+        ESP_LOGE(kippen_tag, "Query Failed: %s", esp_err_to_name(err));
+        return;
+    }
+    if(!results){
+        ESP_LOGW(kippen_tag, "No results found!");
+        return;
+    }
+
+    mdns_print_results(results);
+    mdns_query_results_free(results);
+}
+
+static void query_mdns_host(const char * host_name)
+{
+    ESP_LOGI(kippen_tag, "Query A: %s.local", host_name);
+
+    struct ip4_addr addr;
+    addr.addr = 0;
+
+    esp_err_t err = mdns_query_a(host_name, 2000,  &addr);
+    if(err){
+        if(err == ESP_ERR_NOT_FOUND){
+            ESP_LOGW(kippen_tag, "%s: Host was not found!", esp_err_to_name(err));
+            return;
+        }
+        ESP_LOGE(kippen_tag, "Query Failed: %s", esp_err_to_name(err));
+        return;
+    }
+
+    ESP_LOGI(kippen_tag, "Query A: %s.local resolved to: " IPSTR, host_name, IP2STR(&addr));
+}
+
+const char *mqtt_kippen_schedule	= "/kippen/schedule";
+const char *mqtt_kippen_system		= "/kippen/system";
+const char *mqtt_kippen_reboot		=	"/reboot";
+const char *mqtt_kippen_boot		=	"/boot";
+const char *mqtt_kippen_time		=	"/time";
+const char *mqtt_kippen_state		= "/kippen/state";
+const char *mqtt_kippen_sunset		=	"/sunset";
+const char *mqtt_kippen_temperature	=	"/temperature";
+const char *mqtt_kippen_hatch		=	"/hatch";
+const char *mqtt_kippen_mdns		= "/kippen/mdns";
+const char *mqtt_kippen_mdns_query	=	"/query";
+
 void Kippen::HandleMqtt(char *topic, char *payload) {
+  ESP_LOGI(kippen_tag, "HandleMQTT(%s,%s)", topic, payload);
+  if (strcasecmp(topic, mqtt_kippen_schedule) == 0) {
+    // exact match, just query
+  } else if (strncasecmp(topic, mqtt_kippen_schedule, strlen(mqtt_kippen_schedule)) == 0) {
+    // something with this as a prefix
+  } else if (strcasecmp(topic, mqtt_kippen_system) == 0) {
+    // exact match, just query
+  } else if (strncasecmp(topic, mqtt_kippen_system, strlen(mqtt_kippen_system)) == 0) {
+    // something with this as a prefix
+    const char *cmd = topic + strlen(mqtt_kippen_system);
+
+    if (strcasecmp(cmd, mqtt_kippen_boot) == 0) {
+    } else if (strcasecmp(cmd, mqtt_kippen_reboot) == 0) {
+      ESP_LOGE(kippen_tag, "Rebooting");
+      delay(100);
+      esp_restart();
+    } else if (strcasecmp(cmd, mqtt_kippen_time) == 0) {
+      time_t now = getCurrentTime();
+      struct tm *tmp = localtime(&now);
+      char ts[20];
+      strftime(ts, sizeof(ts), "%Y-%m-%d %T", tmp);
+      esp_mqtt_client_publish(mqtt, reply_topic, ts, 0, 0, 0);
+      ESP_LOGI(kippen_tag, "HandleMQTT reply {%s,%s}", reply_topic, ts);
+    } else {
+    }
+  } else if (strncasecmp(topic, mqtt_kippen_state, strlen(mqtt_kippen_state)) == 0) {
+    const char *cmd = topic + strlen(mqtt_kippen_state);
+
+    if (strcasecmp(cmd, mqtt_kippen_sunset) == 0) {
+    } else if (strcasecmp(cmd, mqtt_kippen_hatch) == 0) {
+    } else if (strcasecmp(cmd, mqtt_kippen_temperature) == 0) {
+    } else {
+    }
+  } else if (strncasecmp(topic, mqtt_kippen_mdns, strlen(mqtt_kippen_mdns)) == 0) {
+    const char *cmd = topic + strlen(mqtt_kippen_mdns);
+
+    if (strcasecmp(cmd, mqtt_kippen_mdns_query) == 0) {
+        query_mdns_host("esp32");
+        query_mdns_service("_arduino", "_tcp");
+        query_mdns_service("_http", "_tcp");
+        query_mdns_service("_printer", "_tcp");
+        query_mdns_service("_ipp", "_tcp");
+        query_mdns_service("_afpovertcp", "_tcp");
+        query_mdns_service("_smb", "_tcp");
+        query_mdns_service("_ftp", "_tcp");
+        query_mdns_service("_nfs", "_tcp");
+    // } else if (strcasecmp(cmd, mqtt_kippen_hatch) == 0) {
+    } else {
+    }
+  }
 }
 
 time_t Kippen::getCurrentTime() {

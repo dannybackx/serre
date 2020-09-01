@@ -37,6 +37,7 @@ class WebServer {
 
   private:
     const char *webserver_tag = "WebServer";
+    void Start();
 
     httpd_handle_t	server;
     void SendPage(httpd_req_t *);
@@ -44,5 +45,7 @@ class WebServer {
     friend esp_err_t index_handler(httpd_req_t *req);
     friend esp_err_t alarm_handler(httpd_req_t *req);
     friend esp_err_t wildcard_handler(httpd_req_t *req);
+    friend esp_err_t WsNetworkConnected(void *ctx, system_event_t *event);
+    friend esp_err_t WsNetworkDisonnected(void *ctx, system_event_t *event);
 };
 #endif	/* _WEBSERVER_H_ */

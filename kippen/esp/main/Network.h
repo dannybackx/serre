@@ -27,12 +27,27 @@
 #include <esp_event_loop.h>
 #include "WebServer.h"
 
+#include <list>
+using namespace std;
+
 enum NetworkStatus {
   NS_NONE,		// Network uninitialized
   NS_SETUP_DONE,	// OS/HW init calls were performed by the app
   NS_CONNECTING,	// Wifi connected, awaiting IP address
   NS_RUNNING,		// We're alive and kicking
   NS_FAILED		// We got completely disconnected
+};
+
+struct module_registration {
+  char *module;
+  esp_err_t (*NetworkConnected)(void *, system_event_t *);
+  esp_err_t (*NetworkDisconnected)(void *, system_event_t *);
+  esp_err_t result;
+
+  module_registration();
+  module_registration(const char *name,
+    esp_err_t NetworkConnected(void *, system_event_t *),
+    esp_err_t NetworkDisconnected(void *, system_event_t *));
 };
 
 class Network {
@@ -53,6 +68,7 @@ public:
   void setWifiOk(boolean);
 
   Network();
+  Network(const char *, esp_err_t (*nc)(void *, system_event_t *), esp_err_t (*nd)(void *, system_event_t *));
   ~Network();
 
   void loop(time_t now);
@@ -64,11 +80,6 @@ public:
 
   void Report();
 
-  // Restart
-  void ScheduleRestartWifi();
-  void StopWifi();
-  void RestartWifi();
-
   void NetworkConnected(void *ctx, system_event_t *event);
   void NetworkDisconnected(void *ctx, system_event_t *event);
 
@@ -78,23 +89,38 @@ public:
   void setReason(int);
   void DiscardCurrentNetwork();
 
-private:
-  const char		*network_tag = "Network";
-  bool			wifi_ok;
-  enum NetworkStatus	status;
-  int			reason;
-  int			network;
+  void RegisterModule(module_registration);
+  void RegisterModule(module_registration *);
+  void RegisterModule(const char *,
+    esp_err_t NetworkConnected(void *, system_event_t *),
+    esp_err_t NetworkDisconnected(void *, system_event_t *));
 
-  time_t		last_connect;
-  int			reconnect_interval;
+
+private:
+  const char			*network_tag = "Network";
+  bool				wifi_ok;
+  enum NetworkStatus		status;
+  int				reason;
+  int				network;
+
+  time_t			last_connect;
+  int				reconnect_interval;
 
   // MQTT
-  time_t		last_mqtt_message_received;
-  uint			mqtt_message;
+  time_t			last_mqtt_message_received;
+  uint				mqtt_message;
 
   // Restart
-  time_t		restart_time;
+  time_t			restart_time;
+
   void LoopRestartWifi(time_t now);
+  void ScheduleRestartWifi();
+  void StopWifi();
+  void RestartWifi();
+
+  // Modules interested in network events
+  list<module_registration>	modules;
+  friend esp_err_t wifi_event_handler(void *ctx, system_event_t *event);
 };
 
 // Global variables

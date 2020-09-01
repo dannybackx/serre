@@ -57,6 +57,7 @@ Sunset::Sunset() {
   stable = LIGHT_NONE;
 
   memset(&http_config, 0, sizeof(http_config));
+  http_client = 0;
 
   sunrise =  sunset =  twilight_begin =  twilight_end = 0;
   lat =  lon = 0;

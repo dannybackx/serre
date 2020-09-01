@@ -52,12 +52,15 @@ public:
   void queryRouterExternalAddress();
   in_addr_t getRouterExternalAddress();
   void addPort(int16_t localport, int16_t remoteport, int8_t protocol, int32_t lifetime);
+  void addPortThirdParty(int16_t localport, int16_t remoteport, int8_t protocol, int32_t lifetime, uint32_t intip);
   void deletePort(int16_t localport, int8_t protocol);
 
-  esp_err_t NetworkConnected(void *ctx, system_event_t *event);
+  // esp_err_t NetworkConnected(void *ctx, system_event_t *event);
   const char *resultCode2String(int rc);
 
 private:
+  const char *pcp_tag = "pcp";
+
   in_addr_t	local,
   		external,
 		router_ip;
@@ -74,7 +77,17 @@ private:
   TaskHandle_t task;
   void PcpReplyMapping(struct PcpPacket *);
 
-  list<PcpMappingInventory> requests;
+  class PcpInventory {
+  public:
+    void add(PcpMappingInventory);
+    void remove(PcpMappingInventory);
+    int count();
+
+    list<PcpMappingInventory> requests;
+  } inventory;
+
+  friend esp_err_t PcpNetworkConnected(void *ctx, system_event_t *event);
+  friend esp_err_t PcpNetworkDisconnected(void *ctx, system_event_t *event);
 };
 
 struct PcpMappingInventory {
@@ -86,6 +99,14 @@ struct PcpMappingInventory {
   uint16_t	external_port;
   uint32_t	external_ip[4];
   time_t	timestamp;
+
+  bool isEqual(PcpMappingInventory other) {	// FIX ME do we have the right comparison ?
+    if (protocol != other.protocol) return false;
+    if (internal_port != other.internal_port) return false;
+    if (external_port != other.external_port) return false;
+    if (timestamp != other.timestamp) return false;
+    return true;
+  }
 };
 
 struct PcpRequestHeader {
@@ -121,6 +142,25 @@ struct PcpPeerOpcodeFields {
 struct PcpPacket {
   struct PcpRequestHeader	rh;
   struct PcpMappingOpcodeFields	mof;
+};
+
+struct PcpThirdPartyOption {
+  uint8_t	option_code;
+  uint8_t	reserved;
+  uint16_t	option_length;
+  uint32_t	internal_ip[4];	// Internal IP Address, 128 bits
+};
+
+struct PcpPacket3Party {
+  struct PcpRequestHeader	rh;
+  struct PcpMappingOpcodeFields	mof;
+  struct PcpThirdPartyOption	tpo;
+};
+
+enum PcpProtocol {
+  PCP_PROTOCOL_NONE = 0,
+  PCP_PROTOCOL_UPNP,
+  PCP_PROTOCOL_PCP
 };
 
 enum PcpResultCode {

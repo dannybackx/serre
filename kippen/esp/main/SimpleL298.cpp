@@ -91,7 +91,7 @@ SimpleL298::SimpleL298(int dir_pin1, int dir_pin2, int speed_pin) {
   mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
   mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B);
 
-#if 1
+#if 0
   // Stuff from the example in esp-idf
   xTaskCreate(example, "motor control example", 4096, NULL, 5, NULL);
 #endif
