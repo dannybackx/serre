@@ -356,12 +356,12 @@ void callback(char *topic, byte *payload, unsigned int length) {
 #ifdef DEBUG
       Serial.printf("%s %s %s\n", SWITCH_TOPIC, "/schedule", GetSchedule());
 #endif
-      client.publish(SWITCH_TOPIC "/schedule", GetSchedule());
+      RelayDebug("schedule %s", GetSchedule());
     } else if (strcmp(pl, "network") == 0) {	// Query network parameters
       Debug("SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
     } else if (strcmp(pl, "time") == 0) {	// Query the device's current time
       time_t t = sntp_get_current_timestamp();
-      Debug("%04d.%02d.%02d %02d:%02d:%02d, tz %d",
+      RelayDebug("%04d.%02d.%02d %02d:%02d:%02d, tz %d",
         year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
     } else if (strcmp(pl, "reboot") == 0) {
       ESP.restart();
