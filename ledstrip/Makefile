@@ -390,6 +390,7 @@ $(LIB_OUT_FILE): $(filter-out $(BUILD_DIR)/$(MAIN_NAME)_.cpp$(OBJ_EXT),$(USER_OB
 clean:
 	echo Removing all build files
 	rm -rf "$(BUILD_DIR)" $(FILES_TO_CLEAN)
+	rm -f *~
 
 list_boards:
 	echo === Available boards ===
