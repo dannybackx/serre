@@ -87,7 +87,7 @@ esp_err_t PeersNetworkConnected(void *ctx, system_event_t *event) {
   esp_err_t err = esp_mqtt_client_start(mqtth);
 
   if (err == ESP_OK)
-    ESP_LOGD(mqtt->mqtt_tag, "MQTT Client Start ok");
+    ESP_LOGE(mqtt->mqtt_tag, "MQTT Client Start ok");
   else
     ESP_LOGE(mqtt->mqtt_tag, "MQTT Client Start failure : %d", err);
 
@@ -98,13 +98,12 @@ esp_err_t PeersNetworkConnected(void *ctx, system_event_t *event) {
 }
 
 esp_err_t PeersNetworkDisconnected(void *ctx, system_event_t *event) {
-  ESP_LOGI(mqtt->mqtt_tag, "Network disconnected");
+  ESP_LOGE(mqtt->mqtt_tag, "Network disconnected");
   if (mqtt) {
     esp_err_t err = esp_mqtt_client_stop(mqtth);
     ESP_LOGD(mqtt->mqtt_tag, "MQTT Client Stop : %d %s", (int)err,
       (err == ESP_OK) ? "ok" : (err == ESP_FAIL) ? "fail" : "?");
   }
-  ESP_LOGD(mqtt->mqtt_tag, "Network disconnected --> end of function");
   
   return ESP_OK;
 }
@@ -167,7 +166,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
     mqtt_signal = false;
     break;
   case MQTT_EVENT_SUBSCRIBED:
-    ESP_LOGD(mqtt_tag, "mqtt subscribed");
+    ESP_LOGI(mqtt_tag, "mqtt subscribed");
     network->mqttSubscribed();
     if (mqtt)
       mqtt->mqttSubscribed = true;
@@ -190,7 +189,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
     // Indicate that we just got a message so we're still alive
     network->gotMqttMessage();
 
-    ESP_LOGD(mqtt_tag, "MQTT topic %.*s message %.*s",
+    ESP_LOGI(mqtt_tag, "MQTT topic %.*s message %.*s",
       event->topic_len, event->topic, event->data_len, event->data);
 
     // Make safe copies, then call business logic handler
@@ -207,10 +206,10 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
     mqtt_signal = true;			// FIXME
     break;
   case MQTT_EVENT_ERROR:
-    ESP_LOGD(mqtt_tag, "mqtt event error");
+    ESP_LOGE(mqtt_tag, "mqtt event error");
     break;
   case MQTT_EVENT_BEFORE_CONNECT:
-    ESP_LOGD(mqtt_tag, "mqtt event before connect");
+    ESP_LOGE(mqtt_tag, "mqtt event before connect");
     break;
   }
 
@@ -333,7 +332,7 @@ struct payload_handler_table {
  *	heap
  */
 void mqttMyNodeCallback(char *payload) {
-  ESP_LOGD(mqtt_tag, "mqttMyNodeCallback(%s)", payload);
+  ESP_LOGE(mqtt_tag, "mqttMyNodeCallback(%s)", payload);
 
   for (int i=0; pht[i].pl; i++) {
     if (pht[i].len && strncmp(pht[i].pl, payload, pht[i].len) == 0) {
@@ -371,10 +370,11 @@ void Mqtt::mqttSubscribe() {
 bool Mqtt::Report(const char *msg) {
   if (mqttConnected) {
     esp_mqtt_client_publish(mqtth, reply_topic, msg, 0, 0, 0);
+    ESP_LOGE(mqtt_tag, "Reporting via MQTT: %s", msg);
     return true;
   }
 
-  ESP_LOGD(mqtt_tag, "Report: mqtt not connected yet (msg %s)", msg);
+  ESP_LOGE(mqtt_tag, "Report: mqtt not connected yet (msg %s)", msg);
   return false;
 }
 

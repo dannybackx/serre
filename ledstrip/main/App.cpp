@@ -26,12 +26,14 @@
 #include "Network.h"
 #include "StableTime.h"
 #include "Ota.h"
+#include "Mqtt.h"
 
 const char *app_tag = "LED strip";
 
 Network			*network = 0;
 Ota			*ota = 0;
-time_t			nowts, boot_time;
+time_t			nowts, boot_time = 0;
+Mqtt			*mqtt = 0;
 
 // Initial function
 void setup(void) {
@@ -70,6 +72,7 @@ void setup(void) {
   network->SetupWifi();
 
   ota = new Ota();
+  mqtt = new Mqtt();
 
   /*
    * Set up the time
@@ -105,20 +108,6 @@ void loop()
 
   nowts = tv.tv_sec;
 
-  if (loop_count == 0) {
-    // initialize
-    sum = 0;
-    otv = tv;		// Keep current time for next invocation
-  } else {
-    long diff = 1000000 * (tv.tv_sec - otv.tv_sec) + (tv.tv_usec - otv.tv_usec);
-    diff /= 1000;
-    sum += diff;
-    otv = tv;		// Keep current time for next invocation
-  }
-  loop_count++;
-
-  loop_count = (loop_count + 1) % count_max;
-
   // Record boot time
   if (boot_time == 0 && nowts > 1000) {
     boot_time = nowts;
@@ -127,6 +116,9 @@ void loop()
     struct tm *tmp = localtime(&boot_time);
     strftime(ts, sizeof(ts), "%Y-%m-%d %T", tmp);
     sprintf(msg, "Boot at %s", ts);
+
+    if (mqtt) mqtt->Report(msg);
+    ESP_LOGE(app_tag, "%s", msg);
   }
 
   if (network) network->loop(nowts);

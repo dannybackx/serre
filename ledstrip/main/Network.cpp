@@ -35,6 +35,7 @@
 
 #include <esp_event_legacy.h>
 #include "esp_wpa2.h"
+#include <apps/sntp/sntp.h>
 
 Network::Network() {
   reconnect_interval = 30;
@@ -44,6 +45,8 @@ Network::Network() {
   last_mqtt_message_received = 0;
 
   restart_time = 0;
+
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
 }
 
 Network::Network(const char *name,
@@ -56,6 +59,7 @@ Network::Network(const char *name,
 
 // Not really needed
 Network::~Network() {
+  sntp_stop();
 }
 
 /*
@@ -204,25 +208,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
   }
 
       if (network) network->NetworkConnected(ctx, event);
-#ifdef USE_ACME
-      // if (acme && ! network->NetworkIsNatted())
-      // ESP_LOGE(snetwork_tag, "NetworkConnected() ACME %d", __LINE__);
-      if (acme)
-      {
-      // ESP_LOGE(snetwork_tag, "NetworkConnected() ACME %d", __LINE__);
-        // Note only start running ACME if we're *not* in a NATted environment
-        acme->NetworkConnected(ctx, event);
 
-      // ESP_LOGE(snetwork_tag, "NetworkConnected() ACME %d", __LINE__);
-        if (! acme->HaveValidCertificate()) {
-      // ESP_LOGE(snetwork_tag, "NetworkConnected() ACME %d", __LINE__);
-          ESP_LOGI(snetwork_tag, "Don't have a valid certificate ...");
-          acme->CreateNewAccount();
-          acme->CreateNewOrder();
-        }
-      // ESP_LOGE(snetwork_tag, "NetworkConnected() ACME %d", __LINE__);
-      }
-#endif
       break;
 
     case SYSTEM_EVENT_STA_DISCONNECTED:
@@ -264,9 +250,6 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 	 */
         ESP_LOGI(snetwork_tag, "STA_DISCONNECTED, restarting");
 
-#ifdef USE_ACME
-	if (acme) acme->NetworkDisconnected(ctx, event);
-#endif
 	if (network) network->NetworkDisconnected(ctx, event);
 
         network->StopWifi();			// This also schedules a restart
@@ -557,8 +540,16 @@ void Network::eventDisconnected(const char *fn, int line) {
 }
 
 void Network::NetworkConnected(void *ctx, system_event_t *event) {
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
 
-  ESP_LOGI(network_tag, "Starting JSON Server");
+  sntp_init();
+
+#ifdef	NTP_SERVER_0
+  sntp_setservername(0, (char *)NTP_SERVER_0);
+#endif
+#ifdef	NTP_SERVER_1
+  sntp_setservername(1, (char *)NTP_SERVER_1);
+#endif
 }
 
 void Network::NetworkDisconnected(void *ctx, system_event_t *event) {
