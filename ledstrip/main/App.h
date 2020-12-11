@@ -23,10 +23,12 @@
 #include <Arduino.h>
 #include "secrets.h"
 #include <Wire.h>
+#include "Ota.h"
 
 #include <apps/sntp/sntp.h>
 
 extern String			ips, gws;
+extern Ota			*ota;
 
 extern time_t			nowts, boot_time;
 
