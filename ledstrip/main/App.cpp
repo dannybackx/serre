@@ -25,10 +25,12 @@
 #include <Wire.h>
 #include "Network.h"
 #include "StableTime.h"
+#include "Ota.h"
 
 const char *app_tag = "LED strip";
 
 Network			*network = 0;
+Ota			*ota = 0;
 time_t			nowts, boot_time;
 
 // Initial function
@@ -66,6 +68,8 @@ void setup(void) {
 				ESP_LOGD(app_tag, "Starting WiFi "); 
   // First stage, so we can query the MAC
   network->SetupWifi();
+
+  ota = new Ota();
 
   /*
    * Set up the time
