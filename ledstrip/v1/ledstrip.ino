@@ -108,12 +108,13 @@ int		manual = 0;
 
 
 // Params for width and height
-const uint8_t kMatrixWidth = 16;
-const uint8_t kMatrixHeight = 16;
+const uint8_t kMatrixWidth = 4;				// 16;
+const uint8_t kMatrixHeight = 4;			// 16;
 
 // Param for different pixel layouts
-const bool    kMatrixSerpentineLayout = true;
-const bool    kMatrixVertical = false;
+const bool    kMatrixSerpentineLayout = false;		// true;
+const bool    kMatrixVertical = true;			// false;
+
 // Set 'kMatrixSerpentineLayout' to false if your pixels are 
 // laid out all running the same way, like this:
 //
