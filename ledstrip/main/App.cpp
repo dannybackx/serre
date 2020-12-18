@@ -72,11 +72,9 @@ void setup(void) {
    * Set up the time
    *
    * See https://www.di-mgt.com.au/wclock/help/wclo_tzexplain.html for examples of TZ strings.
-   * This one works for Europe : CET-1CEST,M3.5.0/2,M10.5.0/3
-   * I assume that this one would work for the US : EST5EDT,M3.2.0/2,M11.1.0
    */
-  setenv("TZ", "CET-1CEST,M3.5.0/2,M10.5.0/3", 1);
-  stableTime = new StableTime();
+  // stableTime = new StableTime("EST5EDT,M3.2.0/2,M11.1.0");	// US
+  stableTime = new StableTime("CET-1CEST,M3.5.0/2,M10.5.0/3");	// Europe
 
   network->WaitForWifi();
 

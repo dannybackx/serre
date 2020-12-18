@@ -28,6 +28,7 @@
 class StableTime {
 public:
   StableTime();
+  StableTime(const char *);
   ~StableTime();
   void loop(time_t);
   void loop(struct timeval *);

@@ -38,8 +38,12 @@ esp_err_t StNetworkDisconnected(void *ctx, system_event_t *event);
 StableTime *stableTime;
 
 StableTime::StableTime() {
-  // stableTime = this;		// Already happens in Keypad.cpp
+  network->RegisterModule(st_tag, StNetworkConnected, StNetworkDisconnected);
+}
 
+StableTime::StableTime(const char *dst) {
+  if (dst != 0)
+    setenv("TZ", dst, 1);
   network->RegisterModule(st_tag, StNetworkConnected, StNetworkDisconnected);
 }
 
