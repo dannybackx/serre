@@ -86,20 +86,15 @@ void setup(void) {
 
 void loop()
 {
-  struct timeval tv;
-  gettimeofday(&tv, 0);
-  if (stableTime) stableTime->loop(&tv);
-
-  nowts = tv.tv_sec;
+  nowts = stableTime->loop();
 
   // Record boot time
-  if (boot_time == 0 && nowts > 15) {
+  if (boot_time == 0 && nowts > 15) {	// >15 means we should already have SNTP supplied time
     boot_time = nowts;
 
-    char msg[80], ts[24];
-    struct tm *tmp = localtime(&boot_time);
-    strftime(ts, sizeof(ts), "%Y-%m-%d %T", tmp);
-    sprintf(msg, "Boot at %s", ts);
+    char *ts = stableTime->TimeStamp(boot_time);
+    char msg[80];
+    sprintf(msg, "boot at %s", ts);
 
     if (mqtt) mqtt->Report(msg);
     ESP_LOGE(app_tag, "%s", msg);

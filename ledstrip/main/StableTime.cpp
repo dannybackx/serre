@@ -55,6 +55,11 @@ void StableTime::loop(time_t n) {
   now.tv_usec = 0;
 }
 
+time_t StableTime::loop() {
+  gettimeofday(&now, 0);
+  return now.tv_sec;
+}
+
 time_t StableTime::Query() {
   return now.tv_sec;
 }
@@ -64,6 +69,12 @@ void StableTime::Query(struct timeval *ptv) {
 }
 
 // Returns pointer to static memory area
+char *StableTime::TimeStamp(time_t t) {
+  struct tm *tmp = localtime(&t);
+  strftime(ts, sizeof(ts), "%Y-%m-%d %T", tmp);
+  return ts;
+}
+
 char *StableTime::TimeStamp() {
   struct tm *tmp = localtime(&now.tv_sec);
   strftime(ts, sizeof(ts), "%Y-%m-%d %T", tmp);

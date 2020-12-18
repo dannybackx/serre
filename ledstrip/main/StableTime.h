@@ -31,9 +31,11 @@ public:
   ~StableTime();
   void loop(time_t);
   void loop(struct timeval *);
+  time_t loop();
   time_t Query();
   void Query(struct timeval *);
   char *TimeStamp();
+  char *TimeStamp(time_t);
 
 private:
   struct timeval	now;
