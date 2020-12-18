@@ -1,7 +1,7 @@
 /*
- * Secure keypad : one that doesn't need unlock codes
+ * Generic app include file
  *
- * Copyright (c) 2018, 2019 Danny Backx
+ * Copyright (c) 2018, 2019, 2020 Danny Backx
  *
  * License (GNU Lesser General Public License) :
  *
@@ -20,14 +20,12 @@
  *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <Arduino.h>
 #include "secrets.h"
-#include <Wire.h>
-#include "Ota.h"
+#include <Ota.h>
+#include <esp_log.h>
 
 #include <apps/sntp/sntp.h>
 
-extern String			ips, gws;
 extern Ota			*ota;
 
 extern time_t			nowts, boot_time;

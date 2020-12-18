@@ -21,11 +21,9 @@
  */
 
 #include "App.h"
-#include <Arduino.h>
-#include <Wire.h>
 #include "Network.h"
 #include "StableTime.h"
-#include "Ota.h"
+#include "App.h"
 #include "Mqtt.h"
 
 const char *app_tag = "LED strip";
@@ -37,10 +35,6 @@ Mqtt			*mqtt = 0;
 
 // Initial function
 void setup(void) {
-  Serial.begin(115200);
-
-  delay(250);
-
   ESP_LOGI(app_tag, "LED strip (c) 2020 Danny Backx");
 #if 1
   extern const char *build;
@@ -90,16 +84,6 @@ void setup(void) {
   twinklefox_setup();
 }
 
-/*
- * Keep track of average loop duration.
- *	avg = sum / (count - 1)
- * in milli-seconds
- */
-struct timeval otv;
-int loop_count = 0;
-const int count_max = 100000;
-long	sum;
-
 void loop()
 {
   struct timeval tv;
@@ -109,7 +93,7 @@ void loop()
   nowts = tv.tv_sec;
 
   // Record boot time
-  if (boot_time == 0 && nowts > 1000) {
+  if (boot_time == 0 && nowts > 15) {
     boot_time = nowts;
 
     char msg[80], ts[24];

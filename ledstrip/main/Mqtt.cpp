@@ -20,7 +20,6 @@
  *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <Arduino.h>	// For IPAddress, ..
 #include <time.h>
 
 #include <list>
@@ -46,8 +45,6 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event);
 esp_mqtt_client_config_t mqtt_config;
 esp_mqtt_client_handle_t mqtth;
 
-boolean mqtt_signal = false;
-
 // Forward
 esp_err_t PeersNetworkConnected(void *ctx, system_event_t *event);
 esp_err_t PeersNetworkDisconnected(void *ctx, system_event_t *event);
@@ -61,8 +58,6 @@ Mqtt::Mqtt() {
 
   mqttConnected = false;
   mqttSubscribed = false;
-
-  mqtt_signal = false;
 
   network->RegisterModule(mqtt_tag, PeersNetworkConnected, PeersNetworkDisconnected);
 }
@@ -81,13 +76,14 @@ esp_err_t PeersNetworkConnected(void *ctx, system_event_t *event) {
   memset(&mqtt_config, 0, sizeof(mqtt_config));
   mqtt_config.uri = MQTT_URI;
   mqtt_config.event_handle = mqtt_event_handler;
+  mqtt_config.client_id = mqtt->app_name;
 
   // Note Tuan's MQTT component starts a separate task for event handling
   mqtth = esp_mqtt_client_init(&mqtt_config);
   esp_err_t err = esp_mqtt_client_start(mqtth);
 
   if (err == ESP_OK)
-    ESP_LOGE(mqtt->mqtt_tag, "MQTT Client Start ok");
+    ESP_LOGI(mqtt->mqtt_tag, "MQTT Client Start ok");
   else
     ESP_LOGE(mqtt->mqtt_tag, "MQTT Client Start failure : %d", err);
 
@@ -147,7 +143,6 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
       // This should not happen, there's almost nothing after mqtt startup in our ctor
       ESP_LOGE(mqtt_tag, "MQTT : no peers, couldn't connect");
     }
-    // mqtt_signal = true;			// FIXME
     break;
   case MQTT_EVENT_DISCONNECTED:
     // Track how soon this happens after connect
@@ -163,21 +158,18 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
     if (mqtt)
       mqtt->mqttConnected = false;
     network->mqttDisconnected();
-    mqtt_signal = false;
     break;
   case MQTT_EVENT_SUBSCRIBED:
     ESP_LOGI(mqtt_tag, "mqtt subscribed");
     network->mqttSubscribed();
     if (mqtt)
       mqtt->mqttSubscribed = true;
-    // mqtt_signal = true;			// FIXME
     break;
   case MQTT_EVENT_UNSUBSCRIBED:
-    ESP_LOGE(mqtt_tag, "mqtt subscribed");
+    ESP_LOGD(mqtt_tag, "mqtt subscribed");
     network->mqttUnsubscribed();
     if (mqtt)
       mqtt->mqttSubscribed = false;
-    // mqtt_signal = false;
     break;
   case MQTT_EVENT_PUBLISHED:
     break;
@@ -203,13 +195,12 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
 
     ESP_LOGD(mqtt_tag, "MQTT end handler");
 
-    mqtt_signal = true;			// FIXME
     break;
   case MQTT_EVENT_ERROR:
     ESP_LOGE(mqtt_tag, "mqtt event error");
     break;
   case MQTT_EVENT_BEFORE_CONNECT:
-    ESP_LOGE(mqtt_tag, "mqtt event before connect");
+    ESP_LOGD(mqtt_tag, "mqtt event before connect");
     break;
   }
 
@@ -240,8 +231,8 @@ static void PeersRebootHandler(const char *payload) {
 }
 
 static void PeersOtaHandler(const char *payload) {
-  ESP_LOGE(mqtt_tag, "MQTT OTA");
-  ota->DoOTA();
+  ESP_LOGI(mqtt_tag, "MQTT OTA");
+  // ota->DoOTA();
 }
 
 void timeString(time_t t, const char *format, char *buffer, int len) {
@@ -252,15 +243,15 @@ void timeString(time_t t, const char *format, char *buffer, int len) {
 static void PeersBootHandler(const char *payload) {
   char reply[80];
   char msg[60], format[40];
-  sprintf(format, "Boot %s %%F %%R", "ledstrip");
+  sprintf(format, "Boot %s %%F %%R", mqtt->app_name);
   timeString(boot_time, format, msg, sizeof(msg));
-  sprintf(reply, "Boot %s %s", "ledstrip", msg);
+  sprintf(reply, "Boot %s %s", mqtt->app_name, msg);
   esp_mqtt_client_publish(mqtth, mqtt->reply_topic, reply, 0, 0, 0);
 }
 
 static void PeersTimeHandler(const char *payload) {
     char msg[64], format[48];
-    sprintf(format, "Time %s %%F %%R", "ledstrip");
+    sprintf(format, "Time %s %%F %%R", mqtt->app_name);
     timeString(time(0), format, msg, sizeof(msg));
     esp_mqtt_client_publish(mqtth, mqtt->reply_topic, msg, 0, 0, 0);
 }
@@ -280,7 +271,7 @@ static void PeersNetworkHandler(const char *payload) {
       char reply[80];
       sprintf(reply,
 	"Alarm node %s, ip %s, mac %02x:%02x:%02x:%02x:%02x:%02x, ap %s ch %d rssi %d",
-	"ledstrip", ip,
+	mqtt->app_name, ip,
 	apinfo.bssid[0], apinfo.bssid[1], apinfo.bssid[2], apinfo.bssid[3], apinfo.bssid[4],
 	apinfo.bssid[5], apinfo.ssid, apinfo.primary, apinfo.rssi);
 
@@ -302,7 +293,7 @@ struct payload_handler_table {
   void (*h)(const char *);
 } pht[] = {
   { "reboot",		0,	PeersRebootHandler },
-  { "ota",		0,	PeersOtaHandler },
+  { "ota",		3,	PeersOtaHandler },
   { "boot",		0,	PeersBootHandler },
   { "time",		0,	PeersTimeHandler },
   { "network",		0,	PeersNetworkHandler },
@@ -332,7 +323,7 @@ struct payload_handler_table {
  *	heap
  */
 void mqttMyNodeCallback(char *payload) {
-  ESP_LOGE(mqtt_tag, "mqttMyNodeCallback(%s)", payload);
+  ESP_LOGD(mqtt_tag, "mqttMyNodeCallback(%s)", payload);
 
   for (int i=0; pht[i].pl; i++) {
     if (pht[i].len && strncmp(pht[i].pl, payload, pht[i].len) == 0) {
@@ -370,11 +361,11 @@ void Mqtt::mqttSubscribe() {
 bool Mqtt::Report(const char *msg) {
   if (mqttConnected) {
     esp_mqtt_client_publish(mqtth, reply_topic, msg, 0, 0, 0);
-    ESP_LOGE(mqtt_tag, "Reporting via MQTT: %s", msg);
+    // ESP_LOGE(mqtt_tag, "Reporting via MQTT: %s", msg);
     return true;
   }
 
-  ESP_LOGE(mqtt_tag, "Report: mqtt not connected yet (msg %s)", msg);
+  ESP_LOGI(mqtt_tag, "Report: mqtt not connected yet (msg %s)", msg);
   return false;
 }
 

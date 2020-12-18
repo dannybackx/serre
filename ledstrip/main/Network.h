@@ -72,7 +72,7 @@ public:
 
   void SetupWifi(void);
   void WaitForWifi(void);
-  void setWifiOk(boolean);
+  void setWifiOk(bool);
 
   Network();
   Network(const char *, esp_err_t (*nc)(void *, system_event_t *), esp_err_t (*nd)(void *, system_event_t *));

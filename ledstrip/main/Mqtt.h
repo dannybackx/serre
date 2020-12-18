@@ -53,9 +53,17 @@ public:
   bool isMqttConnected();
 
   // Allocate this only once
+#if 0
   const char *reply_topic = "/ledstrip/reply";
   const char *my_topic = "/ledstrip";
+  const char *app_name = "ledstrip";
   const char *topic_wildcard = "/ledstrip/#";
+#else
+  const char *reply_topic = "/ledstrip-test/reply";
+  const char *my_topic = "/ledstrip-test";
+  const char *app_name = "ledstrip-test";
+  const char *topic_wildcard = "/ledstrip-test/#";
+#endif
 
 private:
 
@@ -65,7 +73,7 @@ private:
   time_t	unconnected;
   const uint16_t portMulti = 23456;		// port number used for all our communication
   uint8_t	 packetBuffer[512];		// buffer to hold incoming and outgoing packets
-  IPAddress ipMulti;
+  // IPAddress ipMulti;
   ip4_addr_t	local;
 
   const int recBufLen = 512;

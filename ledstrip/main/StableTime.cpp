@@ -24,12 +24,23 @@
  *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "Network.h"
 #include "StableTime.h"
+#include <esp_event_loop.h>
+#include <apps/sntp/sntp.h>
+#include <esp_log.h>
+
+const char *st_tag = "StableTime";
+
+esp_err_t StNetworkConnected(void *ctx, system_event_t *event);
+esp_err_t StNetworkDisconnected(void *ctx, system_event_t *event);
 
 StableTime *stableTime;
 
 StableTime::StableTime() {
   // stableTime = this;		// Already happens in Keypad.cpp
+
+  network->RegisterModule(st_tag, StNetworkConnected, StNetworkDisconnected);
 }
 
 StableTime::~StableTime() {
@@ -50,4 +61,42 @@ time_t StableTime::Query() {
 
 void StableTime::Query(struct timeval *ptv) {
   *ptv = now;
+}
+
+// Returns pointer to static memory area
+char *StableTime::TimeStamp() {
+  struct tm *tmp = localtime(&now.tv_sec);
+  strftime(ts, sizeof(ts), "%Y-%m-%d %T", tmp);
+  return ts;
+}
+
+static void sntp_sync_notify(struct timeval *tvp) {
+  char ts[20];
+  struct tm *tmp = localtime(&tvp->tv_sec);
+  strftime(ts, sizeof(ts), "%Y-%m-%d %T", tmp);
+  ESP_LOGE(st_tag, "Timesync event %s", ts);
+}
+
+esp_err_t StNetworkConnected(void *ctx, system_event_t *event) {
+  ESP_LOGI(st_tag, "NetworkConnected : start SNTP");
+
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+
+  sntp_init();
+
+#ifdef	NTP_SERVER_0
+  sntp_setservername(0, (char *)NTP_SERVER_0);
+#endif
+#ifdef	NTP_SERVER_1
+  sntp_setservername(1, (char *)NTP_SERVER_1);
+#endif
+  sntp_setservername(2, (char *)"3.ubuntu.pool.ntp.org");	// fallback
+
+  sntp_set_time_sync_notification_cb(sntp_sync_notify);
+  return ESP_OK;
+}
+
+esp_err_t StNetworkDisconnected(void *ctx, system_event_t *event) {
+  ESP_LOGE(st_tag, "Network disconnect ...");
+  return ESP_OK;
 }

@@ -1,7 +1,7 @@
 /*
  * Call this module instead of time(0) or gettimeofday(&x, 0) who both freeze occasionally.
  *
- * Copyright (c) 2019 Danny Backx
+ * Copyright (c) 2019, 2020 by Danny Backx
  *
  * License (GNU Lesser General Public License) :
  *
@@ -23,7 +23,6 @@
 #ifndef	_STABLETIME_H_
 #define	_STABLETIME_H_
 
-#include <Arduino.h>
 #include <sys/time.h>
 
 class StableTime {
@@ -34,9 +33,12 @@ public:
   void loop(struct timeval *);
   time_t Query();
   void Query(struct timeval *);
+  char *TimeStamp();
 
-//private:
+private:
   struct timeval	now;
+  const char *st_tag = "StableTime";
+  char ts[24];
 };
 
 extern StableTime *stableTime;

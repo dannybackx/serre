@@ -1,9 +1,7 @@
 /*
- * ESP32 OTA code
+ * This module implements a small web server, for OTA
  *
- * Copyright (c) 2018, 2019, 2020 Danny Backx
- *   Derived from the OTA example code in esp-idf/examples/system/ota/main/ota_example_main.c .
- *   The original code is in the Public Domain, changes are subject to the GNU LGPL (see below).
+ * Copyright (c) 2019, 2020 Danny Backx
  *
  * License (GNU Lesser General Public License) :
  *
@@ -21,15 +19,43 @@
  *   License along with this library; if not, write to the Free Software
  *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef	__KEYPAD_OTA_H_
-#define	__KEYPAD_OTA_H_
+
+
+#ifndef	_OTA_H_
+#define	_OTA_H_
+
+#include <esp_wifi.h>
+#include <esp_event_loop.h>
+#include <esp_http_server.h>
 
 class Ota {
   public:
     Ota();
-    void DoOTA();
-    void DoOTA(const char *url);
+    ~Ota();
+    httpd_handle_t getServer();
+
   private:
-    const char *ota_tag = "OTA";
+    const char *webserver_tag = "Ota";
+    void Start();
+
+    httpd_handle_t	server;
+    void SendPage(httpd_req_t *);
+
+    friend esp_err_t index_handler(httpd_req_t *req);
+    friend esp_err_t serverIndex_handler(httpd_req_t *req);
+    friend esp_err_t update_handler(httpd_req_t *req);
+    friend esp_err_t WsNetworkConnected(void *ctx, system_event_t *event);
+    friend esp_err_t WsNetworkDisonnected(void *ctx, system_event_t *event);
+
+    char			*my_name;
+    const int			my_serverport = 80;
+
+    // 
+    bool isPeerSecure(int sock);
+
+    static const char *loginIndex;
+    static const char *serverIndex;
 };
-#endif  // __KEYPAD_OTA_H_
+
+extern Ota *ota;
+#endif	/* _OTA_H_ */
