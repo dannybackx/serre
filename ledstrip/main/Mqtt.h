@@ -53,7 +53,7 @@ public:
   bool isMqttConnected();
 
   // Allocate this only once
-#if 0
+#ifndef USE_TEST
   const char *reply_topic = "/ledstrip/reply";
   const char *my_topic = "/ledstrip";
   const char *app_name = "ledstrip";

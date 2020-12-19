@@ -19,8 +19,6 @@ COMPONENT_SRCDIRS += ../libraries/FastLED
 
 COMPONENT_ADD_INCLUDEDIRS := ../libraries/FastLED .
 
-COMPONENT_EMBED_TXTFILES :=  ${PROJECT_PATH}/dannybackx.hopto.org.crt
-
 #
 # These lines were copied from make/component_wrapper.mk in the esp-idf distro
 # Obviously renamed COMPONENT_OBJS to MY_COMPONENT_OBJS

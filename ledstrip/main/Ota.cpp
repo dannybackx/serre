@@ -22,6 +22,7 @@
 #include "App.h"
 
 #include "Ota.h"
+#include "Mqtt.h"
 #include "secrets.h"
 #include "esp_log.h"
 
@@ -184,8 +185,11 @@ esp_err_t update_handler(httpd_req_t *req) {
   }
 
   const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-  ESP_LOGI(swebserver_tag, "OTA : writing to partition subtype %d at offset 0x%x",
+  char line[80];
+  sprintf(line, "OTA : writing to partition subtype %d at offset 0x%x",
     update_partition->subtype, update_partition->address);
+  ESP_LOGI(swebserver_tag, "%s", line);
+  mqtt->Report(line);
 
   esp_err_t err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &update_handle);
   if (err != ESP_OK) {
@@ -212,6 +216,8 @@ esp_err_t update_handler(httpd_req_t *req) {
 	continue;
 
       free(buf);
+      sprintf(line, "OTA : httpd_req_recv failed, %d %s", ret, esp_err_to_name(ret));
+      mqtt->Report(line);
       ESP_LOGE(swebserver_tag, "httpd_req_recv failed, %d %s", ret, esp_err_to_name(ret));
       return ESP_FAIL;	// Fail in other cases than timeout
     }
@@ -300,6 +306,10 @@ esp_err_t update_handler(httpd_req_t *req) {
     ESP_LOGE(swebserver_tag, "OTA set bootable failed, %d %s", err, esp_err_to_name(err));
     return ESP_FAIL;
   }
+
+  mqtt->Report("OTA success");
+  vTaskDelay(500);
+
   esp_restart();
   return ESP_OK;
 }

@@ -23,15 +23,29 @@
 #include "App.h"
 #include "Network.h"
 #include "StableTime.h"
-#include "App.h"
 #include "Mqtt.h"
+#include "FastLED.h"
 
-const char *app_tag = "LED strip";
+const char		*app_tag = "LED strip";
 
 Network			*network = 0;
 Ota			*ota = 0;
 time_t			nowts, boot_time = 0;
 Mqtt			*mqtt = 0;
+char			*boot_msg = 0;
+
+/*
+ * FastLED stuff
+ */
+CRGBArray<MY_NUM_LEDS> leds;
+extern CRGBPalette16 gTargetPalette;
+extern void chooseNextColorPalette(CRGBPalette16& pal);
+
+void GeneralLEDsetup();
+extern void twinklefox_loop();
+extern void star_loop();
+extern void cylon_loop();
+void led_loop(void *);
 
 void TimeSync(struct timeval *);
 
@@ -81,11 +95,10 @@ void setup(void) {
 
   network->WaitForWifi();
 
-  extern void twinklefox_setup();
-  twinklefox_setup();
-}
+  GeneralLEDsetup();
 
-char *boot_msg = 0;
+  xTaskCreate(&led_loop, "led task", 8192, NULL, 5, NULL);
+}
 
 // Record boot time
 void TimeSync(struct timeval *tvp) {
@@ -113,6 +126,30 @@ void loop()
     boot_msg = 0;
   }
 
-  extern void twinklefox_loop();
-  twinklefox_loop();
+  vTaskDelay(10);
+}
+
+void GeneralLEDsetup() {
+  ESP_LOGE(app_tag, "LED strip setup");
+
+  // delay( 3000 ); //safety startup delay
+
+  FastLED.setMaxPowerInVoltsAndMilliamps(5 /* V */, 1000 /* mA */);
+  FastLED.addLeds<MY_LED_TYPE, MY_DATA_PIN, MY_COLOR_ORDER>(leds, MY_NUM_LEDS).setCorrection(TypicalLEDStrip);
+
+  chooseNextColorPalette(gTargetPalette);
+}
+
+void led_loop(void *ptr) {
+  while (1) {
+    struct tm *tmp = localtime(&nowts);
+    if ((tmp->tm_min % 5) == 0)
+      cylon_loop();
+    // else if ((tmp->tm_min % 5) == 2)
+    //   star_loop();
+    else
+      twinklefox_loop();
+  }
+  // Should never fall through
+  vTaskDelete(0);	// This prevents a FreeRTOS panic (upon return from a task loop)
 }

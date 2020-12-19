@@ -1,17 +1,10 @@
+#include "App.h"
 #include "FastLED.h"
 
 #if defined(FASTLED_VERSION) && (FASTLED_VERSION < 3001000)
 #warning "Requires FastLED 3.1 or later; check github for latest code."
 #endif
 
-
-#define NUM_LEDS	60
-#define LED_TYPE	WS2811
-#define COLOR_ORDER	GRB
-#define DATA_PIN	16
-//#define CLK_PIN       4
-#define VOLTS          12
-#define MAX_MA       4000
 
 // Overall twinkle speed.
 // 0 (VERY slow) to 8 (VERY fast).  
@@ -92,7 +85,7 @@ void coolLikeIncandescent( CRGB& c, uint8_t phase);
 //
 //  -Mark Kriegsman, December 2015
 
-CRGBArray<NUM_LEDS> leds;
+// extern CRGBArray<MY_NUM_LEDS> leds;
 
 // Also: toward the bottom of the file is an array 
 // called "ActivePaletteList" which controls which color
@@ -121,6 +114,7 @@ CRGBPalette16 gCurrentPalette;
 CRGBPalette16 gTargetPalette;
 
 #include "esp_log.h"
+#if 0
 void twinklefox_setup() {
   // Serial.begin(115200);
   ESP_LOGE("TwinkleFox", "Pin %d speed %d", DATA_PIN, TWINKLE_SPEED);
@@ -135,7 +129,7 @@ void twinklefox_setup() {
 
   chooseNextColorPalette(gTargetPalette);
 }
-
+#endif
 
 void twinklefox_loop()
 {

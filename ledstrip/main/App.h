@@ -20,9 +20,15 @@
  *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifndef _APP_H_
+#define _APP_H_
+
+#define	USE_TEST	1
+
 #include "secrets.h"
 #include <Ota.h>
 #include <esp_log.h>
+#include <FastLED.h>
 
 #include <apps/sntp/sntp.h>
 
@@ -31,3 +37,12 @@ extern Ota			*ota;
 extern time_t			nowts, boot_time;
 
 extern const char		*build;
+
+#define MY_NUM_LEDS	60
+#define MY_LED_TYPE	WS2811
+#define MY_COLOR_ORDER	GRB
+#define MY_DATA_PIN	16
+
+extern CRGBArray<MY_NUM_LEDS> leds;
+
+#endif /* _APP_H_ */
