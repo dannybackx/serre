@@ -46,9 +46,10 @@ Network::Network() {
 
 Network::Network(const char *name,
     esp_err_t (*nc)(void *, system_event_t *),
-    esp_err_t (*nd)(void *, system_event_t *)) {
+    esp_err_t (*nd)(void *, system_event_t *),
+    void (*ts)(struct timeval *)) {
   Network();
-  struct module_registration *mr = new module_registration(name, nc, nd);
+  struct module_registration *mr = new module_registration(name, nc, nd, ts);
   RegisterModule(mr);
 }
 
@@ -180,7 +181,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
       break;
 
     case SYSTEM_EVENT_STA_GOT_IP:
-      ESP_LOGI(snetwork_tag, "SYSTEM_EVENT_STA_GOT_IP");
+      ESP_LOGD(snetwork_tag, "SYSTEM_EVENT_STA_GOT_IP");
       ESP_LOGI(snetwork_tag, "Network connected, ip %s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
 
       network->setWifiOk(true);
@@ -197,7 +198,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 
       for (mp = network->modules.begin(); mp != network->modules.end(); mp++) {
 	if (mp->NetworkConnected != 0) {
-	  ESP_LOGI(snetwork_tag, "Network Connected : call module %s", mp->module);
+	  ESP_LOGD(snetwork_tag, "Network Connected : call module %s", mp->module);
 
 	  // FIX ME how to treat result
 	  mp->result = mp->NetworkConnected(ctx, event);
@@ -238,7 +239,6 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 
 	// Trigger next try
 	network->setStatus(NS_SETUP_DONE);
-	// esp_wifi_connect();
 	network->SetupWifi();
         network->WaitForWifi();
       } else {
@@ -504,32 +504,48 @@ void Network::disconnected(const char *fn, int line) {
 
 }
 
+void sntp_sync_notify(struct timeval *tvp) {
+  char ts[20];
+  struct tm *tmp = localtime(&tvp->tv_sec);
+  strftime(ts, sizeof(ts), "%Y-%m-%d %T", tmp);
+  ESP_LOGE(snetwork_tag, "TimeSync event %s", ts);
+
+  list<module_registration>::iterator mp;
+  ESP_LOGD(snetwork_tag, "TimeSync : %d modules", network->modules.size());
+
+  for (mp = network->modules.begin(); mp != network->modules.end(); mp++) {
+    if (mp->TimeSync != 0) {
+      ESP_LOGD(snetwork_tag, "TimeSync : call module %s", mp->module);
+      mp->TimeSync(tvp);
+    }
+  }
+}
+
 void Network::eventDisconnected(const char *fn, int line) {
     ESP_LOGE(network_tag, "Disconnect event (caller: %s line %d)", __FUNCTION__, __LINE__);
 }
 
 void Network::NetworkConnected(void *ctx, system_event_t *event) {
+  ESP_LOGD(network_tag, "NetworkConnected : start SNTP");
+
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_init();
+
+#ifdef	NTP_SERVER_0
+  sntp_setservername(0, (char *)NTP_SERVER_0);
+#endif
+#ifdef	NTP_SERVER_1
+  sntp_setservername(1, (char *)NTP_SERVER_1);
+#endif
+  sntp_setservername(2, (char *)"europe.pool.ntp.org");	// fallback
+  sntp_setservername(3, (char *)"pool.ntp.org");	// fallback
+
+  sntp_set_time_sync_notification_cb(sntp_sync_notify);
 }
 
 void Network::NetworkDisconnected(void *ctx, system_event_t *event) {
   ESP_LOGE(network_tag, "Network disconnect ...");
 
-#if 0
-  ESP_LOGE(network_tag, "Disconnect : event id 0x%02x", event->event_id);
-
-  if (event->event_id == SYSTEM_EVENT_STA_DISCONNECTED) {
-    system_event_sta_disconnected_t *evp = &event->event_info.disconnected;
-
-    char ssid[33];
-    ssid[32] = 0;
-    strncpy(ssid, (char *)evp->ssid, evp->ssid_len);
-    if (evp->reason == WIFI_REASON_NO_AP_FOUND) {
-      ESP_LOGE(network_tag, "Disconnect : ssid %s, reason 0x%02x (no access point)", ssid, evp->reason);
-      status = NS_FAILED;
-    } else
-      ESP_LOGE(network_tag, "Disconnect : ssid %s, reason 0x%02x ", ssid, evp->reason);
-  }
-#endif
 }
 
 
@@ -629,18 +645,30 @@ module_registration::module_registration() {
 
 module_registration::module_registration(const char *name,
   esp_err_t NetworkConnected(void *, system_event_t *),
-  esp_err_t NetworkDisconnected(void *, system_event_t *))
+  esp_err_t NetworkDisconnected(void *, system_event_t *),
+  void TimeSync(struct timeval *))
 {
   this->module = (char *)name;
   this->NetworkConnected = NetworkConnected;
   this->NetworkDisconnected = NetworkDisconnected;
+  this->TimeSync = TimeSync;
+}
+
+void Network::RegisterModule(const char *name,
+    esp_err_t nc(void *, system_event_t *),
+    esp_err_t nd(void *, system_event_t *),
+    void ts(struct timeval *)) {
+  ESP_LOGD(network_tag, "RegisterModule(%s)", name);
+  struct module_registration *mr = new module_registration(name, nc, nd, ts);
+
+  RegisterModule(mr);
 }
 
 void Network::RegisterModule(const char *name,
     esp_err_t nc(void *, system_event_t *),
     esp_err_t nd(void *, system_event_t *)) {
   ESP_LOGD(network_tag, "RegisterModule(%s)", name);
-  struct module_registration *mr = new module_registration(name, nc, nd);
+  struct module_registration *mr = new module_registration(name, nc, nd, 0);
 
   RegisterModule(mr);
 }

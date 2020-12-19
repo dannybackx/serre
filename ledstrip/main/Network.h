@@ -43,12 +43,14 @@ struct module_registration {
   char *module;
   esp_err_t (*NetworkConnected)(void *, system_event_t *);
   esp_err_t (*NetworkDisconnected)(void *, system_event_t *);
+  void (*TimeSync)(struct timeval *);
   esp_err_t result;
 
   module_registration();
   module_registration(const char *name,
     esp_err_t NetworkConnected(void *, system_event_t *),
-    esp_err_t NetworkDisconnected(void *, system_event_t *));
+    esp_err_t NetworkDisconnected(void *, system_event_t *),
+    void TimeSync(struct timeval *));
 
   // Deal with keepalives on a per module basis
   time_t	ka_start,		// timestamp of last poll
@@ -75,7 +77,10 @@ public:
   void setWifiOk(bool);
 
   Network();
-  Network(const char *, esp_err_t (*nc)(void *, system_event_t *), esp_err_t (*nd)(void *, system_event_t *));
+  Network(const char *,
+    esp_err_t (*nc)(void *, system_event_t *),
+    esp_err_t (*nd)(void *, system_event_t *),
+    void (*ts)(struct timeval *));
   ~Network();
 
   void loop(time_t now);
@@ -104,8 +109,11 @@ public:
   void RegisterModule(module_registration *);
   void RegisterModule(const char *,
     esp_err_t NetworkConnected(void *, system_event_t *),
+    esp_err_t NetworkDisconnected(void *, system_event_t *),
+    void TimeSync(struct timeval *));
+  void RegisterModule(const char *,
+    esp_err_t NetworkConnected(void *, system_event_t *),
     esp_err_t NetworkDisconnected(void *, system_event_t *));
-
 
 private:
   const char			*network_tag = "Network";
@@ -132,6 +140,7 @@ private:
   // Modules interested in network events
   list<module_registration>	modules;
   friend esp_err_t wifi_event_handler(void *ctx, system_event_t *event);
+  friend void sntp_sync_notify(struct timeval *tvp);
 };
 
 // Global variables

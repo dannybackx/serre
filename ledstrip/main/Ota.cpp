@@ -159,7 +159,7 @@ esp_err_t update_handler(httpd_req_t *req) {
   if (vl != 0) {
     char *vv = (char *)malloc(vl + 3);
     httpd_req_get_hdr_value_str(req, var, vv, vl+2);
-    ESP_LOGE(swebserver_tag, "%s : %s", var, vv);
+    ESP_LOGD(swebserver_tag, "%s : %s", var, vv);
     free((void *)vv);
   }
 
@@ -169,7 +169,7 @@ esp_err_t update_handler(httpd_req_t *req) {
   if (vl != 0) {
     char *vv = (char *)malloc(vl + 3);
     httpd_req_get_hdr_value_str(req, var, vv, vl+2);
-    ESP_LOGE(swebserver_tag, "%s : %s", var, vv);
+    ESP_LOGD(swebserver_tag, "%s : %s", var, vv);
 
     boundary = strstr(vv, "boundary=");
     if (boundary != 0) {
@@ -177,14 +177,15 @@ esp_err_t update_handler(httpd_req_t *req) {
       int len = strlen(p);
       boundary = (char *)malloc(len+1);
       strcpy(boundary, p);
-      ESP_LOGE(swebserver_tag, "Boundary {%s}", boundary);
+      ESP_LOGD(swebserver_tag, "Boundary {%s}", boundary);
     }
 
     free((void *)vv);
   }
 
   const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-  ESP_LOGI(swebserver_tag, "Writing to partition subtype %d at offset 0x%x", update_partition->subtype, update_partition->address);
+  ESP_LOGI(swebserver_tag, "OTA : writing to partition subtype %d at offset 0x%x",
+    update_partition->subtype, update_partition->address);
 
   esp_err_t err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &update_handle);
   if (err != ESP_OK) {
@@ -199,7 +200,7 @@ esp_err_t update_handler(httpd_req_t *req) {
   int		remain = req->content_len;
   int		offset = 0;
 
-  ESP_LOGE(swebserver_tag, "Receiving (req content-len %d)", remain);
+  ESP_LOGD(swebserver_tag, "Receiving (req content-len %d)", remain);
   while (remain > 0) {
     int len = remain;
     if (buflen < len)

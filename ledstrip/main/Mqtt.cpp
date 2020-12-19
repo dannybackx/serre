@@ -97,6 +97,7 @@ esp_err_t PeersNetworkDisconnected(void *ctx, system_event_t *event) {
   ESP_LOGE(mqtt->mqtt_tag, "Network disconnected");
   if (mqtt) {
     esp_err_t err = esp_mqtt_client_stop(mqtth);
+    mqtt->mqttConnected = false;
     ESP_LOGD(mqtt->mqtt_tag, "MQTT Client Stop : %d %s", (int)err,
       (err == ESP_OK) ? "ok" : (err == ESP_FAIL) ? "fail" : "?");
   }

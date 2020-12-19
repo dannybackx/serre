@@ -33,6 +33,8 @@ Ota			*ota = 0;
 time_t			nowts, boot_time = 0;
 Mqtt			*mqtt = 0;
 
+void TimeSync(struct timeval *);
+
 // Initial function
 void setup(void) {
   ESP_LOGI(app_tag, "LED strip (c) 2020 Danny Backx");
@@ -43,6 +45,7 @@ void setup(void) {
 
   /* Network */
   network = new Network();
+  network->RegisterModule(app_tag, 0, 0, TimeSync);
 
   /* Print chip information */
   esp_chip_info_t chip_info;
@@ -82,23 +85,33 @@ void setup(void) {
   twinklefox_setup();
 }
 
+char *boot_msg = 0;
+
+// Record boot time
+void TimeSync(struct timeval *tvp) {
+  ESP_LOGD(app_tag, "TimeSync");
+
+  if (boot_time == 0) {
+    nowts = boot_time = tvp->tv_sec;
+
+    char *ts = stableTime->TimeStamp(boot_time);
+    char *boot_msg = (char *)malloc(80);
+    sprintf(boot_msg, "boot at %s", ts);
+
+    ESP_LOGE(app_tag, "%s", boot_msg);
+  }
+}
+
 void loop()
 {
   nowts = stableTime->loop();
 
-  // Record boot time
-  if (boot_time == 0 && nowts > 15) {	// >15 means we should already have SNTP supplied time
-    boot_time = nowts;
-
-    char *ts = stableTime->TimeStamp(boot_time);
-    char msg[80];
-    sprintf(msg, "boot at %s", ts);
-
-    if (mqtt) mqtt->Report(msg);
-    ESP_LOGE(app_tag, "%s", msg);
-  }
-
   if (network) network->loop(nowts);
+  if (boot_time != 0 && boot_msg != 0 && mqtt != 0) {
+    mqtt->Report(boot_msg);
+    free((void *)boot_msg);
+    boot_msg = 0;
+  }
 
   extern void twinklefox_loop();
   twinklefox_loop();
