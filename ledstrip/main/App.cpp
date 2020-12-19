@@ -33,6 +33,7 @@ Ota			*ota = 0;
 time_t			nowts, boot_time = 0;
 Mqtt			*mqtt = 0;
 char			*boot_msg = 0;
+TaskHandle_t		tsk = 0;
 
 /*
  * FastLED stuff
@@ -43,7 +44,7 @@ extern void chooseNextColorPalette(CRGBPalette16& pal);
 
 void GeneralLEDsetup();
 extern void twinklefox_loop();
-extern void star_loop();
+extern void star_loop(int);
 extern void cylon_loop();
 void led_loop(void *);
 
@@ -97,7 +98,7 @@ void setup(void) {
 
   GeneralLEDsetup();
 
-  xTaskCreate(&led_loop, "led task", 8192, NULL, 5, NULL);
+  xTaskCreate(&led_loop, "led task", 8192, NULL, 5, &tsk);
 }
 
 // Record boot time
@@ -127,6 +128,16 @@ void loop()
   }
 
   vTaskDelay(10);
+
+  struct tm *tmp = localtime(&nowts);
+  int hour = tmp->tm_hour * 100 + tmp->tm_min;
+  if (hour > 2330 && tsk != 0) {
+    vTaskDelete(tsk);
+    tsk = 0;
+  }
+  if (hour > 700 && tsk == 0) {
+    xTaskCreate(&led_loop, "led task", 8192, NULL, 5, &tsk);
+  }
 }
 
 void GeneralLEDsetup() {
@@ -143,12 +154,31 @@ void GeneralLEDsetup() {
 void led_loop(void *ptr) {
   while (1) {
     struct tm *tmp = localtime(&nowts);
-    if ((tmp->tm_min % 5) == 0)
-      cylon_loop();
-    // else if ((tmp->tm_min % 5) == 2)
-    //   star_loop();
-    else
+
+    /*
+     * A simple way to have a sequence of patterns : change every minute
+     * The modulo operand should be as high as the number of patterns
+     *
+     * We're cheating because I want to twinkle more than the other patterns, hence 6.
+     */
+    int ix = tmp->tm_min % 6;
+
+    switch (ix) {
+    case 0:
+    case 2:
+    case 4:
       twinklefox_loop();
+      break;
+    case 1:
+      cylon_loop();
+      break;
+    case 3:
+      star_loop(1);
+      break;
+    case 5:
+      star_loop(2);
+      break;
+    }
   }
   // Should never fall through
   vTaskDelete(0);	// This prevents a FreeRTOS panic (upon return from a task loop)

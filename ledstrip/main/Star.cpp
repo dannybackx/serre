@@ -1,5 +1,5 @@
 /*
- * Animation for a 5-point star
+ * Animations for a 5-point star
  *
  * Copyright (c) 2020 Danny Backx
  *
@@ -31,16 +31,16 @@
  * So there are 5 triangles
  */
 char triangle[5][12] = {
-  {  0,  1,  2,  3,	28, 29, 30, 31,		56, 57, 58, 59 },	// triangle 1
-  {  4,  5,  6,  7,	32, 33, 34, 35,		36, 37, 38, 39 },	// triangle 2
-  {  8,  9, 10, 11,	12, 13, 14, 15,		40, 41, 42, 43 },	// triangle 3
-  { 16, 17, 18, 19,	44, 45, 46, 47,		48, 49, 50, 51 },	// triangle 4
-  { 20, 21, 22, 23,	24, 25, 26, 27,		52, 53, 54, 55 }	// triangle 5
+  {  0,  1,  2,  3,	31, 30, 29, 28,		56, 57, 58, 59 },	// triangle 1
+  { 36, 37, 38, 39,	 7,  6,  5,  4,		32, 33, 34, 35 },	// triangle 2
+  { 12, 13, 14, 15,	43, 42, 41, 40,		 8,  9, 10, 11 },	// triangle 3
+  { 48, 49, 50, 51,	19, 18, 17, 16,		44, 45, 46, 47 },	// triangle 4
+  { 24, 25, 26, 27,	55, 54, 53, 52,		20, 21, 22, 23 }	// triangle 5
 };
 
 static int i = 0;
 
-void star_loop()
+void star_running_dot()
 {
   // Default = dark
   for (CRGB& pixel : leds)
@@ -49,11 +49,30 @@ void star_loop()
   // Running dot
   for (int star = 0; star < 6; star++) {
     int x = triangle[star][i];
-    leds[x] = CRGB::Red;
+    if (0 <= x && x < MY_NUM_LEDS) {
+      leds[x] = CRGB::Red;
+      if (i > 0) {
+	// Chase the red dot with a green one
+	int y = triangle[star][i-1];
+	if (0 <= y && y < MY_NUM_LEDS)
+	  leds[y] = CRGB::Green;
+      }
+    }
   }
 
   i = (i + 1) % 12;
 
   FastLED.show(); // display this frame
   FastLED.delay(1000 / FRAMES_PER_SECOND);
+}
+
+void star_loop(int i) {
+  switch (i) {
+  case 1:
+  default:
+    star_running_dot();
+    break;
+  // case 2:
+    break;
+  }
 }
