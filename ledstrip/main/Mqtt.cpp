@@ -66,7 +66,7 @@ Mqtt::~Mqtt() {
 }
 
 esp_err_t PeersNetworkConnected(void *ctx, system_event_t *event) {
-  ESP_LOGI(mqtt->mqtt_tag, "Network Connected, ip %s",
+  ESP_LOGD(mqtt->mqtt_tag, "Network Connected, ip %s",
     ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
 
   mqtt->local = event->event_info.got_ip.ip_info.ip;
@@ -83,7 +83,7 @@ esp_err_t PeersNetworkConnected(void *ctx, system_event_t *event) {
   esp_err_t err = esp_mqtt_client_start(mqtth);
 
   if (err == ESP_OK)
-    ESP_LOGI(mqtt->mqtt_tag, "MQTT Client Start ok");
+    ESP_LOGD(mqtt->mqtt_tag, "MQTT Client Start ok");
   else
     ESP_LOGE(mqtt->mqtt_tag, "MQTT Client Start failure : %d", err);
 
@@ -134,7 +134,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
 
   switch (event->event_id) {
   case MQTT_EVENT_CONNECTED:
-    ESP_LOGI(mqtt_tag, "mqtt connected");
+    ESP_LOGI(mqtt_tag, "connected");
     network->mqttConnected();
     conn_ts = esp_timer_get_time();
     if (mqtt) {
@@ -155,13 +155,13 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
         return ESP_OK;
       }
     }
-    ESP_LOGE(mqtt_tag, "mqtt disconnected");
+    ESP_LOGE(mqtt_tag, "disconnected");
     if (mqtt)
       mqtt->mqttConnected = false;
     network->mqttDisconnected();
     break;
   case MQTT_EVENT_SUBSCRIBED:
-    ESP_LOGI(mqtt_tag, "mqtt subscribed");
+    ESP_LOGI(mqtt_tag, "subscribed");
     network->mqttSubscribed();
     if (mqtt)
       mqtt->mqttSubscribed = true;
@@ -182,7 +182,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
     // Indicate that we just got a message so we're still alive
     network->gotMqttMessage();
 
-    ESP_LOGI(mqtt_tag, "MQTT topic %.*s message %.*s",
+    ESP_LOGD(mqtt_tag, "MQTT topic %.*s message %.*s",
       event->topic_len, event->topic, event->data_len, event->data);
 
     // Make safe copies, then call business logic handler
@@ -229,11 +229,6 @@ static void PeersRebootHandler(const char *payload) {
   char reply[80];
   esp_mqtt_client_publish(mqtth, mqtt->reply_topic, reply, 0, 0, 0);
   esp_restart();
-}
-
-static void PeersOtaHandler(const char *payload) {
-  ESP_LOGI(mqtt_tag, "MQTT OTA");
-  // ota->DoOTA();
 }
 
 void timeString(time_t t, const char *format, char *buffer, int len) {
@@ -294,35 +289,12 @@ struct payload_handler_table {
   void (*h)(const char *);
 } pht[] = {
   { "reboot",		0,	PeersRebootHandler },
-  { "ota",		3,	PeersOtaHandler },
   { "boot",		0,	PeersBootHandler },
   { "time",		0,	PeersTimeHandler },
   { "network",		0,	PeersNetworkHandler },
   { NULL,		0,	NULL }
 };
-/*
- * Process commands for this node only
- * Note : payload is null-terminated here.
- *
- * Payloads handled :
- *	QUERY			ACTION
- *	boot			reboot
- *	title			ota
- *	time
- *	query			arm
- *	build			night
- *	network			disarm
- *	/peers/query
- *	arp
- *	config		--> crash, memory allocation too tight ?	FIXME
- *
- *	DEBUG (output only on console, not on MQTT)
- *	wifi
- *	listalive
- *	listnodes
- *	update_timeout
- *	heap
- */
+
 void mqttMyNodeCallback(char *payload) {
   ESP_LOGD(mqtt_tag, "mqttMyNodeCallback(%s)", payload);
 
