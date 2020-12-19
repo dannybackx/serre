@@ -97,8 +97,6 @@ void TimeSync(struct timeval *tvp) {
     char *ts = stableTime->TimeStamp(boot_time);
     char *boot_msg = (char *)malloc(80);
     sprintf(boot_msg, "boot at %s", ts);
-
-    ESP_LOGE(app_tag, "%s", boot_msg);
   }
 }
 
@@ -107,7 +105,9 @@ void loop()
   nowts = stableTime->loop();
 
   if (network) network->loop(nowts);
-  if (boot_time != 0 && boot_msg != 0 && mqtt != 0) {
+
+  if (boot_time != 0 && boot_msg != 0) {
+    ESP_LOGI(app_tag, "%s", boot_msg);
     mqtt->Report(boot_msg);
     free((void *)boot_msg);
     boot_msg = 0;
