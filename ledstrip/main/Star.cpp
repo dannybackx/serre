@@ -30,12 +30,24 @@
  *
  * So there are 5 triangles
  */
-char triangle[5][12] = {
+#if 0
+// This is a complete functioning 5 point star
+int triangle[5][12] = {
   {  0,  1,  2,  3,	31, 30, 29, 28,		56, 57, 58, 59 },	// triangle 1
   { 36, 37, 38, 39,	 7,  6,  5,  4,		32, 33, 34, 35 },	// triangle 2
   { 12, 13, 14, 15,	43, 42, 41, 40,		 8,  9, 10, 11 },	// triangle 3
   { 48, 49, 50, 51,	19, 18, 17, 16,		44, 45, 46, 47 },	// triangle 4
   { 24, 25, 26, 27,	55, 54, 53, 52,		20, 21, 22, 23 }	// triangle 5
+};
+#endif
+
+// One module missing (position 36)
+int triangle[5][12] = {
+  {  0,  1,  2,  3,	31, 30, 29, 28,		55, 56, 57, 58 },	// triangle 1
+  { -1, 36, 37, 38,	 7,  6,  5,  4,		32, 33, 34, 35 },	// triangle 2
+  { 12, 13, 14, 15,	42, 41, 40, 39,		 8,  9, 10, 11 },	// triangle 3
+  { 47, 48, 49, 50,	19, 18, 17, 16,		43, 44, 45, 46 },	// triangle 4
+  { 24, 25, 26, 27,	54, 53, 52, 51,		20, 21, 22, 23 }	// triangle 5
 };
 
 static int i = 0;
