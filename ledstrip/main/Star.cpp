@@ -47,7 +47,26 @@ void star_running_dot()
     pixel = CRGB::Black;
 
   // Running dot
-  for (int star = 0; star < 6; star++) {
+  for (int star = 0; star < 5; star++) {
+    int x = triangle[star][i];
+    if (0 <= x && x < MY_NUM_LEDS) {
+      leds[x] = CRGB::Red;
+    }
+  }
+
+  i = (i + 1) % 12;
+
+  FastLED.show(); // display this frame
+  FastLED.delay(1000 / FRAMES_PER_SECOND);
+}
+
+void star_chasing_dot() {
+  // Default = dark
+  for (CRGB& pixel : leds)
+    pixel = CRGB::Black;
+
+  // Running dot
+  for (int star = 0; star < 5; star++) {
     int x = triangle[star][i];
     if (0 <= x && x < MY_NUM_LEDS) {
       leds[x] = CRGB::Red;
@@ -66,13 +85,49 @@ void star_running_dot()
   FastLED.delay(1000 / FRAMES_PER_SECOND);
 }
 
+void star_triangle() {
+  i = (i + 1) % 7;
+
+  // char line[80];
+  // strcpy(line, "colours                                                                        ");
+  // Every triangle has its colour
+  for (int tr=0; tr < 5; tr++) {
+    CRGB colour;
+    char cv = ' ';
+    int y = (tr + i) % 7;
+         if (y == 0) { colour = CRGB::Red;	cv = 'r'; }
+    else if (y == 1) { colour = CRGB::Orange;	cv = 'o'; }
+    else if (y == 2) { colour = CRGB::Yellow;	cv = 'y'; }
+    else if (y == 3) { colour = CRGB::Green;	cv = 'g'; }
+    else if (y == 4) { colour = CRGB::Blue;	cv = 'b'; }
+    else if (y == 5) { colour = CRGB::Indigo;	cv = 'i'; }
+    else if (y == 6) { colour = CRGB::Violet;	cv = 'v'; }
+    for (int x=0; x<12; x++) {
+      int i=triangle[tr][x];
+      if (0 <= i && i < MY_NUM_LEDS) {
+        leds[i] = colour;
+	// line[i + 8] = cv;
+      }
+    }
+  }
+
+  // ESP_LOGI("star", "%s", line);
+
+  FastLED.show(); // display this frame
+  FastLED.delay(1000);
+}
+
 void star_loop(int i) {
   switch (i) {
   case 1:
   default:
     star_running_dot();
     break;
-  // case 2:
+  case 2:
+    star_chasing_dot();
+    break;
+  case 3:
+    star_triangle();
     break;
   }
 }

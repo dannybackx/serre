@@ -25,6 +25,14 @@
 
 #define	USE_TEST	1
 
+#if	USE_TEST
+#define TS_NIGHT	2210
+#define	TS_MORNING	545
+#else
+#define TS_NIGHT	2330
+#define	TS_MORNING	700
+#endif
+
 #include "secrets.h"
 #include <Ota.h>
 #include <esp_log.h>

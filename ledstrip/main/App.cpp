@@ -47,6 +47,7 @@ extern void twinklefox_loop();
 extern void star_loop(int);
 extern void cylon_loop();
 void led_loop(void *);
+void LEDdark();
 
 void TimeSync(struct timeval *);
 
@@ -127,17 +128,7 @@ void loop()
     boot_msg = 0;
   }
 
-  vTaskDelay(10);
-
-  struct tm *tmp = localtime(&nowts);
-  int hour = tmp->tm_hour * 100 + tmp->tm_min;
-  if (hour > 2330 && tsk != 0) {
-    vTaskDelete(tsk);
-    tsk = 0;
-  }
-  if (hour > 700 && tsk == 0) {
-    xTaskCreate(&led_loop, "led task", 8192, NULL, 5, &tsk);
-  }
+  vTaskDelay(1);
 }
 
 void GeneralLEDsetup() {
@@ -153,7 +144,19 @@ void GeneralLEDsetup() {
 
 void led_loop(void *ptr) {
   while (1) {
+
     struct tm *tmp = localtime(&nowts);
+    int hour = tmp->tm_hour * 100 + tmp->tm_min;
+
+    /*
+     * Implement a simple schedule...
+     * Stop the LED activity during the night, wake up again in the morning.
+     */
+    if (hour >= TS_NIGHT || hour < TS_MORNING) {
+      LEDdark();
+      vTaskDelay(1000);
+      continue;
+    }
 
     /*
      * A simple way to have a sequence of patterns : change every minute
@@ -161,12 +164,17 @@ void led_loop(void *ptr) {
      *
      * We're cheating because I want to twinkle more than the other patterns, hence 6.
      */
-    int ix = tmp->tm_min % 6;
+#if 0
+//#if USE_TEST
+      star_loop(3);
+#else
+    int ix = tmp->tm_min % 8;
 
     switch (ix) {
     case 0:
     case 2:
     case 4:
+    case 6:
       twinklefox_loop();
       break;
     case 1:
@@ -178,8 +186,20 @@ void led_loop(void *ptr) {
     case 5:
       star_loop(2);
       break;
+    case 7:
+      star_loop(3);
+      break;
     }
+#endif
   }
+
   // Should never fall through
   vTaskDelete(0);	// This prevents a FreeRTOS panic (upon return from a task loop)
+}
+
+void LEDdark() {
+  for (CRGB& pixel : leds)
+    pixel = CRGB::Black;
+
+  FastLED.show(); // display this frame
 }
