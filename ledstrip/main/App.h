@@ -28,9 +28,11 @@
 #if	USE_TEST
 #define TS_NIGHT	2210
 #define	TS_MORNING	545
+#define MY_DATA_PIN	16
 #else
 #define TS_NIGHT	2330
 #define	TS_MORNING	700
+#define MY_DATA_PIN	16
 #endif
 
 #include "secrets.h"
@@ -41,16 +43,17 @@
 #include <apps/sntp/sntp.h>
 
 extern Ota			*ota;
+extern bool			OTAbusy;
 
 extern time_t			nowts, boot_time;
 
 extern const char		*build;
 
-#define MY_NUM_LEDS	60
-#define MY_LED_TYPE	WS2811
-#define MY_COLOR_ORDER	GRB
-#define MY_DATA_PIN	16
+#define MY_NUM_LEDS		60
+#define MY_NUM_LEDS_ALLOC	(MY_NUM_LEDS + 40)
+#define MY_LED_TYPE		WS2811
+#define MY_COLOR_ORDER		GRB
 
-extern CRGBArray<MY_NUM_LEDS> leds;
+extern CRGBArray<MY_NUM_LEDS_ALLOC> leds;
 
 #endif /* _APP_H_ */

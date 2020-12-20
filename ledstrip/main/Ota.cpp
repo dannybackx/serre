@@ -138,10 +138,13 @@ esp_err_t update_handler(httpd_req_t *req) {
   // Check whether this socket is secure.
   int sock = httpd_req_to_sockfd(req);
 
+  OTAbusy = true;
+
   if (! ota->isPeerSecure(sock)) {
     const char *reply = "Error: not authorized";
     httpd_resp_send(req, reply, strlen(reply));
     httpd_resp_send_500(req);
+    OTAbusy = false;
     return ESP_OK;
   }
 
@@ -151,6 +154,7 @@ esp_err_t update_handler(httpd_req_t *req) {
 
   if (configured != running) {
     ESP_LOGE(swebserver_tag, "Configured != running --> fix this first");
+    OTAbusy = false;
     return ESP_FAIL;
   }
 
@@ -194,6 +198,7 @@ esp_err_t update_handler(httpd_req_t *req) {
   esp_err_t err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &update_handle);
   if (err != ESP_OK) {
     ESP_LOGE(swebserver_tag, "esp_ota_begin failed, %d %s", err, esp_err_to_name(err));
+    OTAbusy = false;
     return ESP_FAIL;
   }
 
@@ -219,6 +224,7 @@ esp_err_t update_handler(httpd_req_t *req) {
       sprintf(line, "OTA : httpd_req_recv failed, %d %s", ret, esp_err_to_name(ret));
       mqtt->Report(line);
       ESP_LOGE(swebserver_tag, "httpd_req_recv failed, %d %s", ret, esp_err_to_name(ret));
+      OTAbusy = false;
       return ESP_FAIL;	// Fail in other cases than timeout
     }
 
@@ -260,6 +266,7 @@ esp_err_t update_handler(httpd_req_t *req) {
 	    free(buf);
 	    if (boundary)
 	      free((void *)boundary);
+	    OTAbusy = false;
 	    return ESP_FAIL;
 	  }
 
@@ -299,17 +306,20 @@ esp_err_t update_handler(httpd_req_t *req) {
   err = esp_ota_end(update_handle);
   if (err != ESP_OK) {
     ESP_LOGE(swebserver_tag, "OTA failed, %d %s", err, esp_err_to_name(err));
+    OTAbusy = false;
     return ESP_FAIL;
   }
   err = esp_ota_set_boot_partition(update_partition);
   if (err != ESP_OK) {
     ESP_LOGE(swebserver_tag, "OTA set bootable failed, %d %s", err, esp_err_to_name(err));
+    OTAbusy = false;
     return ESP_FAIL;
   }
 
   mqtt->Report("OTA success");
   vTaskDelay(500);
 
+  OTAbusy = false;
   esp_restart();
   return ESP_OK;
 }

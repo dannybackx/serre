@@ -34,11 +34,12 @@ time_t			nowts, boot_time = 0;
 Mqtt			*mqtt = 0;
 char			*boot_msg = 0;
 TaskHandle_t		tsk = 0;
+bool			OTAbusy = false;
 
 /*
  * FastLED stuff
  */
-CRGBArray<MY_NUM_LEDS> leds;
+CRGBArray<MY_NUM_LEDS_ALLOC> leds;
 extern CRGBPalette16 gTargetPalette;
 extern void chooseNextColorPalette(CRGBPalette16& pal);
 
@@ -132,7 +133,7 @@ void loop()
 }
 
 void GeneralLEDsetup() {
-  ESP_LOGE(app_tag, "LED strip setup");
+  ESP_LOGE(app_tag, "LED strip setup, pin %d, #leds %d", MY_DATA_PIN, MY_NUM_LEDS);
 
   // delay( 3000 ); //safety startup delay
 
@@ -144,14 +145,21 @@ void GeneralLEDsetup() {
 
 void led_loop(void *ptr) {
   while (1) {
-
-    struct tm *tmp = localtime(&nowts);
-    int hour = tmp->tm_hour * 100 + tmp->tm_min;
+    /*
+     * Don't do anything during OTA (flashing a new program version).
+     */
+    if (OTAbusy) {
+      vTaskDelay(10);
+      continue;
+    }
 
     /*
      * Implement a simple schedule...
      * Stop the LED activity during the night, wake up again in the morning.
      */
+    struct tm *tmp = localtime(&nowts);
+    int hour = tmp->tm_hour * 100 + tmp->tm_min;
+
     if (hour >= TS_NIGHT || hour < TS_MORNING) {
       LEDdark();
       vTaskDelay(1000);
