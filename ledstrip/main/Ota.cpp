@@ -29,12 +29,12 @@
 #include "Network.h"
 #include <sys/socket.h>
 #include "esp_ota_ops.h"
+#include "StableTime.h"
 
 // Forward definitions of static functions
 esp_err_t index_handler(httpd_req_t *req);
 esp_err_t update_handler(httpd_req_t *req);
 esp_err_t serverIndex_handler(httpd_req_t *req);
-esp_err_t wildcard_handler(httpd_req_t *req);
 esp_err_t WsNetworkConnected(void *ctx, system_event_t *event);
 esp_err_t WsNetworkDisconnected(void *ctx, system_event_t *event);
 
@@ -71,15 +71,6 @@ void Ota::Start() {
   };
   httpd_register_uri_handler(server, &uri_hdl_def);
 
-#if defined(IDF_VER) && (IDF_MAJOR_VERSION > 3 || IDF_MINOR_VERSION > 2)
-  // Only available in esp-idf 3.3 and up
-  cfg.uri_match_fn = httpd_uri_match_wildcard;
-#endif
-
-  uri_hdl_def.uri = "/*";
-  uri_hdl_def.handler = wildcard_handler;
-  httpd_register_uri_handler(server, &uri_hdl_def);
-
   uri_hdl_def.uri = "/serverIndex";
   uri_hdl_def.handler = serverIndex_handler;
   httpd_register_uri_handler(server, &uri_hdl_def);
@@ -98,14 +89,6 @@ Ota::~Ota() {
 /*
  * URI Handlers
  */
-
-/*
- * Generic handler
- * No conditional compilation here but only called if esp-idf version is right
- */
-esp_err_t wildcard_handler(httpd_req_t *req) {
-  return ESP_OK;
-}
 
 /*
  * Handler for browsing the caller's filesystem
@@ -190,8 +173,8 @@ esp_err_t update_handler(httpd_req_t *req) {
 
   const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
   char line[80];
-  sprintf(line, "OTA : writing to partition subtype %d at offset 0x%x",
-    update_partition->subtype, update_partition->address);
+  sprintf(line, "OTA : writing to partition subtype %d at offset 0x%x (%s)",
+    update_partition->subtype, update_partition->address, stableTime->TimeStamp());
   ESP_LOGI(swebserver_tag, "%s", line);
   mqtt->Report(line);
 
@@ -250,13 +233,14 @@ esp_err_t update_handler(httpd_req_t *req) {
 
     int pos = 0;
     if (boundary && (remain < 10000)) {
-      ESP_LOGE(swebserver_tag, "Checking boundary (offset %d) ..", offset);
+      ESP_LOGE(swebserver_tag, "Checking boundary (offset %d), received %d, remain %d",
+        offset, ret, remain-ret);
 
       char *p = memmem(ptr, ret, boundary, strlen(boundary));
       if (p != 0) {
         pos = p - ptr;
 	if (0 < pos && pos < ret) {
-	  ESP_LOGE(swebserver_tag, "End of message at offset %d, %d", offset, pos);
+	  ESP_LOGE(swebserver_tag, "End of message at offset %d, %04X", offset, pos);
 	  ret = pos - 2;	// Remove CR-LF that precedes the boundary
 
 	  // Write last piece
@@ -275,6 +259,25 @@ esp_err_t update_handler(httpd_req_t *req) {
 
 	  break;
 	}
+#if 1
+      } else {
+	if (remain < 2500) {
+	  char line[120];
+	  line[0] = 0;
+	  for (int i=0; i<ret; i++) {
+	    if ((i % 32) == 0) {
+	      if (i > 0)
+		ESP_LOGE(swebserver_tag, "recv %s", line);
+	      sprintf(line, "%04X ", i);
+	    }
+	    char x[4];
+	    sprintf(x, "%02x ", 255 & ptr[i]);
+	    strcat(line, x);
+	  }
+	  ESP_LOGE(swebserver_tag, "recv %s", line);
+	}
+
+#endif
       }
     }
 
@@ -316,7 +319,8 @@ esp_err_t update_handler(httpd_req_t *req) {
     return ESP_FAIL;
   }
 
-  mqtt->Report("OTA success");
+  sprintf(line, "OTA success, rebooting (%s)", stableTime->TimeStamp());
+  mqtt->Report(line);
   vTaskDelay(500);
 
   OTAbusy = false;

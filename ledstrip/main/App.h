@@ -23,17 +23,10 @@
 #ifndef _APP_H_
 #define _APP_H_
 
-#define	USE_TEST	0
-
-#if	USE_TEST
-#define TS_NIGHT	2210
-#define	TS_MORNING	545
-#define MY_DATA_PIN	12
-#else
 #define TS_NIGHT	2330
 #define	TS_MORNING	700
 #define MY_DATA_PIN	16
-#endif
+#define	LEDSTRIP	"ledstrip"
 
 #include "secrets.h"
 #include <Ota.h>

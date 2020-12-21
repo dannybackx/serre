@@ -23,6 +23,7 @@
 #ifndef	_PEER_H_
 #define	_PEER_H_
 
+#include "App.h"
 #include <esp_event.h>
 
 #include <list>
@@ -53,17 +54,10 @@ public:
   bool isMqttConnected();
 
   // Allocate this only once
-#ifndef USE_TEST
-  const char *reply_topic = "/ledstrip/reply";
-  const char *my_topic = "/ledstrip";
-  const char *app_name = "ledstrip";
-  const char *topic_wildcard = "/ledstrip/#";
-#else
-  const char *reply_topic = "/ledstrip-test/reply";
-  const char *my_topic = "/ledstrip-test";
-  const char *app_name = "ledstrip-test";
-  const char *topic_wildcard = "/ledstrip-test/#";
-#endif
+  const char *reply_topic = "/" LEDSTRIP "/reply";
+  const char *my_topic = "/" ;
+  const char *app_name = LEDSTRIP;
+  const char *topic_wildcard = "/" LEDSTRIP "/#";
 
 private:
 
