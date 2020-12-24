@@ -32,7 +32,6 @@ class Ota {
   public:
     Ota();
     ~Ota();
-    httpd_handle_t getServer();
 
   private:
     const char *webserver_tag = "Ota";
@@ -41,11 +40,9 @@ class Ota {
     httpd_handle_t	server;
     void SendPage(httpd_req_t *);
 
-    friend esp_err_t index_handler(httpd_req_t *req);
-    friend esp_err_t serverIndex_handler(httpd_req_t *req);
     friend esp_err_t update_handler(httpd_req_t *req);
     friend esp_err_t WsNetworkConnected(void *ctx, system_event_t *event);
-    friend esp_err_t WsNetworkDisonnected(void *ctx, system_event_t *event);
+    friend esp_err_t WsNetworkDisconnected(void *ctx, system_event_t *event);
 
     char			*my_name;
     const int			my_serverport = 80;

@@ -1,5 +1,6 @@
 /*
  * This module implements a small web server, with specific stuff to implement OTA.
+ *   curl -X POST -T build/ledstrip.bin http://esp/update
  *
  * Copyright (c) 2019, 2020 Danny Backx
  *
@@ -32,9 +33,7 @@
 #include "StableTime.h"
 
 // Forward definitions of static functions
-esp_err_t index_handler(httpd_req_t *req);
 esp_err_t update_handler(httpd_req_t *req);
-esp_err_t serverIndex_handler(httpd_req_t *req);
 esp_err_t WsNetworkConnected(void *ctx, system_event_t *event);
 esp_err_t WsNetworkDisconnected(void *ctx, system_event_t *event);
 
@@ -62,44 +61,13 @@ void Ota::Start() {
     return;
   }
 
-  // Handle the default query, this is "/", not "/index.html".
-  httpd_uri_t uri_hdl_def = {
-    "/",			// URI handled
-    HTTP_GET,			// HTTP method
-    index_handler,		// Handler
-    (void *)0			// User context
-  };
-  httpd_register_uri_handler(server, &uri_hdl_def);
-
-  uri_hdl_def.uri = "/serverIndex";
-  uri_hdl_def.handler = serverIndex_handler;
-  httpd_register_uri_handler(server, &uri_hdl_def);
-
-  uri_hdl_def.uri = "/update";
-  uri_hdl_def.method = HTTP_POST;
-  uri_hdl_def.handler = update_handler;
+  httpd_uri_t uri_hdl_def = { "/update", HTTP_POST, update_handler, (void *)0 };
   httpd_register_uri_handler(server, &uri_hdl_def);
 }
 
 Ota::~Ota() {
   if (server)
     httpd_stop(server);
-}
-
-/*
- * URI Handlers
- */
-
-/*
- * Handler for browsing the caller's filesystem
- */
-esp_err_t serverIndex_handler(httpd_req_t *req) {
-  httpd_resp_send_chunk(req, ota->serverIndex, strlen(ota->serverIndex));
-
-  // Terminate reply
-  httpd_resp_send_chunk(req, ota->serverIndex, 0);
-  // ota->SendPage(req);
-  return ESP_OK;
 }
 
 static char *memmem(char *haystack, int hsl, char *needle, int nl) {
@@ -113,12 +81,6 @@ static char *memmem(char *haystack, int hsl, char *needle, int nl) {
  * OTA
  */
 esp_err_t update_handler(httpd_req_t *req) {
-  // int buflen;
-  // buflen = httpd_req_get_url_query_len(req);
-  // ESP_LOGI(swebserver_tag, "%s - URI {%s}, httpd_req_get_url_query_len() -> %d", __FUNCTION__, req->uri, buflen);
-  // return ESP_OK;
-
-  // Check whether this socket is secure.
   int sock = httpd_req_to_sockfd(req);
 
   OTAbusy = true;
@@ -198,15 +160,20 @@ esp_err_t update_handler(httpd_req_t *req) {
     if (buflen < len)
       len = buflen;
 
+/*
+ * Sometimes we fail here :
+ * E (3773882) Ota: httpd_req_recv failed, 0 ESP_OK
+ * W (3773882) httpd_uri: httpd_uri: uri handler execution failed
+ */
     if ((ret = httpd_req_recv(req, buf, len)) <= 0) {
       if (ret == HTTPD_SOCK_ERR_TIMEOUT)
         // retry
 	continue;
 
       free(buf);
-      sprintf(line, "OTA : httpd_req_recv failed, %d %s", ret, esp_err_to_name(ret));
+      sprintf(line, "OTA : httpd_req_recv failed, %d %s, len %d", ret, esp_err_to_name(ret), len);
       mqtt->Report(line);
-      ESP_LOGE(swebserver_tag, "httpd_req_recv failed, %d %s", ret, esp_err_to_name(ret));
+      ESP_LOGE(swebserver_tag, "httpd_req_recv failed, %d %s, len %d", ret, esp_err_to_name(ret), len);
       OTAbusy = false;
       return ESP_FAIL;	// Fail in other cases than timeout
     }
@@ -343,56 +310,16 @@ void Ota::SendPage(httpd_req_t *req) {
   httpd_resp_send_chunk(req, loginIndex, 0);
 }
 
-/*
- * This gets the standard initial request, just http://this-node
- */
-esp_err_t index_handler(httpd_req_t *req) {
-  // Check whether this socket is secure.
-  int sock = httpd_req_to_sockfd(req);
-
-  if (! ota->isPeerSecure(sock)) {
-    const char *reply = "Error: not authorized";
-    httpd_resp_send(req, reply, strlen(reply));
-    
-    struct sockaddr_in6 sa6;
-    socklen_t salen = sizeof(sa6);
-    if (getpeername(sock, (sockaddr *)&sa6, &salen) == 0) {
-      struct sockaddr_in sa;
-      sa.sin_addr.s_addr = sa6.sin6_addr.un.u32_addr[3];
-      ESP_LOGE(swebserver_tag, "%s: access attempt for %s from %s, not allowed",
-        __FUNCTION__, req->uri, inet_ntoa(sa.sin_addr));
-    } else {
-      ESP_LOGE(swebserver_tag, "%s: access attempt for %s, not allowed", __FUNCTION__, req->uri);
-    }
-
-    httpd_resp_set_status(req, "401 Not authorized");
-    return ESP_OK;
-  }
-
-  ota->SendPage(req);
-  return ESP_OK;
-}
-
-/*
- * Expose the server handle so we can pass it to the ACME library
- */
-httpd_handle_t Ota::getServer() {
-  return server;
-}
-
 esp_err_t WsNetworkConnected(void *ctx, system_event_t *event) {
   ESP_LOGI(swebserver_tag, "Starting Ota");
 
   ota->Start();
-#ifdef USE_ACME
-  if (acme) acme->setOta(ota->getServer());
-#endif
   return ESP_OK;
 }
 
 esp_err_t WsNetworkDisconnected(void *ctx, system_event_t *event) {
-  if (ota->getServer())
-    httpd_stop(ota->getServer());
+  if (ota->server)
+    httpd_stop(ota->server);
   return ESP_OK;
 }
 
@@ -424,81 +351,3 @@ bool Ota::isPeerSecure(int sock) {
   // return isIPSecure(&sa);
   return true;
 }
-
-const char *Ota::loginIndex = 
- "<form name='loginForm'>"
-    "<table width='20%' bgcolor='A09F9F' align='center'>"
-        "<tr>"
-            "<td colspan=2>"
-                "<center><font size=4><b>ESP32 Login Page</b></font></center>"
-                "<br>"
-            "</td>"
-            "<br>"
-            "<br>"
-        "</tr>"
-        "<td>Username:</td>"
-        "<td><input type='text' size=25 name='userid'><br></td>"
-        "</tr>"
-        "<br>"
-        "<br>"
-        "<tr>"
-            "<td>Password:</td>"
-            "<td><input type='Password' size=25 name='pwd'><br></td>"
-            "<br>"
-            "<br>"
-        "</tr>"
-        "<tr>"
-            "<td><input type='submit' onclick='check(this.form)' value='Login'></td>"
-        "</tr>"
-    "</table>"
-"</form>"
-"<script>"
-    "function check(form)"
-    "{"
-    "if(form.userid.value=='admin' && form.pwd.value=='admin')"
-    "{"
-    "window.open('/serverIndex')"
-    "}"
-    "else"
-    "{"
-    " alert('Error Password or Username')/*displays error message*/"
-    "}"
-    "}"
-"</script>";
- 
-const char *Ota::serverIndex = 
-"<script src='https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>"
-"<form method='POST' action='#' enctype='multipart/form-data' id='upload_form'>"
-   "<input type='file' name='update'>"
-        "<input type='submit' value='Update'>"
-    "</form>"
- "<div id='prg'>progress: 0%</div>"
- "<script>"
-  "$('form').submit(function(e){"
-  "e.preventDefault();"
-  "var form = $('#upload_form')[0];"
-  "var data = new FormData(form);"
-  " $.ajax({"
-  "url: '/update',"
-  "type: 'POST',"
-  "data: data,"
-  "contentType: false,"
-  "processData:false,"
-  "xhr: function() {"
-  "var xhr = new window.XMLHttpRequest();"
-  "xhr.upload.addEventListener('progress', function(evt) {"
-  "if (evt.lengthComputable) {"
-  "var per = evt.loaded / evt.total;"
-  "$('#prg').html('progress: ' + Math.round(per*100) + '%');"
-  "}"
-  "}, false);"
-  "return xhr;"
-  "},"
-  "success:function(d, s) {"
-  "console.log('success!')" 
- "},"
- "error: function (a, b, c) {"
- "}"
- "});"
- "});"
- "</script>";
