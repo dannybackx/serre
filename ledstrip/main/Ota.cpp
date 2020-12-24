@@ -295,21 +295,6 @@ esp_err_t update_handler(httpd_req_t *req) {
   return ESP_OK;
 }
 
-/*
- * Used by handlers after their processing, to send a normal page back to the user.
- * No status or error codes called.
- */
-void Ota::SendPage(httpd_req_t *req) {
-  ESP_LOGI(swebserver_tag, "%s", __FUNCTION__);
-
-  // No response code set, assumption that this is a succesfull call
-  httpd_resp_send_chunk(req, loginIndex, strlen(loginIndex));
-  // httpd_resp_send_chunk(req, reply_template2, strlen(reply_template2));
-
-  // Terminate reply
-  httpd_resp_send_chunk(req, loginIndex, 0);
-}
-
 esp_err_t WsNetworkConnected(void *ctx, system_event_t *event) {
   ESP_LOGI(swebserver_tag, "Starting Ota");
 

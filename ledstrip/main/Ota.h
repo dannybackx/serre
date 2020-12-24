@@ -38,7 +38,6 @@ class Ota {
     void Start();
 
     httpd_handle_t	server;
-    void SendPage(httpd_req_t *);
 
     friend esp_err_t update_handler(httpd_req_t *req);
     friend esp_err_t WsNetworkConnected(void *ctx, system_event_t *event);
