@@ -106,10 +106,12 @@ struct dates {
   short		month, day;
   const char	*schedule;
 } date_table [] = {
-  { 11, 1,	"16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0" },	// Winter
   { 2, 10,	"21:00,1,22:35,0,06:58,1,07:25,0" },					// Late winter
   { 4, 1,	"21:00,1,22:35,0" },							// Spring
   { 6, 15,	"22:00,1,22:45,0" },							// Summer
+  { 11, 1,	"16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0" },	// Winter
+  { 12, 15,	"17:28,1,18:12,0,21:00,1,22:35,0,06:58,1,07:25,0" },
+  { 12, 32,	NULL },									// Year end
   { 0, 0,	0 }
 };
 
@@ -126,7 +128,8 @@ void SetDefaultSchedule(time_t);
 
 // Arduino setup function
 void setup() {
-  Serial.begin(76800);
+  // Serial.begin(76800);
+  Serial.begin(115200);
   Serial.printf("Starting switch");
   // Try to connect to WiFi
   WiFi.mode(WIFI_STA);
@@ -222,12 +225,13 @@ void setup() {
 
 #if 0
   // Default schedule
+  // SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
   SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
   // SetSchedule("21:00,1,22:35,0,06:58,1,07:25,0");	// Late winter
   // SetSchedule("21:00,1,22:35,0");	// Spring
   // SetSchedule("22:00,1,22:45,0");	// Summer
 #else
-  SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
+  // SetSchedule("17:38,1,18:12,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
   SetDefaultSchedule(sntp_get_current_timestamp());
 #endif
 }
@@ -633,9 +637,24 @@ void Debug(const char *format, ...)
 void SetDefaultSchedule(time_t the_time) {
   int i;
 
-  for (i=0; date_table[i].schedule; i++)
+  RelayDebug("SetDefaultSchedule %04d.%02d.%02d", year(the_time), month(the_time), day(the_time));
+
+  for (i=0; date_table[i].schedule; i++) {
+    // Exact date match ?
     if (date_table[i].month == month(the_time) && date_table[i].day == day(the_time)) {
       SetSchedule(date_table[i].schedule);
       return;
     }
+
+    // Compare date ranges
+    int x = date_table[i].month * 100 + date_table[i].day;
+    int y = date_table[i+1].month * 100 + date_table[i+1].day;
+    int z = month(the_time) * 100 + day(the_time);
+
+    if (x <= z && z <= y) {
+      // RelayDebug("SetDefaultSchedule -> %s", date_table[i].schedule);
+      SetSchedule(date_table[i].schedule);
+      return;
+    }
+  }
 }
