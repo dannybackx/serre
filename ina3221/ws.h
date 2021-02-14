@@ -1,7 +1,7 @@
 /*
- * Measurement station, with web server
+ * Web server for measurement station
  *
- * Copyright (c) 2016, 2017, 2021 Danny Backx
+ * Copyright (c) 2021 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,11 +24,17 @@
  */
 
 #include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 
-/* Personal configuration that are not secrets, so moved from secrets.h */
-#define APP_NAME	"measure"
+#include <coredecls.h>
+#include <TZ.h>
 
-#define OTA_ID		"OTA-measure"
+#include "secrets.h"
+#include "measure.h"
 
-extern char		*timestamp(time_t);
-extern WiFiClient	espClient;
+extern ESP8266WebServer	*ws;
+
+extern "C" {
+  extern void ws_begin();
+  extern void ws_loop();
+}
