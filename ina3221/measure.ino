@@ -265,7 +265,7 @@ char *timestamp(time_t t) {
   return &ret[0];
 }
 
-void handleRoot() {
+void handleRootInefficient() {
   Serial.printf("Replying to HTTP client ...");
   String r = 
 	"<!DOCTYPE html><html>"
@@ -297,6 +297,47 @@ void handleRoot() {
   // The HTTP responds ends with another blank line
   r += "</body></html>";
   ws->send(200, "text/html", r);
+  Serial.printf("done\n");
+}
+
+// Version with chunked response
+void handleRoot() {
+  if (! ws->chunkedResponseModeStart(200, "text/html")) {
+    handleRootInefficient();
+    return;
+  }
+
+  Serial.printf("Replying to HTTP client (chunked) ...");
+  ws->sendContent(
+	"<!DOCTYPE html><html>"
+	"<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+	"<link rel=\"icon\" href=\"data:,\">"
+	// CSS to style the on/off buttons
+	// Feel free to change the background-color and font-size attributes to fit your preferences
+	"<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}"
+	".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;"
+	"text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}"
+	".button2 {background-color: #77878A;}</style></head>"
+
+	// Web Page Heading
+	"<title>ESP8266 Web Server</title>"
+	"<body><h1>ESP8266 Web Server</h1>\n");
+
+  ws->sendContent("<table><tr><td>time</td><td>temperature</td><td>humidity</td></tr>\n");
+  for (int i=0; i<100; i++)
+    if (aht_reg[i].ts != 0) {
+      char line[80];
+      tm *tmp = localtime(&aht_reg[i].ts);
+      sprintf(line, "<tr><td>%04d.%02d.%02d %02d:%02d:%02d</td><td>%3.1f</td><td>%2.0f</td></tr>\n",
+	tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
+	aht_reg[i].temp, aht_reg[i].hum);
+      ws->sendContent(line);
+    }
+  ws->sendContent("</tr></table>\n");
+
+  // The HTTP responds ends with another blank line
+  ws->sendContent("</body></html>");
+  ws->chunkedResponseFinalize();
   Serial.printf("done\n");
 }
 
