@@ -1,7 +1,4 @@
-#define	DO_OTA
 #define	DO_AHT
-#define	DO_WEBSERVER
-
 /*
  * Measurement station, with web server
  *
@@ -120,9 +117,7 @@ void setup() {
 
   ws_begin();
 
-#ifdef	DO_OTA
   doOTA();
-#endif
 
 #ifdef	DO_AHT
   aht10_begin();
@@ -149,9 +144,7 @@ void loop() {
   the_year = tmp->tm_year + 1900;
   the_dow = tmp->tm_wday;
 
-#ifdef DO_OTA
   ArduinoOTA.handle();
-#endif
 
   delay(1);
 

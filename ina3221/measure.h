@@ -1,7 +1,7 @@
 /*
  * Measurement station, with web server
  *
- * Copyright (c) 2016, 2017, 2021 Danny Backx
+ * Copyright (c) 2021 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
