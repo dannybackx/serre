@@ -1,5 +1,5 @@
 /*
- * Measurement station, with MQTT and a web server
+ * Measurement station, with web server
  *
  * Copyright (c) 2016, 2017, 2021 Danny Backx
  *
@@ -24,15 +24,8 @@
  */
 
 /* Personal configuration that are not secrets, so moved from secrets.h */
-#ifdef DEBUG
-# define MQTT_CLIENT	"esp switch debug"
-# define SWITCH_TOPIC	"/testswitch"
-# define OTA_ID		"OTA-Switch-debug"
-#else
-# define MQTT_CLIENT	"esp measure"
-# define SWITCH_TOPIC	"/measure"
-# define OTA_ID		"OTA-measure"
-#endif
+#define APP_NAME	"measure"
 
-#define	SSR_PIN		D3
-#define	LED_PIN		D4
+#define OTA_ID		"OTA-measure"
+
+extern char *timestamp(time_t);
