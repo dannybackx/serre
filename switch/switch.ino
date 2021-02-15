@@ -2,7 +2,7 @@
 /*
  * Power switch, controlled by MQTT
  *
- * Copyright (c) 2016, 2017, 2019, 2020 Danny Backx
+ * Copyright (c) 2016, 2017, 2019, 2020, 2021 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,13 +26,10 @@
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <TimeLib.h>
 #include <stdarg.h>
 
-extern "C" {
-#include <sntp.h>
-#include <time.h>
-}
+#include <coredecls.h>
+#include <TZ.h>
 
 // Prepare for OTA software installation
 #include <ESP8266mDNS.h>
@@ -66,7 +63,7 @@ struct mywifi {
 
 // MQTT
 WiFiClient	espClient;
-PubSubClient	client(espClient);
+PubSubClient	mqtt(espClient);
 
 const char* mqtt_server = MQTT_HOST;
 const int mqtt_port = MQTT_PORT;
@@ -76,14 +73,12 @@ const char *reply_topic = SWITCH_TOPIC "/reply";
 const char *relay_topic = SWITCH_TOPIC "/relay";
 
 int mqtt_initial = 1;
-int _isdst = 0;
 
 // Forward
-bool IsDST(int day, int month, int dow);
-bool IsDST2(int day, int month, int dow, int hr);
 char *GetSchedule();
 void SetSchedule(const char *desc);
 void PinOff();
+void time_is_set(bool from_sntp);
 
 void RelayDebug(const char *format, ...);
 void Debug(const char *format, ...);
@@ -123,22 +118,21 @@ struct dates {
 // Forward declarations
 void callback(char * topic, byte *payload, unsigned int length);
 void reconnect(void);
-time_t mySntpInit();
 void SetDefaultSchedule(time_t);
 
 // Arduino setup function
 void setup() {
-  // Serial.begin(76800);
   Serial.begin(115200);
-  Serial.printf("Starting switch");
-  // Try to connect to WiFi
+  Serial.printf("Starting %s", MQTT_CLIENT);
+
+  // Connect to WiFi
   WiFi.mode(WIFI_STA);
 
   int wcr = WL_IDLE_STATUS;
   for (int ix = 0; wcr != WL_CONNECTED && mywifi[ix].ssid != NULL; ix++) {
     int wifi_tries = 3;
     while (wifi_tries-- >= 0) {
-      Serial.printf("\nTrying (%d %d) %s %s .. ", ix, wifi_tries, mywifi[ix].ssid, mywifi[ix].pass);
+      Serial.printf("\nTrying (%d %d) %s .. ", ix, wifi_tries, mywifi[ix].ssid);
       WiFi.begin(mywifi[ix].ssid, mywifi[ix].pass);
       wcr = WiFi.waitForConnectResult();
       if (wcr == WL_CONNECTED)
@@ -159,33 +153,8 @@ void setup() {
   gws = gw.toString();
 
   // Set up real time clock
-  // Note : DST processing comes later
-  (void)sntp_set_timezone(MY_TIMEZONE);
-  sntp_init();
-  sntp_setservername(0, (char *)"ntp.telenet.be");
-  sntp_setservername(1, (char *)"ntp.belnet.be");
-
-  ArduinoOTA.onStart([]() {
-    if (verbose & VERBOSE_OTA) {
-      if (!client.connected())
-        reconnect();
-#ifdef DEBUG
-      Serial.printf("OTA start\n");
-#endif
-      client.publish(reply_topic, "OTA start");
-    }
-  });
-
-  ArduinoOTA.onEnd([]() {
-    if (verbose & VERBOSE_OTA) {
-      if (!client.connected())
-        reconnect();
-#ifdef DEBUG
-      Serial.printf("OTA complete\n");
-#endif
-      client.publish(reply_topic, "OTA complete");
-    }
-  });
+  settimeofday_cb(time_is_set);
+  configTime(MY_TIMEZONE, MY_NTP_SERVER);
 
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     int curr;
@@ -194,14 +163,7 @@ void setup() {
   });
 
   ArduinoOTA.onError([](ota_error_t error) {
-    if (verbose & VERBOSE_OTA) {
-      if (!client.connected())
-        reconnect();
-#ifdef DEBUG
-      Serial.printf("OTA error\n");
-#endif
-      client.publish(reply_topic, "OTA Error");
-    }
+    Serial.printf("OTA error\n");
   });
 
   ArduinoOTA.setPort(8266);
@@ -210,11 +172,9 @@ void setup() {
 
   ArduinoOTA.begin();
 
-  mySntpInit();
-
   // MQTT
-  client.setServer(mqtt_server, mqtt_port);
-  client.setCallback(callback);
+  mqtt.setServer(mqtt_server, mqtt_port);
+  mqtt.setCallback(callback);
 
   // Note don't use MQTT here yet, we're probably not connected yet
 
@@ -223,17 +183,10 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   PinOff();
 
-#if 0
-  // Default schedule
-  // SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
-  SetSchedule("16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
-  // SetSchedule("21:00,1,22:35,0,06:58,1,07:25,0");	// Late winter
-  // SetSchedule("21:00,1,22:35,0");	// Spring
-  // SetSchedule("22:00,1,22:45,0");	// Summer
-#else
-  // SetSchedule("17:38,1,18:12,0,21:00,1,22:35,0,06:58,1,07:25,0");	// Winter
-  SetDefaultSchedule(sntp_get_current_timestamp());
-#endif
+  // Schedule will probably be set initially in time_is_set(), not here.
+  time_t now = time(0);
+  if (now > 1000L)
+    SetDefaultSchedule(now);
 }
 
 void PinOn() {
@@ -257,15 +210,16 @@ int GetState() {
 int	counter = 0;
 int	oldminute, newminute, oldhour, newhour;
 time_t	the_time;
+tm	*tmp;
 
 void loop() {
   ArduinoOTA.handle();
 
   // MQTT
-  if (!client.connected()) {
+  if (!mqtt.connected()) {
     reconnect();
   }
-  if (!client.loop())
+  if (!mqtt.loop())
     reconnect();
 
   delay(100);
@@ -279,19 +233,20 @@ void loop() {
     oldminute = newminute;
     oldhour = newhour;
 
-    the_time = sntp_get_current_timestamp();
+    the_time = time(0);
+    tmp = localtime(&the_time);
 
-    newhour = hour(the_time);
-    newminute = minute(the_time);
+    newhour = tmp->tm_hour;
+    newminute = tmp->tm_min;
 
     if (newminute == oldminute && newhour == oldhour) {
       return;
     }
 
-    int the_day = day(the_time);
-    int the_month = month(the_time);
-    int the_year = year(the_time);
-    int the_dow = dayOfWeek(the_time);
+    int the_day = tmp->tm_mday;
+    int the_month = tmp->tm_mon + 1;
+    int the_year = tmp->tm_year + 1900;
+    int the_dow = tmp->tm_wday;
 
     int tn = newhour * 60 + newminute;
     for (int i=1; i<nitems; i++) {
@@ -319,17 +274,6 @@ void loop() {
 	  RelayDebug("%04d.%02d.%02d %02d:%02d : %s", the_year, the_month, the_day, newhour, newminute, "off");
 	}
       }
-    }
-
-    // On the beginning of the hour, check DST
-    if (newminute == 0) {
-      bool newdst = IsDST2(the_day, the_month, the_dow, newhour);
-      if (_isdst != newdst) {
-        mySntpInit();
-	_isdst = newdst;
-      }
-    } else if (newminute == 1 && newhour == 1) {
-      SetDefaultSchedule(the_time);
     }
   }
 }
@@ -364,104 +308,50 @@ void callback(char *topic, byte *payload, unsigned int length) {
     } else if (strcmp(pl, "network") == 0) {	// Query network parameters
       Debug("SSID {%s}, IP %s, GW %s", WiFi.SSID().c_str(), ips.c_str(), gws.c_str());
     } else if (strcmp(pl, "time") == 0) {	// Query the device's current time
-      time_t t = sntp_get_current_timestamp();
-      RelayDebug("%04d.%02d.%02d %02d:%02d:%02d, tz %d",
-        year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
+      time_t t = time(0);
+      tm *tmp = localtime(&t);
+      RelayDebug("%04d.%02d.%02d %02d:%02d:%02d, tz %s",
+        tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec, MY_TIMEZONE);
     } else if (strcmp(pl, "reboot") == 0) {
       ESP.restart();
-    } else if (strcmp(pl, "reinit") == 0) {
-      mySntpInit();
     }
     // else silently ignore
   } else if (strcmp(topic, SWITCH_TOPIC "/program") == 0) {
     // Set the schedule according to the string provided
     SetSchedule((char *)pl);
-    client.publish(SWITCH_TOPIC "/schedule", "Ok");
+    mqtt.publish(SWITCH_TOPIC "/schedule", "Ok");
   }
   // Else silently ignore
 }
 
 void reconnect(void) {
   // Loop until we're reconnected
-  while (!client.connected()) {
+  while (!mqtt.connected()) {
     // Attempt to connect
-    if (client.connect(MQTT_CLIENT)) {
+    if (mqtt.connect(MQTT_CLIENT)) {
       // Get the time
-      time_t t = mySntpInit();
+      time_t t = time(0);
 
       // Once connected, publish an announcement...
-      if (mqtt_initial) {
-	Debug("boot %04d.%02d.%02d %02d:%02d:%02d, timezone is set to %d",
-	  year(t), month(t), day(t), hour(t), minute(t), second(t), sntp_get_timezone());
+      if (mqtt_initial && (t > 1000L)) {
+	Debug("boot %04d.%02d.%02d %02d:%02d:%02d, timezone is set to %s",
+          tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec, MY_TIMEZONE);
 
 	mqtt_initial = 0;
       } else {
-        Debug("reconnect %04d.%02d.%02d %02d:%02d:%02d",
-	  year(t), month(t), day(t), hour(t), minute(t), second(t));
+        if (t > 1000L)
+	  Debug("reconnect %04d.%02d.%02d %02d:%02d:%02d",
+            tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
       }
 
       // ... and (re)subscribe
-      client.subscribe(SWITCH_TOPIC);
-      client.subscribe(SWITCH_TOPIC "/program");
+      mqtt.subscribe(SWITCH_TOPIC);
+      mqtt.subscribe(SWITCH_TOPIC "/program");
     } else {
       // Wait 5 seconds before retrying
       delay(5000);
     }
   }
-}
-
-bool IsDST(int day, int month, int dow)
-{
-  dow--;	// Convert this to POSIX convention (Day Of Week = 0-6, Sunday = 0)
-
-  // January, february, and december are out.
-  if (month < 3 || month > 10)
-    return false;
-
-  // April to October are in
-  if (month > 3 && month < 10)
-    return true;
-
-  int previousSunday = day - dow;
-
-  // In march, we are DST if our previous sunday was on or after the 25th.
-  if (month == 3)
-    return previousSunday >= 25;
-
-  // In november we must be before the first sunday to be dst.
-  // That means the previous sunday must be before the 1st.
-  return previousSunday <= 0;
-}
-
-bool IsDST2(int day, int month, int dow, int hr)
-{
-  dow--;	// Convert this to POSIX convention (Day Of Week = 0-6, Sunday = 0)
-
-  // January, february, and december are out.
-  if (month < 3 || month > 10)
-    return false;
-
-  // April to October are in
-  if (month > 3 && month < 10)
-    return true;
-
-  int previousSunday = day - dow;
-
-  // In march, we are DST if our previous sunday was on or after the 25th.
-  if (month == 3) {
-    if (previousSunday < 25)
-      return false;
-    if (dow > 0)
-      return true;
-    if (hr < 3)
-      return false;
-    return true;
-    // return previousSunday >= 25;
-  }
-
-  // In november we must be before the first sunday to be dst.
-  // That means the previous sunday must be before the 1st.
-  return previousSunday <= 0;
 }
 
 /*
@@ -568,44 +458,6 @@ char *GetSchedule() {
   return r;
 }
 
-time_t mySntpInit() {
-  time_t t;
-
-  // Wait for a correct time, and report it
-
-  t = sntp_get_current_timestamp();
-  while (t < 100000) {
-    delay(1000);
-    t = sntp_get_current_timestamp();
-  }
-
-  // DST handling
-  if (IsDST(day(t), month(t), dayOfWeek(t))) {
-    _isdst = 1;
-
-    // Set TZ again
-    sntp_stop();
-    (void)sntp_set_timezone(MY_TIMEZONE + 1);
-
-    // Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d, timezone %d", day(t), month(t), dayOfWeek(t), _isdst, MY_TIMEZONE + 1);
-
-    // Re-initialize/fetch
-    sntp_init();
-    t = sntp_get_current_timestamp();
-    while (t < 0x1000) {
-      delay(1000);
-      t = sntp_get_current_timestamp();
-    }
-
-    // Debug("Checkup : day %d month %d time %02d:%02d:%02d, timezone %d", day(t), month(t), hour(t), minute(t), second(t), sntp_get_timezone());
-  } else {
-    t = sntp_get_current_timestamp();
-    // Debug("mySntpInit(day %d, month %d, dow %d) : DST = %d", day(t), month(t), dayOfWeek(t), _isdst);
-  }
-
-  return t;
-}
-
 // Send a line of debug info to MQTT
 void RelayDebug(const char *format, ...)
 {
@@ -614,7 +466,7 @@ void RelayDebug(const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, 128, format, ap);
   va_end(ap);
-  client.publish(relay_topic, buffer);
+  mqtt.publish(relay_topic, buffer);
 #ifdef DEBUG
   Serial.printf("%s\n", buffer);
 #endif
@@ -628,7 +480,7 @@ void Debug(const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, 128, format, ap);
   va_end(ap);
-  client.publish(reply_topic, buffer);
+  mqtt.publish(reply_topic, buffer);
 #ifdef DEBUG
   Serial.printf("%s\n", buffer);
 #endif
@@ -637,11 +489,12 @@ void Debug(const char *format, ...)
 void SetDefaultSchedule(time_t the_time) {
   int i;
 
-  RelayDebug("SetDefaultSchedule %04d.%02d.%02d", year(the_time), month(the_time), day(the_time));
+  tm *tmp = localtime(&the_time);
+  RelayDebug("SetDefaultSchedule %04d.%02d.%02d", tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday);
 
   for (i=0; date_table[i].schedule; i++) {
     // Exact date match ?
-    if (date_table[i].month == month(the_time) && date_table[i].day == day(the_time)) {
+    if (date_table[i].month == tmp->tm_mon + 1 && date_table[i].day == tmp->tm_mday) {
       SetSchedule(date_table[i].schedule);
       return;
     }
@@ -649,7 +502,7 @@ void SetDefaultSchedule(time_t the_time) {
     // Compare date ranges
     int x = date_table[i].month * 100 + date_table[i].day;
     int y = date_table[i+1].month * 100 + date_table[i+1].day;
-    int z = month(the_time) * 100 + day(the_time);
+    int z = (tmp->tm_mon + 1) * 100 + tmp->tm_mday;
 
     if (x <= z && z <= y) {
       // RelayDebug("SetDefaultSchedule -> %s", date_table[i].schedule);
@@ -657,4 +510,21 @@ void SetDefaultSchedule(time_t the_time) {
       return;
     }
   }
+}
+
+/*
+ * Get notified when NTP time is updated.
+ * Reinitialize our schedule when that happens.
+ */
+void time_is_set(bool from_sntp) {
+  time_t now = time(0);
+  tm *tmp = localtime(&now);
+  reconnect();
+  if (mqtt_initial) {
+    Debug("boot %04d.%02d.%02d %02d:%02d:%02d, timezone is set to %s",
+      tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec, MY_TIMEZONE);
+
+    mqtt_initial = 0;
+  }
+  SetDefaultSchedule(now);
 }

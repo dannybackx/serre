@@ -1,7 +1,7 @@
 /*
  * Power switch, controlled by MQTT
  *
- * Copyright (c) 2016, 2017 Danny Backx
+ * Copyright (c) 2016, 2017, 2021 Danny Backx
  *
  * License (MIT license):
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,4 +37,5 @@
 #define	SSR_PIN		D3
 #define	LED_PIN		D4
 
-#define	MY_TIMEZONE	+1
+#define	MY_TIMEZONE	TZ_Europe_Brussels
+#define	MY_NTP_SERVER	"ntp.telenet.be"
