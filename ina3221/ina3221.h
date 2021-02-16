@@ -1,5 +1,5 @@
 /*
- * Measurement station, with web server : driver for AHT10 sensor
+ * Measurement station, with web server : ina3221 driver
  *
  * Copyright (c) 2021 Danny Backx
  *
@@ -22,43 +22,12 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
-#include <Adafruit_AHTX0.h>
-#include "aht10.h"
-#include "measure.h"
+#include <SDL_Arduino_INA3221.h>
 
-static Adafruit_AHTX0 aht;
-static bool sensor = false;
-static time_t prev_ts = 0;
+extern void ina3221_begin();
+extern void ina3221_loop(time_t);
 
-struct aht_reg aht_reg[100];
-static int ix = 0;
-
-void aht_register(time_t ts, float temp, float hum) {
-  aht_reg[ix].ts = ts;
-  aht_reg[ix].hum = hum;
-  aht_reg[ix].temp = temp;
-  ix = (ix + 1) % 100;
-}
-
-void aht10_begin() {
-  if (! aht.begin())
-    Serial.println("No AHT sensor");
-  else
-    sensor = true;
-
-  prev_ts = time(0);
-}
-
-void aht10_loop(time_t now) {
-  if ((now - prev_ts < 2) || (now < 1000))
-    return;
-  prev_ts = now;
-
-  if (sensor) {
-    sensors_event_t	humidity, temp;
-    aht.getEvent(&humidity, &temp);
-    Serial.printf("Temp %3.1f hum %2.0f (ts %s)\n", temp.temperature, humidity.relative_humidity, timestamp(now));
-
-    aht_register(now, temp.temperature, humidity.relative_humidity);
-  }
-}
+extern struct ina3221_reg {
+  time_t ts;
+  float bus_voltage, shunt_voltage, current;
+} ina3221_reg[];

@@ -40,6 +40,7 @@ void doOTA();
 #ifdef	DO_AHT
 #include "aht10.h"
 #endif
+#include "ina3221.h"
 
 struct mywifi {
   const char *ssid, *pass;
@@ -122,6 +123,7 @@ void setup() {
 #ifdef	DO_AHT
   aht10_begin();
 #endif
+  ina3221_begin();
 }
 
 int	old_minute, old_hour;
@@ -151,6 +153,7 @@ void loop() {
 #ifdef DO_AHT
   aht10_loop(the_time);
 #endif
+  ina3221_loop(the_time);
 
   ws_loop();
 }

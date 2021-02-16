@@ -76,6 +76,16 @@ static void handleRoot() {
   Serial.printf("done\n");
 }
 
+void handleConfig() {
+}
+
+void handleJson() {
+}
+
+void handleWildcard() {
+  Serial.printf("WS: %s\n", ws->pathArg(0));
+}
+
 void handleNotFound() {
   String message = "File Not Found\n\n";
   message += "URI: ";
@@ -96,6 +106,9 @@ void ws_begin() {
   
   ws->on("/", handleRoot);
   ws->onNotFound(handleNotFound);
+  ws->on("/json", handleJson);
+  ws->on("/config", handleConfig);
+#if 0
   ws->on("/gif", []() {
     static const uint8_t gif[] PROGMEM = {
       0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0x10, 0x00, 0x10, 0x00, 0x80, 0x01,
@@ -112,7 +125,7 @@ void ws_begin() {
     gif_colored[18] = millis() % 256;
     ws->send(200, "image/gif", gif_colored, sizeof(gif_colored));
   });
-
+#endif
 
   ws->begin();
   Serial.printf("Web server started, port %d\n", 80);

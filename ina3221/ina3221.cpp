@@ -1,5 +1,5 @@
 /*
- * Measurement station, with web server : driver for AHT10 sensor
+ * Measurement station, with web server : ina3221 driver
  *
  * Copyright (c) 2021 Danny Backx
  *
@@ -22,43 +22,48 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
-#include <Adafruit_AHTX0.h>
-#include "aht10.h"
+#include "ina3221.h"
 #include "measure.h"
 
-static Adafruit_AHTX0 aht;
-static bool sensor = false;
+static SDL_Arduino_INA3221 *ina3221 = 0;
 static time_t prev_ts = 0;
 
-struct aht_reg aht_reg[100];
+struct ina3221_reg ina3221_reg[100];
 static int ix = 0;
 
-void aht_register(time_t ts, float temp, float hum) {
-  aht_reg[ix].ts = ts;
-  aht_reg[ix].hum = hum;
-  aht_reg[ix].temp = temp;
+void ina3221_register(time_t ts, float bus_voltage, float shunt_voltage, float current) {
+  ina3221_reg[ix].ts = ts;
+  ina3221_reg[ix].current = current;
+  ina3221_reg[ix].shunt_voltage = shunt_voltage;
+  ina3221_reg[ix].bus_voltage = bus_voltage;
   ix = (ix + 1) % 100;
 }
 
-void aht10_begin() {
-  if (! aht.begin())
-    Serial.println("No AHT sensor");
+void ina3221_begin() {
+  ina3221 = new SDL_Arduino_INA3221();
+
+  if (ina3221)
+    ina3221->begin();
   else
-    sensor = true;
+    Serial.println("No ina3321 sensor");
 
   prev_ts = time(0);
 }
 
-void aht10_loop(time_t now) {
+void ina3221_loop(time_t now) {
   if ((now - prev_ts < 2) || (now < 1000))
     return;
   prev_ts = now;
 
-  if (sensor) {
-    sensors_event_t	humidity, temp;
-    aht.getEvent(&humidity, &temp);
-    Serial.printf("Temp %3.1f hum %2.0f (ts %s)\n", temp.temperature, humidity.relative_humidity, timestamp(now));
+  if (ina3221) {
+    float	current, bus_voltage, shunt_voltage;
 
-    aht_register(now, temp.temperature, humidity.relative_humidity);
+    current = ina3221->getBusVoltage_V(1);
+    bus_voltage = ina3221->getShuntVoltage_mV(2);
+    shunt_voltage = ina3221->getCurrent_mA(3);
+
+    Serial.printf("Bus v %3.1f shunt v %3.1f current %3.1f (ts %s)\n", bus_voltage, shunt_voltage, current, timestamp(now));
+
+    ina3221_register(now, bus_voltage, shunt_voltage, current);
   }
 }
