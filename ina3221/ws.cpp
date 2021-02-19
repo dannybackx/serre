@@ -31,7 +31,6 @@
 
 #include "measure.h"
 #include "ws.h"
-// #include "aht10.h"
 #include <Control.h>
 
 ESP8266WebServer	*ws = 0;
@@ -60,23 +59,12 @@ static void handleRoot() {
 	"<body><h1>ESP8266 Web Server</h1>\n");
 
   ws->sendContent("<table><tr><td>time</td><td>temperature</td><td>humidity</td></tr>\n");
-#if 0
-  for (int i=0; i<100; i++)
-    if (aht_reg[i].ts != 0) {
-      char line[80];
-      tm *tmp = localtime(&aht_reg[i].ts);
-      sprintf(line, "<tr><td>%04d.%02d.%02d %02d:%02d:%02d</td><td>%3.1f</td><td>%2.0f</td></tr>\n",
-	tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
-	aht_reg[i].temp, aht_reg[i].hum);
-      ws->sendContent(line);
-    }
-#else
-  // Serial.printf("Allocation %d", control->getAllocation());
+
   for (int i=0; i<control->getAllocation(); i++) {
     time_t ts = control->getTimestamp(i);
-    // Serial.printf("TS %d %d\n", i, ts);
     if (ts == 0)
       continue;
+
     tm *tmp = localtime(&ts);
     float t, h;
     t = control->getDataFloat(i, 0, 0);
@@ -87,7 +75,7 @@ static void handleRoot() {
       t, h);
     ws->sendContent(line);
   }
-#endif
+
   ws->sendContent("</tr></table>\n");
 
   // The HTTP responds ends with another blank line

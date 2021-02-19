@@ -30,17 +30,6 @@
 static Adafruit_AHTX0 *aht = 0;
 static time_t prev_ts = 0;
 
-#if 0
-struct aht_reg aht_reg[100];
-static int ix = 0;
-
-void aht_register(time_t ts, float temp, float hum) {
-  aht_reg[ix].ts = ts;
-  aht_reg[ix].hum = hum;
-  aht_reg[ix].temp = temp;
-  ix = (ix + 1) % 100;
-}
-#else
 static int sensor = 0;
 
 void aht_register(time_t ts, float temp, float hum) {
@@ -48,7 +37,6 @@ void aht_register(time_t ts, float temp, float hum) {
   control->RegisterData(sensor, 0, temp);
   control->RegisterData(sensor, 1, hum);
 }
-#endif
 
 void aht10_begin() {
   aht = new Adafruit_AHTX0();
