@@ -68,7 +68,16 @@ static void handleRoot() {
     sprintf(line, "<H1>Sensor %s</H1>", sn);
     ws->sendContent(line);
 
-  ws->sendContent("<table><tr><td>time</td><td>temperature</td><td>humidity</td></tr>\n");
+    ws->sendContent("<table border=1><tr>\n");
+    ws->sendContent("<td>timestamp</td>\n");
+    for (int i=0; i<MAX_FIELDS; i++) {
+      const char *fn = control->getFieldName(sid, i);
+      if (fn) {
+        sprintf(line, "<td>%s</td>", fn);
+        ws->sendContent(line);
+      }
+    }
+    ws->sendContent("</tr>\n");
 
     for (int i=0; i<control->getAllocation(); i++) {
       time_t ts = control->getTimestamp(i);
@@ -92,9 +101,8 @@ static void handleRoot() {
         t, h);
       ws->sendContent(line);
     }
+    ws->sendContent("</tr></table>\n");
   }
-
-  ws->sendContent("</tr></table>\n");
 
   // The HTTP responds ends with another blank line
   ws->sendContent("</body></html>");

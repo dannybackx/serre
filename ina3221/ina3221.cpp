@@ -39,11 +39,17 @@ void ina3221_register(time_t ts, float bus_voltage, float shunt_voltage, float c
 }
 
 void ina3221_begin() {
+  // Register the sensor first, so we'll report about it whether or not it is present
+  sensor = control->RegisterSensor("INA3221");
+  control->SensorRegisterField(sensor, "bus_voltage", FT_FLOAT);
+  control->SensorRegisterField(sensor, "shunt_voltage", FT_FLOAT);
+  control->SensorRegisterField(sensor, "current", FT_FLOAT);
+
   ina3221 = new SDL_Arduino_INA3221();
   ina3221->begin();
   int manuf = ina3221->getManufID();
-  Serial.printf("INA3221 manufacturer : %04x\n", manuf);
-  if (manuf == 0xFFFF) {
+  // Serial.printf("INA3221 manufacturer : %04x\n", manuf);
+  if (manuf == 0xFFFF) {	// Manufacturer id is 0xFFFF if sensor not connected
     Serial.println("No ina3321 sensor");
     delete ina3221;
     ina3221 = 0;
@@ -51,11 +57,6 @@ void ina3221_begin() {
   }
 
   prev_ts = time(0);
-
-  sensor = control->RegisterSensor("INA3221");
-  control->SensorRegisterField(sensor, "bus_voltage", FT_FLOAT);
-  control->SensorRegisterField(sensor, "shunt_voltage", FT_FLOAT);
-  control->SensorRegisterField(sensor, "current", FT_FLOAT);
 }
 
 void ina3221_loop(time_t now) {

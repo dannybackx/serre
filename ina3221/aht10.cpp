@@ -39,6 +39,11 @@ void aht_register(time_t ts, float temp, float hum) {
 }
 
 void aht10_begin() {
+  // Register the sensor first, so we'll report about it whether or not it is present
+  sensor = control->RegisterSensor("AHT10");
+  control->SensorRegisterField(sensor, "temperature", FT_FLOAT);
+  control->SensorRegisterField(sensor, "humidity", FT_FLOAT);
+
   aht = new Adafruit_AHTX0();
   if (! aht->begin()) {
     Serial.println("No AHT sensor");
@@ -47,10 +52,6 @@ void aht10_begin() {
   }
 
   prev_ts = time(0);
-
-  sensor = control->RegisterSensor("AHT10");
-  control->SensorRegisterField(sensor, "temperature", FT_FLOAT);
-  control->SensorRegisterField(sensor, "humidity", FT_FLOAT);
 }
 
 void aht10_loop(time_t now) {
