@@ -25,11 +25,12 @@
 #include <Adafruit_AHTX0.h>
 #include "aht10.h"
 #include "measure.h"
+#include <Control.h>
 
-static Adafruit_AHTX0 aht;
-static bool sensor = false;
+static Adafruit_AHTX0 *aht = 0;
 static time_t prev_ts = 0;
 
+#if 0
 struct aht_reg aht_reg[100];
 static int ix = 0;
 
@@ -39,14 +40,29 @@ void aht_register(time_t ts, float temp, float hum) {
   aht_reg[ix].temp = temp;
   ix = (ix + 1) % 100;
 }
+#else
+static int sensor = 0;
+
+void aht_register(time_t ts, float temp, float hum) {
+  control->RegisterData(sensor, ts);
+  control->RegisterData(sensor, 0, temp);
+  control->RegisterData(sensor, 1, hum);
+}
+#endif
 
 void aht10_begin() {
-  if (! aht.begin())
+  aht = new Adafruit_AHTX0();
+  if (! aht->begin()) {
     Serial.println("No AHT sensor");
-  else
-    sensor = true;
+    delete aht;
+    aht = 0;
+  }
 
   prev_ts = time(0);
+
+  sensor = control->RegisterSensor("AHT10");
+  control->SensorRegisterField(sensor, "temperature", FT_FLOAT);
+  control->SensorRegisterField(sensor, "humidity", FT_FLOAT);
 }
 
 void aht10_loop(time_t now) {
@@ -54,9 +70,9 @@ void aht10_loop(time_t now) {
     return;
   prev_ts = now;
 
-  if (sensor) {
+  if (aht != 0) {
     sensors_event_t	humidity, temp;
-    aht.getEvent(&humidity, &temp);
+    aht->getEvent(&humidity, &temp);
     Serial.printf("Temp %3.1f hum %2.0f (ts %s)\n", temp.temperature, humidity.relative_humidity, timestamp(now));
 
     aht_register(now, temp.temperature, humidity.relative_humidity);

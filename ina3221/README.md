@@ -11,3 +11,7 @@ You can specify more than one network, if you have more than one Wifi network av
 
 It's possible to update the app in the esp over OTA (type "make ota").
 
+We have a web interface to control the application.
+Parameters can be set on when and how (long, frequent) to measure. This includes start and stop conditions.
+
+Data query is possible via web interface or JSON.

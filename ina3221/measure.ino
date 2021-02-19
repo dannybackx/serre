@@ -30,12 +30,13 @@
 #include <coredecls.h>
 #include <TZ.h>
 
-void doOTA();
+void ConfigureOTA();
 
 #include "secrets.h"
 #include "measure.h"
 #include "buildinfo.h"
 #include "ws.h"
+#include "Control.h"
 
 #ifdef	DO_AHT
 #include "aht10.h"
@@ -45,19 +46,19 @@ void doOTA();
 struct mywifi {
   const char *ssid, *pass;
 } mywifi[] = {
-#ifdef MY_SSID_1
+#if defined(MY_SSID_1) && defined(MY_WIFI_PASSWORD_1)
   { MY_SSID_1, MY_WIFI_PASSWORD_1 },
 #endif
-#ifdef MY_SSID_2
+#if defined(MY_SSID_2) && defined(MY_WIFI_PASSWORD_2)
   { MY_SSID_2, MY_WIFI_PASSWORD_2 },
 #endif
-#ifdef MY_SSID_3
+#if defined(MY_SSID_3) && defined(MY_WIFI_PASSWORD_3)
   { MY_SSID_3, MY_WIFI_PASSWORD_3 },
 #endif
-#ifdef MY_SSID_4
+#if defined(MY_SSID_4) && defined(MY_WIFI_PASSWORD_4)
   { MY_SSID_4, MY_WIFI_PASSWORD_4 },
 #endif
-#ifdef MY_SSID_5
+#if defined(MY_SSID_5) && defined(MY_WIFI_PASSWORD_5)
   { MY_SSID_5, MY_WIFI_PASSWORD_5 },
 #endif
   { NULL, NULL}
@@ -82,6 +83,13 @@ void setup() {
 
   // Try to connect to WiFi
   WiFi.mode(WIFI_STA);
+
+  if (mywifi[0].ssid == 0) {
+    Serial.printf("No WiFi configured, failing...\n");
+    while (1)
+      delay(10000);
+    /*NOTREACHED*/
+  }
 
   int wcr = WL_IDLE_STATUS;
   for (int ix = 0; wcr != WL_CONNECTED && mywifi[ix].ssid != NULL; ix++) {
@@ -118,12 +126,17 @@ void setup() {
 
   ws_begin();
 
-  doOTA();
+  ConfigureOTA();
+
+  // Need this before initializing sensors
+  control = new Control();
 
 #ifdef	DO_AHT
   aht10_begin();
 #endif
   ina3221_begin();
+
+  control->setAllocation(100);
 }
 
 int	old_minute, old_hour;
@@ -167,7 +180,7 @@ void time_is_set(bool from_sntp) {
     tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
 }
 
-void doOTA() {
+void ConfigureOTA() {
   static int OTAprev;
 
   Serial.printf("Configuring OTA ... ");

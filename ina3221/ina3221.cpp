@@ -41,11 +41,15 @@ void ina3221_register(time_t ts, float bus_voltage, float shunt_voltage, float c
 
 void ina3221_begin() {
   ina3221 = new SDL_Arduino_INA3221();
-
-  if (ina3221)
-    ina3221->begin();
-  else
+  ina3221->begin();
+  int manuf = ina3221->getManufID();
+  Serial.printf("INA3221 manufacturer : %04x\n", manuf);
+  if (manuf == 0xFFFF) {
     Serial.println("No ina3321 sensor");
+    delete ina3221;
+    ina3221 = 0;
+    return;
+  }
 
   prev_ts = time(0);
 }
