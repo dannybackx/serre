@@ -58,22 +58,40 @@ static void handleRoot() {
 	"<title>ESP8266 Web Server</title>"
 	"<body><h1>ESP8266 Web Server</h1>\n");
 
-  ws->sendContent("<table><tr><td>time</td><td>temperature</td><td>humidity</td></tr>\n");
+  for (int sid = 0; sid < MAX_SENSORS; sid++) {
+    const char *sn = control->getSensorName(sid);
 
-  for (int i=0; i<control->getAllocation(); i++) {
-    time_t ts = control->getTimestamp(i);
-    if (ts == 0)
+    if (sn == 0)
       continue;
 
-    tm *tmp = localtime(&ts);
-    float t, h;
-    t = control->getDataFloat(i, 0, 0);
-    h = control->getDataFloat(i, 0, 1);
     char line[80];
-    sprintf(line, "<tr><td>%04d.%02d.%02d %02d:%02d:%02d</td><td>%3.1f</td><td>%2.0f</td></tr>\n",
-      tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
-      t, h);
+    sprintf(line, "<H1>Sensor %s</H1>", sn);
     ws->sendContent(line);
+
+  ws->sendContent("<table><tr><td>time</td><td>temperature</td><td>humidity</td></tr>\n");
+
+    for (int i=0; i<control->getAllocation(); i++) {
+      time_t ts = control->getTimestamp(i);
+      if (ts == 0)
+        continue;
+
+      tm *tmp = localtime(&ts);
+
+      // Is this data chunk about the sensor under investigation ?
+      int sn = control->getDataSensor(i);
+      if (sid != sn)
+        continue;
+
+      float t, h;
+      t = control->getDataFloat(i, 0);
+      h = control->getDataFloat(i, 1);
+
+      char line[80];
+      sprintf(line, "<tr><td>%04d.%02d.%02d %02d:%02d:%02d</td><td>%3.1f</td><td>%2.0f</td></tr>\n",
+        tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
+        t, h);
+      ws->sendContent(line);
+    }
   }
 
   ws->sendContent("</tr></table>\n");

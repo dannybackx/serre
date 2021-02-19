@@ -35,9 +35,10 @@ enum ft {
 #define	MAX_FIELDS	3
 
 struct sensorid {
-  char		*name;
-  char		*fields[MAX_FIELDS];
+  const char	*name;
+  const char	*fields[MAX_FIELDS];
   ft		fieldtypes[MAX_FIELDS];
+  int		fn;
 };
 
 struct sensordata {
@@ -70,13 +71,16 @@ public:
 
   time_t getTimestamp(int ix);
   int getDataSensor(int ix);
-  ft getType(int sensor, int field);
-  float getDataFloat(int ix, int sensor, int field);
-  int getDataInt(int ix, int sensor, int field);
+  ft getFieldType(int sensor, int field);
+  const char *getSensorName(int sensor);
+  const char *getFieldName(int sensor, int field);
+  float getDataFloat(int ix, int field);
+  int getDataInt(int ix, int field);
 
 private:
   int nalloc;
   int next;
+  int nsensors;
   bool AllocateMemory();
   
   struct sensorid sensors[MAX_SENSORS];

@@ -26,8 +26,3 @@
 
 extern void ina3221_begin();
 extern void ina3221_loop(time_t);
-
-extern struct ina3221_reg {
-  time_t ts;
-  float bus_voltage, shunt_voltage, current;
-} ina3221_reg[];

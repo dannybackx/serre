@@ -24,19 +24,18 @@
  */
 #include "ina3221.h"
 #include "measure.h"
+#include <Control.h>
 
 static SDL_Arduino_INA3221 *ina3221 = 0;
 static time_t prev_ts = 0;
 
-struct ina3221_reg ina3221_reg[100];
-static int ix = 0;
+static int sensor = -1;
 
 void ina3221_register(time_t ts, float bus_voltage, float shunt_voltage, float current) {
-  ina3221_reg[ix].ts = ts;
-  ina3221_reg[ix].current = current;
-  ina3221_reg[ix].shunt_voltage = shunt_voltage;
-  ina3221_reg[ix].bus_voltage = bus_voltage;
-  ix = (ix + 1) % 100;
+  control->RegisterData(sensor, ts);
+  control->RegisterData(sensor, 0, bus_voltage);
+  control->RegisterData(sensor, 1, shunt_voltage);
+  control->RegisterData(sensor, 2, current);
 }
 
 void ina3221_begin() {
@@ -52,6 +51,11 @@ void ina3221_begin() {
   }
 
   prev_ts = time(0);
+
+  sensor = control->RegisterSensor("INA3221");
+  control->SensorRegisterField(sensor, "bus_voltage", FT_FLOAT);
+  control->SensorRegisterField(sensor, "shunt_voltage", FT_FLOAT);
+  control->SensorRegisterField(sensor, "current", FT_FLOAT);
 }
 
 void ina3221_loop(time_t now) {

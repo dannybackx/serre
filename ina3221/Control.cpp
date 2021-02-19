@@ -31,6 +31,12 @@ Control::Control() {
   control = this;
   nalloc = 0;
   next = 0;
+  nsensors = 0;
+  
+  for (int i=0; i<MAX_SENSORS; i++) {
+    sensors[i].name = 0;
+    sensors[i].fn = 0;
+  }
 
   Serial.printf("Yow, Control ctor\n");
 }
@@ -65,10 +71,19 @@ void Control::LogData() {
 }
 
 int Control::RegisterSensor(const char *name) {
-  return 0;
+  // Serial.printf("RegisterSensor(%s) -> %d\n", name, nsensors);
+  if (nsensors == MAX_SENSORS)
+    return -1;
+  sensors[nsensors].name = name;
+  sensors[nsensors].fn = 0;
+  return nsensors++;
 }
 
 void Control::SensorRegisterField(int sensor, char *field, ft field_type) {
+  int fn = sensors[nsensors].fn++;
+
+  sensors[sensor].fields[fn] = field;
+  sensors[sensor].fieldtypes[fn] = field_type;
 }
 
 bool Control::AllocateMemory() {
@@ -105,10 +120,26 @@ time_t Control::getTimestamp(int ix) {
   return data[ix].ts;
 }
 
-ft Control::getType(int sensor, int field) {
-  if (sensor < 0 || sensor >= MAX_SENSORS || field < 0 || field >= MAX_FIELDS)
+ft Control::getFieldType(int sensor, int field) {
+  if (sensor < 0 || sensor >= nsensors || field < 0 || field >= MAX_FIELDS)
     return FT_NONE;
   return sensors[sensor].fieldtypes[field];
+}
+
+const char *Control::getFieldName(int sensor, int field) {
+  if (sensor < 0 || sensor >= nsensors || field < 0 || field >= MAX_FIELDS)
+    return 0;
+  return sensors[sensor].fields[field];
+}
+
+const char *Control::getSensorName(int sensor) {
+  // Serial.printf("getSensorName(%d) ", sensor);
+  if (sensor < 0 || sensor >= nsensors) {
+    // Serial.printf(" -> (null)\n");
+    return 0;
+  }
+  // Serial.printf(" -> %s\n", sensors[sensor].name);
+  return sensors[sensor].name;
 }
 
 int Control::getDataSensor(int ix) {
@@ -117,10 +148,10 @@ int Control::getDataSensor(int ix) {
   return data[ix].sensorid;
 }
 
-float Control::getDataFloat(int ix, int sensor, int field) {
+float Control::getDataFloat(int ix, int field) {
   return data[ix].data[field].f;
 }
 
-int Control::getDataInt(int ix, int sensor, int field) {
+int Control::getDataInt(int ix, int field) {
   return data[ix].data[field].i;
 }
