@@ -35,49 +35,35 @@
 
 ESP8266WebServer	*ws = 0;
 
-// Version with chunked response
-static void handleRoot() {
-  if (! ws->chunkedResponseModeStart(200, "text/html")) {
-    ws->send(500, "Want HTTP/1.1 for chunked responses");
-    return;
-  }
-
-  Serial.printf("Replying to HTTP client ... ");
-  ws->sendContent(
-	"<!DOCTYPE html><html>"
-	"<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-	"<link rel=\"icon\" href=\"data:,\">"
-	// CSS to style the on/off buttons
-	// Feel free to change the background-color and font-size attributes to fit your preferences
-	"<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}"
-	".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;"
-	"text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}"
-	".button2 {background-color: #77878A;}</style></head>"
-
-	// Web Page Heading
-	"<title>ESP8266 Web Server</title>"
-	"<body><h1>ESP8266 Web Server</h1>\n");
-
-  for (int sid = 0; sid < MAX_SENSORS; sid++) {
+static void QuerySensor(int sid, bool html) {
     const char *sn = control->getSensorName(sid);
 
     if (sn == 0)
-      continue;
+      return;
 
     char line[80];
-    sprintf(line, "<H1>Sensor %s</H1>", sn);
+    if (html)
+      sprintf(line, "<H1>Sensor %s</H1>\n<table border=1><tr>\n", sn);
+    else
+      sprintf(line, "<H1>Sensor %s</H1>\n<table border=1><tr>\n", sn);
     ws->sendContent(line);
 
-    ws->sendContent("<table border=1><tr>\n");
-    ws->sendContent("<td>timestamp</td>\n");
+    if (html)
+      ws->sendContent("<td>timestamp</td>\n");
     for (int i=0; i<MAX_FIELDS; i++) {
       const char *fn = control->getFieldName(sid, i);
       if (fn) {
-        sprintf(line, "<td>%s</td>", fn);
+	if (html)
+          sprintf(line, "<td>%s</td>", fn);
+	else
+          sprintf(line, "<td>%s</td>", fn);
         ws->sendContent(line);
       }
     }
-    ws->sendContent("</tr>\n");
+    if (html)
+      ws->sendContent("</tr>\n");
+    else
+      ws->sendContent("</tr>\n");
 
     for (int i=0; i<control->getAllocation(); i++) {
       time_t ts = control->getTimestamp(i);
@@ -96,31 +82,78 @@ static void handleRoot() {
       h = control->getDataFloat(i, 1);
 
       char line[80];
-      sprintf(line, "<tr><td>%04d.%02d.%02d %02d:%02d:%02d</td><td>%3.1f</td><td>%2.0f</td></tr>\n",
-        tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
-        t, h);
+      if (html)
+        sprintf(line, "<tr><td>%04d.%02d.%02d %02d:%02d:%02d</td><td>%3.1f</td><td>%2.0f</td></tr>\n",
+          tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
+          t, h);
+      else
+        sprintf(line, "<tr><td>%04d.%02d.%02d %02d:%02d:%02d</td><td>%3.1f</td><td>%2.0f</td></tr>\n",
+          tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
+          t, h);
       ws->sendContent(line);
     }
-    ws->sendContent("</tr></table>\n");
+    if (html)
+      ws->sendContent("</tr></table>\n");
+    else
+      ws->sendContent("</tr></table>\n");
+}
+
+static void QuerySensors(bool html) {
+  if (html) {
+  // Version with chunked response
+    if (! ws->chunkedResponseModeStart(200, "text/html")) {
+      ws->send(500, "Want HTTP/1.1 for chunked responses");
+      return;
+    }
+  
+    ws->sendContent(
+	"<!DOCTYPE html><html>"
+	"<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+	"<link rel=\"icon\" href=\"data:,\">"
+	// CSS to style the on/off buttons
+	// Feel free to change the background-color and font-size attributes to fit your preferences
+	"<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}"
+	".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;"
+	"text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}"
+	".button2 {background-color: #77878A;}</style></head>"
+
+	// Web Page Heading
+	"<title>ESP8266 Web Server</title>"
+	"<body><h1>ESP8266 Web Server</h1>\n");
+  } else {
+    if (! ws->chunkedResponseModeStart(200, "text/json")) {
+      ws->send(500, "Want HTTP/1.1 for chunked responses");
+      return;
+    }
+    ws->sendContent("{");
   }
 
-  // The HTTP responds ends with another blank line
-  ws->sendContent("</body></html>");
-  ws->chunkedResponseFinalize();
-  Serial.printf("done\n");
+  for (int sid = 0; sid < MAX_SENSORS; sid++) {
+    QuerySensor(sid, html);
+  }
+
+  if (html) {
+    ws->sendContent("</body></html>");
+    ws->chunkedResponseFinalize();
+  }
 }
 
-void handleConfig() {
+static void handleRoot() {
+  QuerySensors(true);
 }
 
-void handleJson() {
+static void handleConfig() {
 }
 
-void handleWildcard() {
+static void handleJson() {
+  QuerySensors(false);
+}
+
+static void handleWildcard() {
   Serial.printf("WS: %s\n", ws->pathArg(0));
 }
 
-void handleNotFound() {
+static void handleNotFound() {
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += ws->uri();
