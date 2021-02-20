@@ -139,8 +139,6 @@ static void QuerySensors(bool html) {
       if (control->getSensorName(sid) && control->getSensorName(sid+1))
          ws->sendContent(",\n");
     }
-    // if (sid < MAX_SENSORS && !html)
-    //   ws->sendContent(",\n");
   }
 
   if (html) {
@@ -151,15 +149,47 @@ static void QuerySensors(bool html) {
   ws->chunkedResponseFinalize();
 }
 
-static void handleRoot() {
-  QuerySensors(true);
+static void handleHtmlQuery() {
+  const char *uri = ws->uri().c_str();
+
+  // Query everything
+  if (uri == 0 || uri[1] == 0) {
+    QuerySensors(true);
+    return;
+  }
+
+  // Query for an individual sensor
+  for (int sid=0; sid<MAX_SENSORS; sid++) {
+    if (control->getSensorName(sid) == 0)
+      continue;
+    if (strcmp(control->getSensorName(sid), uri+1) == 0) {
+      QuerySensor(sid, true);
+      return;
+    }
+  }
 }
 
 static void handleConfig() {
 }
 
 static void handleJson() {
-  QuerySensors(false);
+  const char *uri = ws->uri().c_str();
+
+  // Query everything
+  if (uri == 0 || uri[1] == 0) {
+    QuerySensors(false);
+    return;
+  }
+
+  // Query for an individual sensor
+  for (int sid=0; sid<MAX_SENSORS; sid++) {
+    if (control->getSensorName(sid) == 0)
+      continue;
+    if (strcmp(control->getSensorName(sid), uri+1) == 0) {
+      QuerySensor(sid, false);
+      return;
+    }
+  }
 }
 
 static void handleWildcard() {
@@ -184,28 +214,23 @@ static void handleNotFound() {
 void ws_begin() {
   ws = new ESP8266WebServer(80);
   
-  ws->on("/", handleRoot);
+  ws->on("/", handleHtmlQuery);
   ws->onNotFound(handleNotFound);
   ws->on("/json", handleJson);
   ws->on("/config", handleConfig);
-#if 0
-  ws->on("/gif", []() {
-    static const uint8_t gif[] PROGMEM = {
-      0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0x10, 0x00, 0x10, 0x00, 0x80, 0x01,
-      0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x2c, 0x00, 0x00, 0x00, 0x00,
-      0x10, 0x00, 0x10, 0x00, 0x00, 0x02, 0x19, 0x8c, 0x8f, 0xa9, 0xcb, 0x9d,
-      0x00, 0x5f, 0x74, 0xb4, 0x56, 0xb0, 0xb0, 0xd2, 0xf2, 0x35, 0x1e, 0x4c,
-      0x0c, 0x24, 0x5a, 0xe6, 0x89, 0xa6, 0x4d, 0x01, 0x00, 0x3b
-    };
-    char gif_colored[sizeof(gif)];
-    memcpy_P(gif_colored, gif, sizeof(gif));
-    // Set the background to a random set of colors
-    gif_colored[16] = millis() % 256;
-    gif_colored[17] = millis() % 256;
-    gif_colored[18] = millis() % 256;
-    ws->send(200, "image/gif", gif_colored, sizeof(gif_colored));
-  });
-#endif
+
+  for (int sid=0; sid<MAX_SENSORS; sid++) {
+    const char *sn = control->getSensorName(sid);
+    if (sn == 0)
+      continue;
+    char s[32];
+
+    sprintf(s, "/json/%s", sn);
+    ws->on(s, handleJson);
+
+    sprintf(s, "/%s", sn);
+    ws->on(s, handleHtmlQuery);
+  }
 
   ws->begin();
   Serial.printf("Web server started, port %d\n", 80);

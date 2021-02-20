@@ -124,8 +124,6 @@ void setup() {
 
   settimeofday_cb(time_is_set);
 
-  ws_begin();
-
   ConfigureOTA();
 
   // Need this before initializing sensors
@@ -137,6 +135,9 @@ void setup() {
   ina3221_begin();
 
   control->setAllocation(100);
+
+  // Start web server after we've created all sensors
+  ws_begin();
 }
 
 int	old_minute, old_hour;
