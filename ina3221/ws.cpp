@@ -45,7 +45,7 @@ static void QuerySensor(int sid, bool html) {
     if (html)
       sprintf(line, "<H1>Sensor %s</H1>\n<table border=1><tr>\n", sn);
     else
-      sprintf(line, "<H1>Sensor %s</H1>\n<table border=1><tr>\n", sn);
+      sprintf(line, "{\"sensor\": \"%s\", ", sn);
     ws->sendContent(line);
 
     if (html)
@@ -53,17 +53,16 @@ static void QuerySensor(int sid, bool html) {
     for (int i=0; i<MAX_FIELDS; i++) {
       const char *fn = control->getFieldName(sid, i);
       if (fn) {
-	if (html)
+	if (html) {
           sprintf(line, "<td>%s</td>", fn);
-	else
-          sprintf(line, "<td>%s</td>", fn);
-        ws->sendContent(line);
+          ws->sendContent(line);
+	}
       }
     }
     if (html)
       ws->sendContent("</tr>\n");
     else
-      ws->sendContent("</tr>\n");
+      ws->sendContent("\"values\": [\n");
 
     for (int i=0; i<control->getAllocation(); i++) {
       time_t ts = control->getTimestamp(i);
@@ -79,6 +78,10 @@ static void QuerySensor(int sid, bool html) {
 
       float t, h;
       t = control->getDataFloat(i, 0);
+      const char *fn[4];
+        fn[0] = "timestamp";
+      	fn[1] = control->getFieldName(sid, 0);
+	fn[2] = control->getFieldName(sid, 1);
       h = control->getDataFloat(i, 1);
 
       char line[80];
@@ -87,15 +90,16 @@ static void QuerySensor(int sid, bool html) {
           tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
           t, h);
       else
-        sprintf(line, "<tr><td>%04d.%02d.%02d %02d:%02d:%02d</td><td>%3.1f</td><td>%2.0f</td></tr>\n",
-          tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
-          t, h);
+        sprintf(line, "{\"%s\": \"%04d.%02d.%02d %02d:%02d:%02d\", \"%s\": \"%3.1f\", \"%s\": \"%2.0f\"},\n",
+	  fn[0], tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
+          fn[1], t,
+	  fn[2], h);
       ws->sendContent(line);
     }
     if (html)
       ws->sendContent("</tr></table>\n");
     else
-      ws->sendContent("</tr></table>\n");
+      ws->sendContent("]}\n");
 }
 
 static void QuerySensors(bool html) {
@@ -130,12 +134,21 @@ static void QuerySensors(bool html) {
 
   for (int sid = 0; sid < MAX_SENSORS; sid++) {
     QuerySensor(sid, html);
+    if (! html) {
+      const char *sn = control->getSensorName(sid);
+      if (control->getSensorName(sid) && control->getSensorName(sid+1))
+         ws->sendContent(",\n");
+    }
+    // if (sid < MAX_SENSORS && !html)
+    //   ws->sendContent(",\n");
   }
 
   if (html) {
     ws->sendContent("</body></html>");
-    ws->chunkedResponseFinalize();
+  } else {
+    ws->sendContent("}\n");
   }
+  ws->chunkedResponseFinalize();
 }
 
 static void handleRoot() {
