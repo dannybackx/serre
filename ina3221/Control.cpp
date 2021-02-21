@@ -37,8 +37,6 @@ Control::Control() {
     sensors[i].name = 0;
     sensors[i].fn = 0;
   }
-
-  Serial.printf("Yow, Control ctor\n");
 }
 
 Control::~Control() {
@@ -133,12 +131,9 @@ const char *Control::getFieldName(int sensor, int field) {
 }
 
 const char *Control::getSensorName(int sensor) {
-  // Serial.printf("getSensorName(%d) ", sensor);
   if (sensor < 0 || sensor >= nsensors) {
-    // Serial.printf(" -> (null)\n");
     return 0;
   }
-  // Serial.printf(" -> %s\n", sensors[sensor].name);
   return sensors[sensor].name;
 }
 
