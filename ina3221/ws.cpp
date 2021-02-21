@@ -103,35 +103,6 @@ static void QuerySensor(int sid, bool html) {
 }
 
 static void QuerySensors(bool html) {
-  if (html) {
-  // Version with chunked response
-    if (! ws->chunkedResponseModeStart(200, "text/html")) {
-      ws->send(500, "Want HTTP/1.1 for chunked responses");
-      return;
-    }
-  
-    ws->sendContent(
-	"<!DOCTYPE html><html>"
-	"<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-	"<link rel=\"icon\" href=\"data:,\">"
-	// CSS to style the on/off buttons
-	// Feel free to change the background-color and font-size attributes to fit your preferences
-	"<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}"
-	".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;"
-	"text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}"
-	".button2 {background-color: #77878A;}</style></head>"
-
-	// Web Page Heading
-	"<title>ESP8266 Web Server</title>"
-	"<body><h1>ESP8266 Web Server</h1>\n");
-  } else {
-    if (! ws->chunkedResponseModeStart(200, "text/json")) {
-      ws->send(500, "Want HTTP/1.1 for chunked responses");
-      return;
-    }
-    ws->sendContent("{");
-  }
-
   for (int sid = 0; sid < MAX_SENSORS; sid++) {
     QuerySensor(sid, html);
     if (! html) {
@@ -152,6 +123,26 @@ static void QuerySensors(bool html) {
 static void handleHtmlQuery() {
   const char *uri = ws->uri().c_str();
 
+  if (! ws->chunkedResponseModeStart(200, "text/html")) {
+    ws->send(500, "Want HTTP/1.1 for chunked responses");
+    return;
+  }
+  
+  ws->sendContent(
+	"<!DOCTYPE html><html>"
+	"<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+	"<link rel=\"icon\" href=\"data:,\">"
+	// CSS to style the on/off buttons
+	// Feel free to change the background-color and font-size attributes to fit your preferences
+	"<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}"
+	".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;"
+	"text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}"
+	".button2 {background-color: #77878A;}</style></head>"
+
+	// Web Page Heading
+	"<title>ESP8266 Web Server</title>"
+	"<body><h1>ESP8266 Web Server</h1>\n");
+
   // Query everything
   if (uri == 0 || uri[1] == 0) {
     QuerySensors(true);
@@ -160,20 +151,32 @@ static void handleHtmlQuery() {
 
   // Query for an individual sensor
   for (int sid=0; sid<MAX_SENSORS; sid++) {
-    if (control->getSensorName(sid) == 0)
+    const char *sn = control->getSensorName(sid);
+    if (sn == 0)
       continue;
-    if (strcmp(control->getSensorName(sid), uri+1) == 0) {
+    if (strcmp(sn, uri+1) == 0) {	// Prefixed by "/"
       QuerySensor(sid, true);
       return;
     }
   }
+
+  ws->sendContent("</body></html>");
+  ws->chunkedResponseFinalize();
 }
 
 static void handleConfig() {
 }
 
-static void handleJson() {
+static void handleJsonQuery() {
   const char *uri = ws->uri().c_str();
+  // Serial.printf("%s(%s)\n", __FUNCTION__, uri);
+
+  if (! ws->chunkedResponseModeStart(200, "text/json")) {
+    ws->send(500, "Want HTTP/1.1 for chunked responses");
+    // Serial.printf("%s: want HTTP/1.1", __FUNCTION__);
+    return;
+  }
+  ws->sendContent("{");
 
   // Query everything
   if (uri == 0 || uri[1] == 0) {
@@ -183,13 +186,20 @@ static void handleJson() {
 
   // Query for an individual sensor
   for (int sid=0; sid<MAX_SENSORS; sid++) {
-    if (control->getSensorName(sid) == 0)
+    const char *sn = control->getSensorName(sid);
+    if (sn == 0) {
+      // Serial.printf("%s: checking sensor %d {null}\n", __FUNCTION__, sid);
       continue;
-    if (strcmp(control->getSensorName(sid), uri+1) == 0) {
+    }
+    // Serial.printf("%s: checking sensor %d {%s}\n", __FUNCTION__, sid, sn);
+    if (strcmp(sn, uri+6) == 0) {	// Prefixed by "/json/"
       QuerySensor(sid, false);
       return;
     }
   }
+
+  ws->sendContent("}\n");
+  ws->chunkedResponseFinalize();
 }
 
 static void handleWildcard() {
@@ -216,7 +226,7 @@ void ws_begin() {
   
   ws->on("/", handleHtmlQuery);
   ws->onNotFound(handleNotFound);
-  ws->on("/json", handleJson);
+  ws->on("/json", handleJsonQuery);
   ws->on("/config", handleConfig);
 
   for (int sid=0; sid<MAX_SENSORS; sid++) {
@@ -226,7 +236,7 @@ void ws_begin() {
     char s[32];
 
     sprintf(s, "/json/%s", sn);
-    ws->on(s, handleJson);
+    ws->on(s, handleJsonQuery);
 
     sprintf(s, "/%s", sn);
     ws->on(s, handleHtmlQuery);
