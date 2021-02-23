@@ -28,7 +28,8 @@
 enum ft {
   FT_NONE,
   FT_FLOAT,
-  FT_INT
+  FT_INT,
+  FT_PIN
 };
 
 #define	MAX_SENSORS	5
@@ -76,6 +77,10 @@ public:
   const char *getFieldName(int sensor, int field);
   float getDataFloat(int ix, int field);
   int getDataInt(int ix, int field);
+
+  bool isRegistering(uint8 sid, time_t ts, float a, float b, float c);
+  bool isRegistering(uint8 sid, time_t ts, uint8 a, uint8 b, uint8 c);
+  int measureDelay(uint8 sid, time_t ts);
 
 private:
   int nalloc;

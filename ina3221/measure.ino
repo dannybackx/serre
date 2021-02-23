@@ -42,6 +42,8 @@ void ConfigureOTA();
 #include "aht10.h"
 #endif
 #include "ina3221.h"
+#include "d1mini.h"
+#include "ads1115.h"
 
 struct mywifi {
   const char *ssid, *pass;
@@ -133,8 +135,17 @@ void setup() {
   aht10_begin();
 #endif
   ina3221_begin();
+  d1mini_begin();
+  ads1115_begin();
 
-  control->setAllocation(100);
+  for (int a1 = MY_ALLOC1; a1 > 2; a1--) {
+    if (control->setAllocation(a1 * MY_ALLOC2)) {
+      Serial.printf("%s: allocation ok for %d items\n", __FUNCTION__, a1 * MY_ALLOC2);
+      break;
+    } else {
+      Serial.printf("%s: failed to allocate %d items, falling back\n", __FUNCTION__, a1 * MY_ALLOC2);
+    }
+  }
 
   // Start web server after we've created all sensors
   ws_begin();
@@ -168,6 +179,8 @@ void loop() {
   aht10_loop(the_time);
 #endif
   ina3221_loop(the_time);
+  d1mini_loop(the_time);
+  ads1115_loop(the_time);
 
   ws_loop();
 }

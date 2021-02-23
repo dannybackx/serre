@@ -1,5 +1,5 @@
 /*
- * Measurement station, with web server
+ * Measurement station, with web server : allow triggers on ESP8266 pins
  *
  * Copyright (c) 2021 Danny Backx
  *
@@ -23,13 +23,5 @@
  *   THE SOFTWARE.
  */
 
-#include <ESP8266WiFi.h>
-
-/* Personal configuration that are not secrets, so moved from secrets.h */
-#define APP_NAME	"measure"
-#define	MY_ALLOC1	8
-#define	MY_ALLOC2	100
-#define OTA_ID		"OTA-measure"
-
-extern char		*timestamp(time_t);
-extern WiFiClient	espClient;
+extern void d1mini_begin();
+extern void d1mini_loop(time_t);

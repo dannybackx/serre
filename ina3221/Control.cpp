@@ -56,6 +56,7 @@ void Control::Start() {
 void Control::Stop() {
 }
 
+// Return success indicator
 bool Control::setAllocation(int num) {
   nalloc = num;
   return AllocateMemory();
@@ -84,6 +85,7 @@ void Control::SensorRegisterField(int sensor, char *field, ft field_type) {
   sensors[sensor].fieldtypes[fn] = field_type;
 }
 
+// Return success indicator
 bool Control::AllocateMemory() {
   data = (sensordata *)malloc(nalloc * sizeof(sensordata));
   if (! data)
@@ -149,4 +151,16 @@ float Control::getDataFloat(int ix, int field) {
 
 int Control::getDataInt(int ix, int field) {
   return data[ix].data[field].i;
+}
+
+bool Control::isRegistering(uint8 sid, time_t ts, float a, float b, float c) {
+  return true;
+}
+
+bool Control::isRegistering(uint8 sid, time_t ts, uint8 a, uint8 b, uint8 c) {
+  return true;
+}
+
+int Control::measureDelay(uint8 sid, time_t ts) {
+  return 10;
 }

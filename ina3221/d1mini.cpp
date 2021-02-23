@@ -1,5 +1,5 @@
 /*
- * Measurement station, with web server : driver for AHT10 sensor
+ * Measurement station, with web server : allow triggers on ESP8266 pins
  *
  * Copyright (c) 2021 Danny Backx
  *
@@ -22,46 +22,40 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
-#include <Adafruit_AHTX0.h>
-#include "aht10.h"
 #include "measure.h"
 #include <Control.h>
 
-static Adafruit_AHTX0 *aht = 0;
 static time_t prev_ts = 0;
 
 static int sensor = 0;
+static uint8 p5, p6, p7;
 
-void aht10_begin() {
+void d1mini_begin() {
   // Register the sensor first, so we'll report about it whether or not it is present
-  sensor = control->RegisterSensor("AHT10");
-  control->SensorRegisterField(sensor, "temperature", FT_FLOAT);
-  control->SensorRegisterField(sensor, "humidity", FT_FLOAT);
-
-  aht = new Adafruit_AHTX0();
-  if (! aht->begin()) {
-    Serial.println("No AHT sensor");
-    delete aht;
-    aht = 0;
-  }
+  sensor = control->RegisterSensor("d1mini");
+  control->SensorRegisterField(sensor, "d5", FT_PIN);
+  control->SensorRegisterField(sensor, "d6", FT_PIN);
+  control->SensorRegisterField(sensor, "d7", FT_PIN);
 
   prev_ts = time(0);
+
+  pinMode(D5, INPUT);
+  pinMode(D6, INPUT);
+  pinMode(D7, INPUT);
 }
 
-void aht10_loop(time_t now) {
+void d1mini_loop(time_t now) {
   int delta = control->measureDelay(sensor, now);
 
-  if ((aht == 0) || (now - prev_ts < delta) || (now < 1000))
+  if ((now - prev_ts < delta) || (now < 1000))
     return;
   prev_ts = now;
 
-  sensors_event_t	humidity, temp;
-  aht->getEvent(&humidity, &temp);
-  Serial.printf("Temp %3.1f hum %2.0f (ts %s)\n", temp.temperature, humidity.relative_humidity, timestamp(now));
+  p5 = digitalRead(D5);
+  p6 = digitalRead(D6);
+  p7 = digitalRead(D7);
 
-  if (control->isRegistering(sensor, now, temp.temperature, humidity.relative_humidity, 0.0)) {
-    control->RegisterData(sensor, now);
-    control->RegisterData(sensor, 0, temp.temperature);
-    control->RegisterData(sensor, 1, humidity.relative_humidity);
+  if (control->isRegistering(sensor, now, p5, p6, p7)) {
+    // Never actually log something
   }
 }

@@ -15,3 +15,9 @@ We have a web interface to control the application.
 Parameters can be set on when and how (long, frequent) to measure. This includes start and stop conditions.
 
 Data query is possible via web interface or JSON.
+
+The drivers currently builtin :
+- INA3221 : voltage and current measurement instrument (3 sensors)
+- AHT10 : temperature and humidity
+- d1mini (esp8266) : to allow for GPIO pin trigger events, not to monitor stuff
+- ADS1115 : 4 channel ADC (analog to digital converter)

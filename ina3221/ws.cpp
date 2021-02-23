@@ -33,6 +33,8 @@
 #include "ws.h"
 #include <Control.h>
 
+#include <uri/UriRegex.h>
+
 ESP8266WebServer	*ws = 0;
 
 static void QuerySensor(int sid, bool html) {
@@ -221,14 +223,69 @@ static void handleNotFound() {
   ws->send(404, "text/plain", message);
 }
 
+void ws_reg() {
+    // String user = ws->pathArg(0);
+    // String device = ws->pathArg(1);
+    // ws->send(200, "text/plain", "User: '" + user + "' and Device: '" + device + "'");
+    // Serial.printf("User: '%s' device '%s'\n", user, device);
+  Serial.printf("/config (uri %s) ... ", ws->uri().c_str());
+  for (uint8_t i = 0; i < ws->args(); i++) {
+    Serial.printf("%s %s, ", ws->argName(i), ws->arg(i));
+  }
+  Serial.printf("\n");
+}
+
+static void listSensors() {
+  const char *uri = ws->uri().c_str();
+
+  if (! ws->chunkedResponseModeStart(200, "text/html")) {
+    ws->send(500, "Want HTTP/1.1 for chunked responses");
+    return;
+  }
+  
+  ws->sendContent(
+	"<!DOCTYPE html><html>"
+	"<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+	"<link rel=\"icon\" href=\"data:,\">"
+	// CSS to style the on/off buttons
+	// Feel free to change the background-color and font-size attributes to fit your preferences
+	"<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}"
+	".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;"
+	"text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}"
+	".button2 {background-color: #77878A;}</style></head>"
+
+	// Web Page Heading
+	"<title>ESP8266 Web Server</title>"
+	"<body><h1>ESP8266 Web Server</h1>\n"
+	"\n\n<ul>\n");
+
+  // Query for an individual sensor
+  for (int sid=0; sid<MAX_SENSORS; sid++) {
+    const char *sn = control->getSensorName(sid);
+    if (sn == 0)
+      continue;
+
+    char line[80];
+    sprintf(line, "<li><a href=\"%s\">%s</a>", sn, sn);
+    ws->sendContent(line);
+  }
+
+  ws->sendContent("</ul></body></html>");
+  ws->chunkedResponseFinalize();
+}
+
 void ws_begin() {
   ws = new ESP8266WebServer(80);
   
-  ws->on("/", handleHtmlQuery);
   ws->onNotFound(handleNotFound);
-  ws->on("/json", handleJsonQuery);
   ws->on("/config", handleConfig);
+  ws->on("/sensors", listSensors);
 
+  // Root JSON and HTML handlers
+  ws->on("/", handleHtmlQuery);
+  ws->on("/json", handleJsonQuery);
+
+  // Per sensor handlers for HTML and JSON
   for (int sid=0; sid<MAX_SENSORS; sid++) {
     const char *sn = control->getSensorName(sid);
     if (sn == 0)
@@ -241,6 +298,10 @@ void ws_begin() {
     sprintf(s, "/%s", sn);
     ws->on(s, handleHtmlQuery);
   }
+
+  // ws->on(UriRegex("^\\/users\\/([0-9]+)\\/devices\\/([0-9]+)$"), ws_reg);
+  UriRegex r = UriRegex("^\\/config\\/.*$");
+  ws->on(r, ws_reg);
 
   ws->begin();
   Serial.printf("Web server started, port %d\n", 80);

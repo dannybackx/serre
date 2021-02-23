@@ -1,5 +1,5 @@
 /*
- * Measurement station, with web server : driver for AHT10 sensor
+ * Measurement station, with web server : driver for ADS1115 ADC
  *
  * Copyright (c) 2021 Danny Backx
  *
@@ -22,46 +22,49 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *   THE SOFTWARE.
  */
-#include <Adafruit_AHTX0.h>
-#include "aht10.h"
+#include "ads1115.h"
 #include "measure.h"
 #include <Control.h>
 
-static Adafruit_AHTX0 *aht = 0;
+static ADS1115_WE *ads = 0;
 static time_t prev_ts = 0;
 
 static int sensor = 0;
 
-void aht10_begin() {
+void ads1115_begin() {
   // Register the sensor first, so we'll report about it whether or not it is present
-  sensor = control->RegisterSensor("AHT10");
-  control->SensorRegisterField(sensor, "temperature", FT_FLOAT);
-  control->SensorRegisterField(sensor, "humidity", FT_FLOAT);
+  sensor = control->RegisterSensor("ADS1115");
+  control->SensorRegisterField(sensor, "a0", FT_FLOAT);
+  control->SensorRegisterField(sensor, "a1", FT_FLOAT);
+  control->SensorRegisterField(sensor, "a2", FT_FLOAT);
+  // control->SensorRegisterField(sensor, "a3", FT_FLOAT);
 
-  aht = new Adafruit_AHTX0();
-  if (! aht->begin()) {
-    Serial.println("No AHT sensor");
-    delete aht;
-    aht = 0;
+  ads = new ADS1115_WE();
+  if (! ads->init()) {
+    Serial.println("No ADS1115 sensor");
+    delete ads;
+    ads = 0;
   }
 
   prev_ts = time(0);
+
+  ads->setVoltageRange_mV(ADS1115_RANGE_6144);
+  ads->setCompareChannels(ADS1115_COMP_0_GND);
+  ads->setMeasureMode(ADS1115_CONTINUOUS);
 }
 
-void aht10_loop(time_t now) {
+void ads1115_loop(time_t now) {
   int delta = control->measureDelay(sensor, now);
 
-  if ((aht == 0) || (now - prev_ts < delta) || (now < 1000))
+  if ((ads == 0) || (now - prev_ts < delta) || (now < 1000))
     return;
   prev_ts = now;
 
-  sensors_event_t	humidity, temp;
-  aht->getEvent(&humidity, &temp);
-  Serial.printf("Temp %3.1f hum %2.0f (ts %s)\n", temp.temperature, humidity.relative_humidity, timestamp(now));
+  float mv = ads->getResult_mV();
+  Serial.printf("Measure %3.1f mV (ts %s)\n", mv, timestamp(now));
 
-  if (control->isRegistering(sensor, now, temp.temperature, humidity.relative_humidity, 0.0)) {
+  if (control->isRegistering(sensor, now, mv, 0.0, 0.0)) {
     control->RegisterData(sensor, now);
-    control->RegisterData(sensor, 0, temp.temperature);
-    control->RegisterData(sensor, 1, humidity.relative_humidity);
+    control->RegisterData(sensor, 0, mv);
   }
 }
