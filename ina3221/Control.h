@@ -32,14 +32,24 @@ enum ft {
   FT_PIN
 };
 
-#define	MAX_SENSORS	5
-#define	MAX_FIELDS	3
+#define	MAX_SENSORS	8
+#define	MAX_FIELDS	4
+#define	MAX_TRIGGERS	8
 
 struct sensorid {
   const char	*name;
   const char	*fields[MAX_FIELDS];
   ft		fieldtypes[MAX_FIELDS];
   int		fn;
+
+  // Data for decision making
+  time_t	ts;
+  union {
+    float	f;
+    int32_t	i;
+  }		data[MAX_FIELDS];
+
+  int		mdelay;
 };
 
 struct sensordata {
@@ -49,6 +59,16 @@ struct sensordata {
     float	f;
     int32_t	i;
   }		data[MAX_FIELDS];
+};
+
+struct trigger {
+  uint8_t	sensorid;
+  uint8_t	field;
+  union {
+    float	f;
+    int32_t	i;
+  }		data_min, data_max;
+  bool		trigger_min, trigger_max;
 };
 
 class Control {
@@ -78,8 +98,8 @@ public:
   float getDataFloat(int ix, int field);
   int getDataInt(int ix, int field);
 
-  bool isRegistering(uint8 sid, time_t ts, float a, float b, float c);
-  bool isRegistering(uint8 sid, time_t ts, uint8 a, uint8 b, uint8 c);
+  bool isRegistering(uint8 sid, time_t ts, float a, float b = 0.0, float c = 0.0, float d = 0.0);
+  bool isRegistering(uint8 sid, time_t ts, uint32 a, uint32 b = 0, uint32 c = 0, uint32 d = 0);
   int measureDelay(uint8 sid, time_t ts);
 
 private:
@@ -90,6 +110,15 @@ private:
   
   struct sensorid sensors[MAX_SENSORS];
   struct sensordata *data;
+  struct trigger triggers[MAX_TRIGGERS];
+
+  void sensorData(uint8 sid, time_t ts, float a, float b = 0.0, float c = 0.0, float d = 0.0);
+  void sensorData(uint8 sid, time_t ts, uint32 a, uint32 b = 0, uint32 c = 0, uint32 d = 0);
+  bool isRegistering(uint8 sid);
+
+  bool	manual_start, manual_stop;
+  bool	timed_start;
+  bool	triggered_start;
 };
 
 extern Control *control;

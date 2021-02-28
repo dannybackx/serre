@@ -28,7 +28,7 @@
 static time_t prev_ts = 0;
 
 static int sensor = 0;
-static uint8 p5, p6, p7;
+static uint32 p5, p6, p7, p8;
 
 void d1mini_begin() {
   // Register the sensor first, so we'll report about it whether or not it is present
@@ -36,14 +36,21 @@ void d1mini_begin() {
   control->SensorRegisterField(sensor, "d5", FT_PIN);
   control->SensorRegisterField(sensor, "d6", FT_PIN);
   control->SensorRegisterField(sensor, "d7", FT_PIN);
+  control->SensorRegisterField(sensor, "d8", FT_PIN);
 
   prev_ts = time(0);
 
   pinMode(D5, INPUT);
   pinMode(D6, INPUT);
   pinMode(D7, INPUT);
+  pinMode(D8, INPUT);
 }
 
+/*
+ * Any sensor loop function should periodically measure, ask Control whether to log,
+ * (in the process : pass info to Control which can be used for decisions but not logging),
+ * and if yes, call the logging API.
+ */
 void d1mini_loop(time_t now) {
   int delta = control->measureDelay(sensor, now);
 
@@ -54,8 +61,9 @@ void d1mini_loop(time_t now) {
   p5 = digitalRead(D5);
   p6 = digitalRead(D6);
   p7 = digitalRead(D7);
+  p8 = digitalRead(D8);
 
-  if (control->isRegistering(sensor, now, p5, p6, p7)) {
+  if (control->isRegistering(sensor, now, p5, p6, p7, p8)) {
     // Never actually log something
   }
 }

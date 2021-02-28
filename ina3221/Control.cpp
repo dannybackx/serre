@@ -36,6 +36,14 @@ Control::Control() {
   for (int i=0; i<MAX_SENSORS; i++) {
     sensors[i].name = 0;
     sensors[i].fn = 0;
+    sensors[i].mdelay = 10;
+    sensors[i].ts = 0;
+    for (int j=0; j<MAX_FIELDS; j++)
+      sensors[i].data[j].i = 0;
+  }
+  for (int i=0; i<MAX_TRIGGERS; i++) {
+    triggers[i].trigger_min = false;
+    triggers[i].trigger_max = false;
   }
 }
 
@@ -45,15 +53,6 @@ Control::~Control() {
     free((void *)data);
     data = 0;
   }
-}
-
-bool Control::SetStartCondition() {
-}
-
-void Control::Start() {
-}
-
-void Control::Stop() {
 }
 
 // Return success indicator
@@ -153,14 +152,86 @@ int Control::getDataInt(int ix, int field) {
   return data[ix].data[field].i;
 }
 
-bool Control::isRegistering(uint8 sid, time_t ts, float a, float b, float c) {
-  return true;
+void Control::sensorData(uint8 sid, time_t ts, float a, float b, float c, float d) {
+  sensors[sid].ts = ts;
+  sensors[sid].data[0].f = a;
+  sensors[sid].data[1].f = b;
+  sensors[sid].data[2].f = c;
+  sensors[sid].data[3].f = d;
 }
 
-bool Control::isRegistering(uint8 sid, time_t ts, uint8 a, uint8 b, uint8 c) {
-  return true;
+void Control::sensorData(uint8 sid, time_t ts, uint32 a, uint32 b, uint32 c, uint32 d) {
+  sensors[sid].ts = ts;
+  sensors[sid].data[0].i = a;
+  sensors[sid].data[1].i = b;
+  sensors[sid].data[2].i = c;
+  sensors[sid].data[3].i = d;
+}
+
+/*
+ * This function serves two purposes : to collect info on which we possibly judge whether to log info,
+ * and to return the answer whether we log info.
+ *
+ * Depending on settings, the output may not be based on the input. (E.g. if the user pushed the start button.)
+ */
+bool Control::isRegistering(uint8 sid, time_t ts, float a, float b, float c, float d) {
+  sensorData(sid, ts, a, b, c, d);
+  return isRegistering(sid);
+}
+
+bool Control::isRegistering(uint8 sid, time_t ts, uint32 a, uint32 b, uint32 c, uint32 d) {
+  sensorData(sid, ts, a, b, c, d);
+  return isRegistering(sid);
+}
+
+bool Control::isRegistering(uint8 sid) {
+  // Global or per sensor override
+  if (manual_stop)
+    return false;
+  if (manual_start)
+    return true;
+
+  for (int i=0; i<MAX_TRIGGERS; i++) {
+    if (triggers[i].trigger_min) {
+      uint8_t sid = triggers[i].sensorid;
+      uint8_t field = triggers[i].field;
+      enum ft tp = sensors[sid].fieldtypes[field];
+      if (tp == FT_FLOAT) {
+        if (sensors[sid].data[field].f >= triggers[i].data_min.f)
+	  return true;
+      } else if (tp == FT_INT) {
+        if (sensors[sid].data[field].i >= triggers[i].data_min.i)
+	  return true;
+      }
+    } else if (triggers[i].trigger_max) {
+      uint8_t sid = triggers[i].sensorid;
+      uint8_t field = triggers[i].field;
+      enum ft tp = sensors[sid].fieldtypes[field];
+      if (tp == FT_FLOAT) {
+        if (sensors[sid].data[field].f <= triggers[i].data_max.f)
+	  return true;
+      } else if (tp == FT_INT) {
+        if (sensors[sid].data[field].i <= triggers[i].data_max.i)
+	  return true;
+      }
+    } else {
+    }
+  }
+  return false;
 }
 
 int Control::measureDelay(uint8 sid, time_t ts) {
-  return 10;
+  return sensors[sid].mdelay;
+}
+
+bool Control::SetStartCondition() {
+}
+
+void Control::Start() {
+  manual_stop = false;
+  manual_start = true;
+}
+
+void Control::Stop() {
+  manual_stop = true;
 }

@@ -59,7 +59,7 @@ void aht10_loop(time_t now) {
   aht->getEvent(&humidity, &temp);
   Serial.printf("Temp %3.1f hum %2.0f (ts %s)\n", temp.temperature, humidity.relative_humidity, timestamp(now));
 
-  if (control->isRegistering(sensor, now, temp.temperature, humidity.relative_humidity, 0.0)) {
+  if (control->isRegistering(sensor, now, temp.temperature, humidity.relative_humidity, 0.0, 0.0)) {
     control->RegisterData(sensor, now);
     control->RegisterData(sensor, 0, temp.temperature);
     control->RegisterData(sensor, 1, humidity.relative_humidity);

@@ -37,7 +37,7 @@ void ads1115_begin() {
   control->SensorRegisterField(sensor, "a0", FT_FLOAT);
   control->SensorRegisterField(sensor, "a1", FT_FLOAT);
   control->SensorRegisterField(sensor, "a2", FT_FLOAT);
-  // control->SensorRegisterField(sensor, "a3", FT_FLOAT);
+  control->SensorRegisterField(sensor, "a3", FT_FLOAT);
 
   ads = new ADS1115_WE();
   if (! ads->init()) {
@@ -63,7 +63,7 @@ void ads1115_loop(time_t now) {
   float mv = ads->getResult_mV();
   Serial.printf("Measure %3.1f mV (ts %s)\n", mv, timestamp(now));
 
-  if (control->isRegistering(sensor, now, mv, 0.0, 0.0)) {
+  if (control->isRegistering(sensor, now, mv, 0.0, 0.0, 0.0)) {
     control->RegisterData(sensor, now);
     control->RegisterData(sensor, 0, mv);
   }
