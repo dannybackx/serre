@@ -32,6 +32,11 @@ Control::Control() {
   nalloc = 0;
   next = 0;
   nsensors = 0;
+  registering_from = 0;
+
+  manual_stop = timed_stop = false;
+  manual_start = timed_start = triggered_start = false;
+  amount = 0;
   
   for (int i=0; i<MAX_SENSORS; i++) {
     sensors[i].name = 0;
@@ -98,6 +103,7 @@ bool Control::AllocateMemory() {
 }
 
 void Control::RegisterData(int sensor, time_t ts) {
+  amount++;
   next = (next + 1) % nalloc;
   data[next].ts = ts;
   data[next].sensorid = sensor;
@@ -184,12 +190,42 @@ bool Control::isRegistering(uint8 sid, time_t ts, uint32 a, uint32 b, uint32 c, 
   return isRegistering(sid);
 }
 
+void Control::StartRegistering(uint8 sid) {
+  if (registering_from != 0)
+    return;
+  registering_from = time(0);
+}
+
 bool Control::isRegistering(uint8 sid) {
+  time_t now = time(0);
+
+  // Should we stop ?
+  for (int i=0; i<MAX_TRIGGERS; i++) {
+    if (stoppers[i].st_tp == ST_NONE)
+      continue;
+    else if (stoppers[i].st_tp == ST_TIMER) {
+      time_t delta = now - registering_from;
+      if (delta > stoppers[i].amount) {
+        timed_stop = true;
+	return false;
+      }
+    } else if (stoppers[i].st_tp == ST_AMOUNT) {
+      if (amount > stoppers[i].amount) {
+        timed_stop = true;
+	return false;
+      }
+    } else {
+      // Should not happen
+    }
+  }
+
   // Global or per sensor override
-  if (manual_stop)
+  if (manual_stop || timed_stop)
     return false;
-  if (manual_start)
+  if (manual_start || triggered_start || timed_start) {
+    StartRegistering(sid);
     return true;
+  }
 
   for (int i=0; i<MAX_TRIGGERS; i++) {
     if (triggers[i].trigger_min) {
@@ -197,22 +233,30 @@ bool Control::isRegistering(uint8 sid) {
       uint8_t field = triggers[i].field;
       enum ft tp = sensors[sid].fieldtypes[field];
       if (tp == FT_FLOAT) {
-        if (sensors[sid].data[field].f >= triggers[i].data_min.f)
+        if (sensors[sid].data[field].f >= triggers[i].data_min.f) {
+	  StartRegistering(sid);
 	  return true;
+	}
       } else if (tp == FT_INT) {
-        if (sensors[sid].data[field].i >= triggers[i].data_min.i)
+        if (sensors[sid].data[field].i >= triggers[i].data_min.i) {
+	  StartRegistering(sid);
 	  return true;
+	}
       }
     } else if (triggers[i].trigger_max) {
       uint8_t sid = triggers[i].sensorid;
       uint8_t field = triggers[i].field;
       enum ft tp = sensors[sid].fieldtypes[field];
       if (tp == FT_FLOAT) {
-        if (sensors[sid].data[field].f <= triggers[i].data_max.f)
+        if (sensors[sid].data[field].f <= triggers[i].data_max.f) {
+	  StartRegistering(sid);
 	  return true;
+	}
       } else if (tp == FT_INT) {
-        if (sensors[sid].data[field].i <= triggers[i].data_max.i)
+        if (sensors[sid].data[field].i <= triggers[i].data_max.i) {
+	  StartRegistering(sid);
 	  return true;
+	}
       }
     } else {
     }
@@ -228,7 +272,7 @@ bool Control::SetStartCondition() {
 }
 
 void Control::Start() {
-  manual_stop = false;
+  manual_stop = timed_stop = false;
   manual_start = true;
 }
 

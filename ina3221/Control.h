@@ -34,7 +34,7 @@ enum ft {
 
 #define	MAX_SENSORS	8
 #define	MAX_FIELDS	4
-#define	MAX_TRIGGERS	8
+#define	MAX_TRIGGERS	4
 
 struct sensorid {
   const char	*name;
@@ -61,6 +61,7 @@ struct sensordata {
   }		data[MAX_FIELDS];
 };
 
+// Trigger = turn on at any of these
 struct trigger {
   uint8_t	sensorid;
   uint8_t	field;
@@ -69,6 +70,18 @@ struct trigger {
     int32_t	i;
   }		data_min, data_max;
   bool		trigger_min, trigger_max;
+};
+
+enum stopper_t {
+  ST_NONE,
+  ST_TIMER,
+  ST_AMOUNT
+};
+
+// Stop conditions
+struct stopper {
+  stopper_t	st_tp;
+  int		amount;
 };
 
 class Control {
@@ -103,22 +116,29 @@ public:
   int measureDelay(uint8 sid, time_t ts);
 
 private:
-  int nalloc;
-  int next;
-  int nsensors;
+  int		nalloc;
+  int		next;
+  int		nsensors;
+  bool		manual_start, manual_stop;
+  bool		timed_start, timed_stop;
+  bool		triggered_start;
+  time_t	registering_from;
+  int		amount;
+
   bool AllocateMemory();
   
   struct sensorid sensors[MAX_SENSORS];
   struct sensordata *data;
+
+  // Start conditions
   struct trigger triggers[MAX_TRIGGERS];
+  // Stop conditions
+  struct stopper stoppers[MAX_TRIGGERS];
 
   void sensorData(uint8 sid, time_t ts, float a, float b = 0.0, float c = 0.0, float d = 0.0);
   void sensorData(uint8 sid, time_t ts, uint32 a, uint32 b = 0, uint32 c = 0, uint32 d = 0);
   bool isRegistering(uint8 sid);
-
-  bool	manual_start, manual_stop;
-  bool	timed_start;
-  bool	triggered_start;
+  void StartRegistering(uint8_t sid);
 };
 
 extern Control *control;
