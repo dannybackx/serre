@@ -24,6 +24,7 @@
  */
 
 #include <Control.h>
+#include <ArduinoJson.h>
 
 Control *control;
 
@@ -50,6 +51,12 @@ Control::Control() {
     triggers[i].trigger_min = false;
     triggers[i].trigger_max = false;
   }
+
+  // Test code
+  triggers[0].sensorid = 0;
+  triggers[0].field = 1;
+  triggers[0].trigger_min = true;
+  triggers[0].data_min.f = 1.23;
 }
 
 Control::~Control() {
@@ -278,4 +285,72 @@ void Control::Start() {
 
 void Control::Stop() {
   manual_stop = true;
+}
+
+const char *Control::FieldType(enum ft t) {
+  switch (t) {
+  case FT_NONE:		return "none";
+  case FT_FLOAT:	return "float";
+  case FT_INT:		return "int";
+  case FT_PIN:		return "pin";
+  }
+}
+
+const char *Control::WriteConfig() {
+  DynamicJsonDocument json(1024);
+
+  JsonArray tr = json.createNestedArray("triggers");
+
+  for (int i=0; i<MAX_TRIGGERS; i++) {
+    uint8_t sid = triggers[i].sensorid;
+    uint8_t field = triggers[i].field;
+    enum ft tp = sensors[sid].fieldtypes[field];
+    
+    const char *sn = sensors[sid].name;
+    const char *fn = sensors[sid].fields[field];
+
+    if (triggers[i].trigger_min) {
+      tr[i]["trigger"] = "min";
+      tr[i]["sensor"] = sn;
+      tr[i]["field"] = fn;
+      tr[i]["type"] = FieldType(tp);
+
+      if (sensors[sid].fieldtypes[field] == FT_FLOAT)
+        tr[i]["value"] = triggers[i].data_min.f;
+      else if (sensors[sid].fieldtypes[field] == FT_INT)
+        tr[i]["value"] = triggers[i].data_min.i;
+    } else if (triggers[i].trigger_max) {
+      tr[i]["trigger"] = "max";
+      tr[i]["sensor"] = sn;
+      tr[i]["field"] = fn;
+      tr[i]["type"] = FieldType(tp);
+
+      if (sensors[sid].fieldtypes[field] == FT_FLOAT)
+        tr[i]["value"] = triggers[i].data_max.f;
+      else if (sensors[sid].fieldtypes[field] == FT_INT)
+        tr[i]["value"] = triggers[i].data_max.i;
+    }
+  }
+
+  JsonArray st = json.createNestedArray("stoppers");
+
+  for (int i=0; i<MAX_TRIGGERS; i++) {
+    if (stoppers[i].st_tp == ST_TIMER) {
+      st[i]["trigger"] = "timer";
+      st[i]["amount"] = stoppers[i].amount;
+    } else if (stoppers[i].st_tp == ST_AMOUNT) {
+      st[i]["trigger"] = "amount";
+      st[i]["amount"] = stoppers[i].amount;
+    }
+  }
+
+  int len = measureJson(json);
+  char *buf = (char *)malloc(len+1);
+  serializeJson(json, buf, len+1);
+  buf[len] = 0;
+
+  return buf;
+}
+
+void Control::ReadConfig(const char *j) {
 }

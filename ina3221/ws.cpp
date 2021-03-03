@@ -38,7 +38,12 @@
 
 ESP8266WebServer	*ws = 0;
 
+// DEBUG
+#define	SEND(x)	ws->sendContent(x)
+// #define	SEND(x)	{ Serial.printf("%s", x); ws->sendContent(x); }
+
 static void QuerySensor(int sid, bool html) {
+    Serial.printf("QuerySensor(%d,%s)\n", sid, html ? "html" : "json");
     const char *sn = control->getSensorName(sid);
 
     if (sn == 0)
@@ -49,23 +54,24 @@ static void QuerySensor(int sid, bool html) {
       sprintf(line, "<H1>Sensor %s</H1>\n<table border=1><tr>\n", sn);
     else
       sprintf(line, "{\"sensor\": \"%s\", ", sn);
-    ws->sendContent(line);
+    SEND(line);
 
-    if (html)
-      ws->sendContent("<td>timestamp</td>\n");
+    if (html) {
+      SEND("<td>timestamp</td>\n");
+    }
     for (int i=0; i<MAX_FIELDS; i++) {
       const char *fn = control->getFieldName(sid, i);
       if (fn) {
 	if (html) {
           sprintf(line, "<td>%s</td>", fn);
-          ws->sendContent(line);
+	  SEND(line);
 	}
       }
     }
-    if (html)
-      ws->sendContent("</tr>\n");
-    else
-      ws->sendContent("\"values\": [\n");
+    if (html) {
+      SEND("</tr>\n");
+    } else
+      SEND("\"values\": [\n");
 
     for (int i=0; i<control->getAllocation(); i++) {
       time_t ts = control->getTimestamp(i);
@@ -97,12 +103,12 @@ static void QuerySensor(int sid, bool html) {
 	  fn[0], tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
           fn[1], t,
 	  fn[2], h);
-      ws->sendContent(line);
+      SEND(line);
     }
-    if (html)
-      ws->sendContent("</tr></table>\n");
-    else
-      ws->sendContent("]}\n");
+    if (html) {
+      SEND("</tr></table>\n");
+    } else
+      SEND("]}\n");
 }
 
 static void QuerySensors(bool html) {
@@ -154,7 +160,32 @@ static void handleHtmlQuery() {
   ws->chunkedResponseFinalize();
 }
 
+static void handleStart() {
+  const char *uri = ws->uri().c_str();
+
+  control->Start();
+
+  if (! ws->chunkedResponseModeStart(200, "text/html")) {
+    ws->send(500, "Want HTTP/1.1 for chunked responses");
+    return;
+  }
+  
+  // FIXME
+  ws->sendContent(webpage_main);
+
+  ws->sendContent("</body></html>");
+  ws->chunkedResponseFinalize();
+}
+
 static void handleConfig() {
+  if (! ws->chunkedResponseModeStart(200, "text/json")) {
+    ws->send(500, "Want HTTP/1.1 for chunked responses");
+    return;
+  }
+  const char *json = control->WriteConfig();
+  ws->sendContent(json);
+  free((void *)json);
+  ws->chunkedResponseFinalize();
 }
 
 static void handleJsonQuery() {
@@ -272,6 +303,7 @@ void ws_begin() {
   // Root JSON and HTML handlers
   ws->on("/", handleHtmlQuery);
   ws->on("/json", handleJsonQuery);
+  ws->on("/start", handleStart);
 
   // Per sensor handlers for HTML and JSON
   for (int sid=0; sid<MAX_SENSORS; sid++) {

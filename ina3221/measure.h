@@ -29,7 +29,7 @@
 #define APP_NAME	"measure"
 #define	MY_ALLOC1	8
 #define	MY_ALLOC2	100
-#define OTA_ID		"OTA-measure"
+#define OTA_ID		"measure"
 
 extern char		*timestamp(time_t);
 extern WiFiClient	espClient;

@@ -115,6 +115,9 @@ public:
   bool isRegistering(uint8 sid, time_t ts, uint32 a, uint32 b = 0, uint32 c = 0, uint32 d = 0);
   int measureDelay(uint8 sid, time_t ts);
 
+  const char *WriteConfig();
+  void ReadConfig(const char *);
+
 private:
   int		nalloc;
   int		next;
@@ -139,6 +142,7 @@ private:
   void sensorData(uint8 sid, time_t ts, uint32 a, uint32 b = 0, uint32 c = 0, uint32 d = 0);
   bool isRegistering(uint8 sid);
   void StartRegistering(uint8_t sid);
+  const char *FieldType(enum ft);
 };
 
 extern Control *control;
