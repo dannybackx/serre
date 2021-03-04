@@ -131,6 +131,12 @@ static void QuerySensors(bool html) {
 
 static void handleHtmlQuery() {
   const char *uri = ws->uri().c_str();
+  Serial.printf("%s: uri %s args %d\n", __FUNCTION__, uri, ws->args());
+  if (ws->args() > 0) {
+    for (uint8_t i = 0; i < ws->args(); i++) {
+      Serial.printf("\targ %d : %s - %s\n", i, ws->argName(i), ws->arg(i));
+    }
+  }
 
   if (! ws->chunkedResponseModeStart(200, "text/html")) {
     ws->send(500, "Want HTTP/1.1 for chunked responses");

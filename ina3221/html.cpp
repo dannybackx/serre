@@ -36,4 +36,13 @@ const char *webpage_main =
 
   // Web Page Heading
   "<title>ESP8266 Web Server</title>"
-  "<body><h1>ESP8266 Web Server</h1>\n";
+  "<body><h1>ESP8266 Web Server</h1>\n"
+
+  /*
+   * Include trial buttons
+   */
+  "<p><form>"
+  "  <input type=\"submit\" name=\"button\" value=\"Submit\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Button\" />"
+  "</form>\n"
+  "\n";
