@@ -143,6 +143,8 @@ private:
   bool isRegistering(uint8 sid);
   void StartRegistering(uint8_t sid);
   const char *FieldType(enum ft);
+  int GetSensor(const char *);
+  int GetField(uint8_t, const char *);
 };
 
 extern Control *control;

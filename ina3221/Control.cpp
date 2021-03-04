@@ -287,15 +287,11 @@ void Control::Stop() {
   manual_stop = true;
 }
 
-const char *Control::FieldType(enum ft t) {
-  switch (t) {
-  case FT_NONE:		return "none";
-  case FT_FLOAT:	return "float";
-  case FT_INT:		return "int";
-  case FT_PIN:		return "pin";
-  }
-}
-
+/*
+ * Caller must free return value
+ *
+ * Sample output : {"triggers":[{"trigger":"min","sensor":"AHT10","field":"humidity","value":1.23}],"stoppers":[]}
+ */
 const char *Control::WriteConfig() {
   DynamicJsonDocument json(1024);
 
@@ -313,7 +309,7 @@ const char *Control::WriteConfig() {
       tr[i]["trigger"] = "min";
       tr[i]["sensor"] = sn;
       tr[i]["field"] = fn;
-      tr[i]["type"] = FieldType(tp);
+      // tr[i]["type"] = FieldType(tp);
 
       if (sensors[sid].fieldtypes[field] == FT_FLOAT)
         tr[i]["value"] = triggers[i].data_min.f;
@@ -323,7 +319,7 @@ const char *Control::WriteConfig() {
       tr[i]["trigger"] = "max";
       tr[i]["sensor"] = sn;
       tr[i]["field"] = fn;
-      tr[i]["type"] = FieldType(tp);
+      // tr[i]["type"] = FieldType(tp);
 
       if (sensors[sid].fieldtypes[field] == FT_FLOAT)
         tr[i]["value"] = triggers[i].data_max.f;
@@ -352,5 +348,84 @@ const char *Control::WriteConfig() {
   return buf;
 }
 
-void Control::ReadConfig(const char *j) {
+void Control::ReadConfig(const char *jtxt) {
+  DynamicJsonDocument	json(1024);
+
+  DeserializationError e = deserializeJson(json, jtxt);
+  if (e) {
+    return;
+  }
+
+  JsonArray tr = json["triggers"];
+  for (int i=0; i<MAX_TRIGGERS; i++) {
+    if (tr[i].isNull())
+      continue;
+    const char *t = tr[i]["trigger"];
+    // FIX ME trigger type can have multiple values, could be both MIN and MAX
+    triggers[i].trigger_min = false;
+    triggers[i].trigger_max = false;
+    if (strcmp(t, "min") == 0)
+      triggers[i].trigger_min = true;
+    else if (strcmp(t, "max") == 0)
+      triggers[i].trigger_max = true;
+    // end FIX ME
+    const char *sn = tr[i]["sensor"];
+    int sid = GetSensor(sn);
+    if (sid < 0)
+      continue;
+    triggers[i].sensorid = sid;
+    const char *field = tr[i]["field"];
+    int fn = GetField(sid, field);
+    if (fn < 0)
+      continue;
+    triggers[i].field = fn;
+    enum ft fte = sensors[sid].fieldtypes[fn];
+    switch (fte) {
+    case FT_INT:
+      triggers[i].data_min.i = tr[i]["value"];
+
+      Serial.printf("ReadConfig trigger %d -> %s, sensor %s (%d), field %s (%d), value %d\n",
+        i, (t == 0) ? "(null)" : t,
+        sn, sid, field, fn, triggers[i].data_min.i);
+      break;
+    case FT_FLOAT:
+      triggers[i].data_min.f = tr[i]["value"];
+
+      Serial.printf("ReadConfig trigger %d -> %s, sensor %s (%d), field %s (%d), value %f\n",
+        i, (t == 0) ? "(null)" : t,
+        sn, sid, field, fn, triggers[i].data_min.f);
+      break;
+    }
+  }
+
+  JsonArray st = json["stoppers"];
+  for (int i=0; i<MAX_TRIGGERS; i++) {
+    if (st[i].isNull())		// FIX ME not sure why we need to break instead of continue
+      break;
+
+    const char *t = st[i]["trigger"];
+    if (strcasecmp(t, "timer") == 0)
+      stoppers[i].st_tp = ST_TIMER;
+    else if (strcasecmp(t, "amount") == 0)
+      stoppers[i].st_tp = ST_AMOUNT;
+    stoppers[i].amount = st[i]["amount"];
+  }
+}
+
+int Control::GetSensor(const char *name) {
+  if (name == 0)
+    return -1;
+  for (int i=0; i<MAX_SENSORS; i++)
+    if (strcasecmp(name, sensors[i].name) == 0)
+      return i;
+  return -1;
+}
+
+int Control::GetField(uint8_t sid, const char *fname) {
+  if (fname == 0)
+    return -1;
+  for (int i=0; i<MAX_FIELDS; i++)
+    if (strcasecmp(fname, sensors[sid].fields[i]) == 0)
+      return i;
+  return -1;
 }

@@ -43,7 +43,7 @@ ESP8266WebServer	*ws = 0;
 // #define	SEND(x)	{ Serial.printf("%s", x); ws->sendContent(x); }
 
 static void QuerySensor(int sid, bool html) {
-    Serial.printf("QuerySensor(%d,%s)\n", sid, html ? "html" : "json");
+    // Serial.printf("QuerySensor(%d,%s)\n", sid, html ? "html" : "json");
     const char *sn = control->getSensorName(sid);
 
     if (sn == 0)
@@ -188,6 +188,9 @@ static void handleConfig() {
   ws->chunkedResponseFinalize();
 }
 
+static void handleSetConfig() {
+}
+
 static void handleJsonQuery() {
   const char *uri = ws->uri().c_str();
   // Serial.printf("%s(%s)\n", __FUNCTION__, uri);
@@ -252,6 +255,12 @@ void ws_reg() {
     Serial.printf("%s %s, ", ws->argName(i), ws->arg(i));
   }
   Serial.printf("\n");
+
+  char *json = "{\"triggers\":[{\"trigger\":\"min\",\"sensor\":\"AHT10\",\"field\":\"humidity\",\"type\":\"float\",\"value\":1.23}],\"stoppers\":[]}";
+  Serial.printf("ReadConfig(%s)\n", json);
+  // control->ReadConfig(ws->uri().c_str() + 8);
+  control->ReadConfig(json);
+  Serial.printf("ws_reg done\n");
 }
 
 static void listSensors() {
@@ -298,6 +307,7 @@ void ws_begin() {
   
   ws->onNotFound(handleNotFound);
   ws->on("/config", handleConfig);
+  // ws->on("/set", handleSetConfig);
   ws->on("/sensors", listSensors);
 
   // Root JSON and HTML handlers
