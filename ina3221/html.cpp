@@ -71,12 +71,15 @@ const char *webpage_configure =
 const char *webpage_trigger_head =
   "<h2>Triggers</h2>\n"
   "<table border=\"1\">\n"
+  // Top row
+  "<tr><td>Number</td><td>Type</td><td>Sensor &amp; field</td><td>Min. value</td><td>Max. value</td></tr>\n"
   "";
 const char *webpage_trigger_trail =
   "</table>";
 const char *webpage_stopper_head =
   "<h2>Stoppers</h2>\n"
   "<table border=\"1\">\n"
+  "<tr><td>Number</td><td>Type</td><td>Value</td></tr>\n"
   "";
 const char *webpage_stopper_trail =
   "</table>";
@@ -84,9 +87,9 @@ const char *webpage_stopper_trail =
 const char *webpage_sensor_dropdown_start = "<select name=\"sensors\" id=\"sensors\">";
 const char *webpage_sensor_dropdown_format = "  <option value=\"%s\">%s</option>";
 const char *webpage_sensor_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
-const char *webpage_sensor_dropdown_end = "</select>";
+const char *webpage_sensor_dropdown_end = "</select>\n";
 
 const char *webpage_triggertype_dropdown_start = "<select name=\"triggertypes\" id=\"triggertypes\">";
 const char *webpage_triggertype_dropdown_format = "  <option value=\"%s\">%s</option>";
 const char *webpage_triggertype_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
-const char *webpage_triggertype_dropdown_end = "</select>";
+const char *webpage_triggertype_dropdown_end = "</select>\n";

@@ -377,24 +377,21 @@ void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   triggerTypeDropdown(ws, ttv);
   ws->sendContent("</td><td>");
   sensorFieldDropdown(ws, sn, fn);
-  ws->sendContent("</td><td>");
 
   // Min. value
- if (sensors[sid].fieldtypes[field] == FT_FLOAT)
-    sprintf(v, "<td>%f</td>", triggers[i].data_min.f);
+  if (sensors[sid].fieldtypes[field] == FT_FLOAT)
+    sprintf(v, "</td><td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_min.f);
   else if (sensors[sid].fieldtypes[field] == FT_INT)
-    sprintf(v, "<td>%d</td>", triggers[i].data_min.i);
+    sprintf(v, "</td><td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_min.i);
   ws->sendContent(v);
-
-  ws->sendContent("</td><td>");
 
   // Max. value
   if (sensors[sid].fieldtypes[field] == FT_FLOAT)
-    sprintf(v, "<td>%f</td>", triggers[i].data_max.f);
+    sprintf(v, "</td><td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_max.f);
   else if (sensors[sid].fieldtypes[field] == FT_INT)
-    sprintf(v, "<td>%d</td>", triggers[i].data_max.i);
-
-  ws->sendContent("</td>");
+    sprintf(v, "</td><td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_max.i);
+  ws->sendContent(v);
+  ws->sendContent("\n");
 }
 
 /*
