@@ -368,7 +368,18 @@ void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   const char *sn = sensors[sid].name;
   const char *fn = sensors[sid].fields[field];
 
-  enum tt ttv = TT_MIN;
+  enum tt ttv = TT_NONE;
+  if (triggers[i].trigger_min && triggers[i].trigger_max)
+    ttv = TT_MINMAX;
+  else if (triggers[i].trigger_min)
+    ttv = TT_MIN;
+  else if (triggers[i].trigger_max)
+    ttv = TT_MAX;
+
+  // Serial.printf("Trigger %d : %s %s -> %d\n", i,
+  //   triggers[i].trigger_min ? "min" : "none",
+  //   triggers[i].trigger_max ? "max" : "none",
+  //   (int)ttv);
 
   sprintf(v, "<td>%d</td>", i);
   ws->sendContent(v);
