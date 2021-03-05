@@ -61,7 +61,7 @@ void ads1115_loop(time_t now) {
   prev_ts = now;
 
   float mv = ads->getResult_mV();
-  Serial.printf("Measure %3.1f mV (ts %s)\n", mv, timestamp(now));
+  // Serial.printf("Measure %3.1f mV (ts %s)\n", mv, timestamp(now));
 
   if (control->isRegistering(sensor, now, mv, 0.0, 0.0, 0.0)) {
     control->RegisterData(sensor, now);

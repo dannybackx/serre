@@ -1,5 +1,5 @@
 # Measurement station for I²C based sensors (especially the INA3221)
-(c) 2021 by Danny Backx
+Copyright (c) 2021 by Danny Backx
 
 This is a simple esp8266 based application to measure stuff.
 Goal is to use a sensor like a ina3221 to measure electrical parameters of a device under test,

@@ -153,7 +153,7 @@ static void handleHtmlQuery() {
   }
 
   if (in_configure) {
-    ws->sendContent(webpage_configure);
+    ws->sendContent(webpage_configure_head);
     ws->sendContent(webpage_trigger_head);
     for (int i=0; i<MAX_TRIGGERS; i++) {
       ws->sendContent("<tr>");
@@ -168,8 +168,9 @@ static void handleHtmlQuery() {
       ws->sendContent("</tr>");
     }
     ws->sendContent(webpage_stopper_trail);
+    ws->sendContent(webpage_configure_trail);
   } else {
-    ws->sendContent(webpage_main);
+    ws->sendContent(webpage_main_head);
 
     // Query everything
     if (uri == 0 || uri[1] == 0) {
@@ -187,9 +188,9 @@ static void handleHtmlQuery() {
         return;
       }
     }
+    ws->sendContent(webpage_main_trail);
   }
 
-  ws->sendContent("</body></html>");
   ws->chunkedResponseFinalize();
 }
 
@@ -204,9 +205,9 @@ static void handleStart() {
   }
   
   // FIXME
-  ws->sendContent(webpage_main);
+  ws->sendContent(webpage_main_head);
 
-  ws->sendContent("</body></html>");
+  ws->sendContent(webpage_main_trail);
   ws->chunkedResponseFinalize();
 }
 
@@ -221,9 +222,10 @@ static void handleStop() {
   }
   
   // FIXME
-  ws->sendContent(webpage_main);
+  ws->sendContent(webpage_main_head);
 
-  ws->sendContent("</body></html>");
+  ws->sendContent(webpage_main_trail);
+
   ws->chunkedResponseFinalize();
 }
 

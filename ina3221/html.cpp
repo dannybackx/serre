@@ -23,7 +23,7 @@
  *   THE SOFTWARE.
  */
 
-const char *webpage_main =
+const char *webpage_main_head =
   "<!DOCTYPE html><html>"
   "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
   "<link rel=\"icon\" href=\"data:,\">"
@@ -49,7 +49,10 @@ const char *webpage_main =
   "</form>\n"
   "\n";
 
-const char *webpage_configure =
+const char *webpage_main_trail =
+  "</body></html>";
+
+const char *webpage_configure_head =
   "<!DOCTYPE html><html>"
   "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
   "<link rel=\"icon\" href=\"data:,\">"
@@ -64,9 +67,13 @@ const char *webpage_configure =
   "  <input type=\"submit\" name=\"button\" value=\"Start\" />"
   "  <input type=\"submit\" name=\"button\" value=\"Stop\" />"
   "  <input type=\"submit\" name=\"button\" value=\"Back\" />"
-  "</form>\n"
+  // "</form>\n"
 
   "\n";
+
+const char *webpage_configure_trail =
+  "</form>"
+  "</body></html>";
 
 const char *webpage_trigger_head =
   "<h2>Triggers</h2>\n"

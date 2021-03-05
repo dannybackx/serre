@@ -23,12 +23,10 @@
  *   THE SOFTWARE.
  */
 
-extern const char *webpage_main;
-extern const char *webpage_configure;
-extern const char *webpage_trigger_head;
-extern const char *webpage_trigger_trail;
-extern const char *webpage_stopper_head;
-extern const char *webpage_stopper_trail;
+extern const char *webpage_main_head, *webpage_main_trail;
+extern const char *webpage_configure_head, *webpage_configure_trail;
+extern const char *webpage_trigger_head, *webpage_trigger_trail;
+extern const char *webpage_stopper_head, *webpage_stopper_trail;
 
 extern const char *webpage_sensor_dropdown_start;
 extern const char *webpage_sensor_dropdown_format, *webpage_sensor_dropdown_format_selected;

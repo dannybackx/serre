@@ -95,9 +95,11 @@ void setup() {
 
   int wcr = WL_IDLE_STATUS;
   for (int ix = 0; wcr != WL_CONNECTED && mywifi[ix].ssid != NULL; ix++) {
+    Serial.printf("\nTrying %s ", mywifi[ix].ssid);
     int wifi_tries = 3;
     while (wifi_tries-- >= 0) {
-      Serial.printf("\nTrying (%d %d) %s .. ", ix, wifi_tries, mywifi[ix].ssid);
+      // Serial.printf("\nTrying (%d %d) %s .. ", ix, wifi_tries, mywifi[ix].ssid);
+      Serial.printf(".");
       WiFi.begin(mywifi[ix].ssid, mywifi[ix].pass);
       wcr = WiFi.waitForConnectResult();
       if (wcr == WL_CONNECTED)
@@ -107,7 +109,7 @@ void setup() {
 
   // Reboot if we didn't manage to connect to WiFi
   if (wcr != WL_CONNECTED) {
-    Serial.printf("not connected, restarting .. ");
+    Serial.printf(" not connected, restarting .. ");
     delay(2000);
     ESP.restart();
   }
@@ -117,7 +119,7 @@ void setup() {
   IPAddress gw = WiFi.gatewayIP();
   gws = gw.toString();
 
-  Serial.printf("connected, ip %s, gw %s\n", ips.c_str(), gws.c_str());
+  Serial.printf(" connected, ip %s, gw %s\n", ips.c_str(), gws.c_str());
 
   configTime(TZ_Europe_Brussels, "ntp.telenet.be");
   time_t local, utc;
@@ -189,8 +191,7 @@ void time_is_set(bool from_sntp) {
   time_t now = time(0);
   struct tm *tmp = localtime(&now);
 
-  Serial.printf("settimeofday(%s), time %04d.%02d.%02d %02d:%02d:%02d\n",
-    from_sntp ? "SNTP" : "USER",
+  Serial.printf("Time set to %04d.%02d.%02d %02d:%02d:%02d\n",
     tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
 }
 
