@@ -27,7 +27,7 @@
 
 /* Personal configuration that are not secrets, so moved from secrets.h */
 #define APP_NAME	"measure"
-#define	MY_ALLOC1	8
+#define	MY_ALLOC1	4
 #define	MY_ALLOC2	100
 #define OTA_ID		"measure"
 

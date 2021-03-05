@@ -129,12 +129,21 @@ static void QuerySensors(bool html) {
   ws->chunkedResponseFinalize();
 }
 
+/*
+ * This handles a query on the / root URI
+ * That includes queries such as triggered by one of our buttons, e.g. http://measure.local/?button=Configure
+ *  Specifically, this translates into ws->argName(0) = "button", ws->args(1) = "Configure".
+ */
 static void handleHtmlQuery() {
   const char *uri = ws->uri().c_str();
+  bool in_configure = false;
+
   Serial.printf("%s: uri %s args %d\n", __FUNCTION__, uri, ws->args());
   if (ws->args() > 0) {
     for (uint8_t i = 0; i < ws->args(); i++) {
       Serial.printf("\targ %d : %s - %s\n", i, ws->argName(i), ws->arg(i));
+      if (strcmp(ws->arg(i).c_str(), "Configure") == 0)
+        in_configure = true;
     }
   }
 
@@ -142,23 +151,41 @@ static void handleHtmlQuery() {
     ws->send(500, "Want HTTP/1.1 for chunked responses");
     return;
   }
-  
-  ws->sendContent(webpage_main);
 
-  // Query everything
-  if (uri == 0 || uri[1] == 0) {
-    QuerySensors(true);
-    return;
-  }
+  if (in_configure) {
+    ws->sendContent(webpage_configure);
+    ws->sendContent(webpage_trigger_head);
+    for (int i=0; i<MAX_TRIGGERS; i++) {
+      ws->sendContent("<tr>");
+      control->describeTrigger(ws, i);
+      ws->sendContent("</tr>");
+    }
+    ws->sendContent(webpage_trigger_trail);
+    ws->sendContent(webpage_stopper_head);
+    for (int i=0; i<MAX_TRIGGERS; i++) {
+      ws->sendContent("<tr>");
+      control->describeStopper(ws, i);
+      ws->sendContent("</tr>");
+    }
+    ws->sendContent(webpage_stopper_trail);
+  } else {
+    ws->sendContent(webpage_main);
 
-  // Query for an individual sensor
-  for (int sid=0; sid<MAX_SENSORS; sid++) {
-    const char *sn = control->getSensorName(sid);
-    if (sn == 0)
-      continue;
-    if (strcmp(sn, uri+1) == 0) {	// Prefixed by "/"
-      QuerySensor(sid, true);
+    // Query everything
+    if (uri == 0 || uri[1] == 0) {
+      QuerySensors(true);
       return;
+    }
+
+    // Query for an individual sensor
+    for (int sid=0; sid<MAX_SENSORS; sid++) {
+      const char *sn = control->getSensorName(sid);
+      if (sn == 0)
+        continue;
+      if (strcmp(sn, uri+1) == 0) {	// Prefixed by "/"
+        QuerySensor(sid, true);
+        return;
+      }
     }
   }
 

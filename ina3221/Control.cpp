@@ -146,8 +146,10 @@ const char *Control::getFieldName(int sensor, int field) {
 
 const char *Control::getSensorName(int sensor) {
   if (sensor < 0 || sensor >= nsensors) {
+    // Serial.printf("%s(%d) -> %s\n", __FUNCTION__, sensor, "(null)");
     return 0;
   }
+  // Serial.printf("%s(%d) -> %s\n", __FUNCTION__, sensor, sensors[sensor].name);
   return sensors[sensor].name;
 }
 
@@ -285,6 +287,60 @@ void Control::Start() {
 
 void Control::Stop() {
   manual_stop = true;
+}
+
+const char *Control::stopperType2String(stopper_t t) {
+  switch (t) {
+  case ST_NONE:		return "none";
+  case ST_TIMER:	return "timer";
+  case ST_AMOUNT:	return "amount";
+  }
+}
+
+void Control::describeStopper(ESP8266WebServer *ws, uint8_t i) {
+  char v[32];
+  sprintf(v, "<td>%d</td><td>", i);
+  ws->sendContent(v);
+  ws->sendContent(stopperType2String(stoppers[i].st_tp));
+  sprintf(v, "</td><td>%d</td>", stoppers[i].amount);
+  ws->sendContent(v);
+}
+
+void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
+  char v[32];
+  uint8_t sid = triggers[i].sensorid;
+  uint8_t field = triggers[i].field;
+  enum ft tp = sensors[sid].fieldtypes[field];
+    
+  const char *sn = sensors[sid].name;
+  const char *fn = sensors[sid].fields[field];
+
+  sprintf(v, "<td>%d</td>", i);
+  ws->sendContent(v);
+
+  if (triggers[i].trigger_min) {
+      ws->sendContent("<td>min</td>");
+      ws->sendContent("<td>"); ws->sendContent(sn); ws->sendContent("</td>");
+      ws->sendContent("<td>"); ws->sendContent(fn); ws->sendContent("</td>");
+
+      if (sensors[sid].fieldtypes[field] == FT_FLOAT)
+        sprintf(v, "<td>%f</td>", triggers[i].data_min.f);
+      else if (sensors[sid].fieldtypes[field] == FT_INT)
+        sprintf(v, "<td>%d</td>", triggers[i].data_min.i);
+      ws->sendContent(v);
+  } else if (triggers[i].trigger_max) {
+      ws->sendContent("<td>max</td>");
+      ws->sendContent("<td>"); ws->sendContent(sn); ws->sendContent("</td>");
+      ws->sendContent("<td>"); ws->sendContent(fn); ws->sendContent("</td>");
+
+      if (sensors[sid].fieldtypes[field] == FT_FLOAT)
+        sprintf(v, "<td>%f</td>", triggers[i].data_max.f);
+      else if (sensors[sid].fieldtypes[field] == FT_INT)
+        sprintf(v, "<td>%d</td>", triggers[i].data_max.i);
+      ws->sendContent(v);
+  } else { // FIX ME
+    ws->sendContent("<td>none</td>");
+  }
 }
 
 /*

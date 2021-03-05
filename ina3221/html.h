@@ -24,3 +24,8 @@
  */
 
 extern const char *webpage_main;
+extern const char *webpage_configure;
+extern const char *webpage_trigger_head;
+extern const char *webpage_trigger_trail;
+extern const char *webpage_stopper_head;
+extern const char *webpage_stopper_trail;

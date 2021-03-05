@@ -43,6 +43,40 @@ const char *webpage_main =
    */
   "<p><form>"
   "  <input type=\"submit\" name=\"button\" value=\"Submit\" />"
-  "  <input type=\"submit\" name=\"button\" value=\"Button\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Start\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Stop\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Configure\" />"
   "</form>\n"
   "\n";
+
+const char *webpage_configure =
+  "<!DOCTYPE html><html>"
+  "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+  "<link rel=\"icon\" href=\"data:,\">"
+
+  // Web Page Heading
+  "<title>ESP8266 Web Server</title>"
+  "<body><h1>ESP8266 Web Server</h1>\n"
+
+  "<p><form>"
+  "  <input type=\"submit\" name=\"button\" value=\"Load\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Save\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Start\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Stop\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Back\" />"
+  "</form>\n"
+
+  "\n";
+
+const char *webpage_trigger_head =
+  "<h2>Triggers</h2>\n"
+  "<table border=\"1\">\n"
+  "";
+const char *webpage_trigger_trail =
+  "</table>";
+const char *webpage_stopper_head =
+  "<h2>Stoppers</h2>\n"
+  "<table border=\"1\">\n"
+  "";
+const char *webpage_stopper_trail =
+  "</table>";

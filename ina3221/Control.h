@@ -24,6 +24,8 @@
  */
 
 #include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 
 enum ft {
   FT_NONE,
@@ -117,6 +119,8 @@ public:
 
   const char *WriteConfig();
   void ReadConfig(const char *);
+  void describeTrigger(ESP8266WebServer *ws, uint8_t i);
+  void describeStopper(ESP8266WebServer *ws, uint8_t i);
 
 private:
   int		nalloc;
@@ -145,6 +149,8 @@ private:
   const char *FieldType(enum ft);
   int GetSensor(const char *);
   int GetField(uint8_t, const char *);
+
+  const char *stopperType2String(stopper_t);
 };
 
 extern Control *control;
