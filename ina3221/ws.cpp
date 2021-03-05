@@ -138,10 +138,10 @@ static void handleHtmlQuery() {
   const char *uri = ws->uri().c_str();
   bool in_configure = false;
 
-  Serial.printf("%s: uri %s args %d\n", __FUNCTION__, uri, ws->args());
+  // Serial.printf("%s: uri %s args %d\n", __FUNCTION__, uri, ws->args());
   if (ws->args() > 0) {
     for (uint8_t i = 0; i < ws->args(); i++) {
-      Serial.printf("\targ %d : %s - %s\n", i, ws->argName(i), ws->arg(i));
+      // Serial.printf("\targ %d : %s - %s\n", i, ws->argName(i), ws->arg(i));
       if (strcmp(ws->arg(i).c_str(), "Configure") == 0)
         in_configure = true;
     }
@@ -197,6 +197,23 @@ static void handleStart() {
   const char *uri = ws->uri().c_str();
 
   control->Start();
+
+  if (! ws->chunkedResponseModeStart(200, "text/html")) {
+    ws->send(500, "Want HTTP/1.1 for chunked responses");
+    return;
+  }
+  
+  // FIXME
+  ws->sendContent(webpage_main);
+
+  ws->sendContent("</body></html>");
+  ws->chunkedResponseFinalize();
+}
+
+static void handleStop() {
+  const char *uri = ws->uri().c_str();
+
+  control->Stop();
 
   if (! ws->chunkedResponseModeStart(200, "text/html")) {
     ws->send(500, "Want HTTP/1.1 for chunked responses");
@@ -278,7 +295,8 @@ static void handleNotFound() {
   ws->send(404, "text/plain", message);
 }
 
-void ws_reg() {
+#if 0
+static void handleRegex() {
     // String user = ws->pathArg(0);
     // String device = ws->pathArg(1);
     // ws->send(200, "text/plain", "User: '" + user + "' and Device: '" + device + "'");
@@ -293,8 +311,9 @@ void ws_reg() {
   Serial.printf("ReadConfig(%s)\n", json);
   // control->ReadConfig(ws->uri().c_str() + 8);
   control->ReadConfig(json);
-  Serial.printf("ws_reg done\n");
+  Serial.printf("handleRegex done\n");
 }
+#endif
 
 static void listSensors() {
   const char *uri = ws->uri().c_str();
@@ -344,9 +363,12 @@ void ws_begin() {
   ws->on("/sensors", listSensors);
 
   // Root JSON and HTML handlers
-  ws->on("/", handleHtmlQuery);
+  ws->on("/", handleHtmlQuery);		// Also dispatches the buttons on our web pages, e.g. http://measure.local/?button=Configure
   ws->on("/json", handleJsonQuery);
+
+  // Easy access for triggering remotely
   ws->on("/start", handleStart);
+  ws->on("/stop", handleStop);
 
   // Per sensor handlers for HTML and JSON
   for (int sid=0; sid<MAX_SENSORS; sid++) {
@@ -362,9 +384,9 @@ void ws_begin() {
     ws->on(s, handleHtmlQuery);
   }
 
-  // ws->on(UriRegex("^\\/users\\/([0-9]+)\\/devices\\/([0-9]+)$"), ws_reg);
-  UriRegex r = UriRegex("^\\/config\\/.*$");
-  ws->on(r, ws_reg);
+  // Not sure if we need this
+  // UriRegex r = UriRegex("^\\/config\\/.*$");
+  // ws->on(r, handleRegex);
 
   ws->begin();
   Serial.printf("Web server started, port %d\n", 80);

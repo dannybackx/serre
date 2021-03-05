@@ -29,3 +29,11 @@ extern const char *webpage_trigger_head;
 extern const char *webpage_trigger_trail;
 extern const char *webpage_stopper_head;
 extern const char *webpage_stopper_trail;
+
+extern const char *webpage_sensor_dropdown_start;
+extern const char *webpage_sensor_dropdown_format, *webpage_sensor_dropdown_format_selected;
+extern const char *webpage_sensor_dropdown_end;
+
+extern const char *webpage_triggertype_dropdown_start;
+extern const char *webpage_triggertype_dropdown_format, *webpage_triggertype_dropdown_format_selected;
+extern const char *webpage_triggertype_dropdown_end;

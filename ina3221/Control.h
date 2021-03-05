@@ -34,6 +34,17 @@ enum ft {
   FT_PIN
 };
 
+enum tt {
+  TT_NONE,
+  TT_MIN,
+  TT_MAX,
+  TT_MINMAX,
+
+  // Add here
+
+  TT_LAST
+};
+
 #define	MAX_SENSORS	8
 #define	MAX_FIELDS	4
 #define	MAX_TRIGGERS	4
@@ -151,6 +162,9 @@ private:
   int GetField(uint8_t, const char *);
 
   const char *stopperType2String(stopper_t);
+  void sensorFieldDropdown(ESP8266WebServer *ws, const char *sensor, const char *field);
+  void triggerTypeDropdown(ESP8266WebServer *ws, enum tt);
+  const char *triggerType2String(enum tt);
 };
 
 extern Control *control;

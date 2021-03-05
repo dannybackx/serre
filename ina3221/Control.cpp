@@ -25,6 +25,7 @@
 
 #include <Control.h>
 #include <ArduinoJson.h>
+#include <html.h>
 
 Control *control;
 
@@ -306,6 +307,58 @@ void Control::describeStopper(ESP8266WebServer *ws, uint8_t i) {
   ws->sendContent(v);
 }
 
+/*
+ * Build a dropdown with sensor/field combination, with specified items already preselected
+ */
+void Control::sensorFieldDropdown(ESP8266WebServer *ws, const char *sensor, const char *field) {
+  ws->sendContent(webpage_sensor_dropdown_start);
+  // Serial.printf("Sent : %s\n", webpage_sensor_dropdown_start);
+  for (int sid=0; sid<MAX_SENSORS; sid++)
+    if (sensors[sid].name != 0) {
+      for (int fid=0; fid<MAX_FIELDS; fid++)
+        if (sensors[sid].fields[fid] != 0) {
+	  char l[120], comb[30];
+	  sprintf(comb, "%s - %s", sensors[sid].name, sensors[sid].fields[fid]);
+
+	  if (strcmp(sensors[sid].name, sensor) == 0 && strcmp(sensors[sid].fields[fid], field) == 0)
+	    sprintf(l, webpage_sensor_dropdown_format_selected, comb, comb);
+	  else
+	    sprintf(l, webpage_sensor_dropdown_format, comb, comb);
+	  ws->sendContent(l);
+	  // Serial.printf("Sent : %s\n", l);
+      }
+    }
+
+  ws->sendContent(webpage_sensor_dropdown_end);
+  // Serial.printf("Sent : %s\n", webpage_sensor_dropdown_end);
+}
+
+const char *Control::triggerType2String(enum tt t) {
+  switch (t) {
+  case TT_NONE:		return "none";
+  case TT_MIN:		return "Min";
+  case TT_MAX:		return "Max";
+  case TT_MINMAX:	return "MinMax";
+  }
+}
+
+void Control::triggerTypeDropdown(ESP8266WebServer *ws, enum tt t) {
+  ws->sendContent(webpage_triggertype_dropdown_start);
+
+  for (int ii=0; ii < (int)TT_LAST; ++ii) {
+    enum tt i = (enum tt) ii;
+    char l[80];
+
+    if (t == i)
+      sprintf(l, webpage_triggertype_dropdown_format_selected, triggerType2String(i), triggerType2String(i));
+    else
+      sprintf(l, webpage_triggertype_dropdown_format, triggerType2String(i), triggerType2String(i));
+    ws->sendContent(l);
+  }
+
+  ws->sendContent(webpage_triggertype_dropdown_end);
+}
+
 void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   char v[32];
   uint8_t sid = triggers[i].sensorid;
@@ -315,32 +368,33 @@ void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   const char *sn = sensors[sid].name;
   const char *fn = sensors[sid].fields[field];
 
+  enum tt ttv = TT_MIN;
+
   sprintf(v, "<td>%d</td>", i);
   ws->sendContent(v);
 
-  if (triggers[i].trigger_min) {
-      ws->sendContent("<td>min</td>");
-      ws->sendContent("<td>"); ws->sendContent(sn); ws->sendContent("</td>");
-      ws->sendContent("<td>"); ws->sendContent(fn); ws->sendContent("</td>");
+  ws->sendContent("<td>");
+  triggerTypeDropdown(ws, ttv);
+  ws->sendContent("</td><td>");
+  sensorFieldDropdown(ws, sn, fn);
+  ws->sendContent("</td><td>");
 
-      if (sensors[sid].fieldtypes[field] == FT_FLOAT)
-        sprintf(v, "<td>%f</td>", triggers[i].data_min.f);
-      else if (sensors[sid].fieldtypes[field] == FT_INT)
-        sprintf(v, "<td>%d</td>", triggers[i].data_min.i);
-      ws->sendContent(v);
-  } else if (triggers[i].trigger_max) {
-      ws->sendContent("<td>max</td>");
-      ws->sendContent("<td>"); ws->sendContent(sn); ws->sendContent("</td>");
-      ws->sendContent("<td>"); ws->sendContent(fn); ws->sendContent("</td>");
+  // Min. value
+ if (sensors[sid].fieldtypes[field] == FT_FLOAT)
+    sprintf(v, "<td>%f</td>", triggers[i].data_min.f);
+  else if (sensors[sid].fieldtypes[field] == FT_INT)
+    sprintf(v, "<td>%d</td>", triggers[i].data_min.i);
+  ws->sendContent(v);
 
-      if (sensors[sid].fieldtypes[field] == FT_FLOAT)
-        sprintf(v, "<td>%f</td>", triggers[i].data_max.f);
-      else if (sensors[sid].fieldtypes[field] == FT_INT)
-        sprintf(v, "<td>%d</td>", triggers[i].data_max.i);
-      ws->sendContent(v);
-  } else { // FIX ME
-    ws->sendContent("<td>none</td>");
-  }
+  ws->sendContent("</td><td>");
+
+  // Max. value
+  if (sensors[sid].fieldtypes[field] == FT_FLOAT)
+    sprintf(v, "<td>%f</td>", triggers[i].data_max.f);
+  else if (sensors[sid].fieldtypes[field] == FT_INT)
+    sprintf(v, "<td>%d</td>", triggers[i].data_max.i);
+
+  ws->sendContent("</td>");
 }
 
 /*

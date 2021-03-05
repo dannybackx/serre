@@ -80,3 +80,13 @@ const char *webpage_stopper_head =
   "";
 const char *webpage_stopper_trail =
   "</table>";
+
+const char *webpage_sensor_dropdown_start = "<select name=\"sensors\" id=\"sensors\">";
+const char *webpage_sensor_dropdown_format = "  <option value=\"%s\">%s</option>";
+const char *webpage_sensor_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
+const char *webpage_sensor_dropdown_end = "</select>";
+
+const char *webpage_triggertype_dropdown_start = "<select name=\"triggertypes\" id=\"triggertypes\">";
+const char *webpage_triggertype_dropdown_format = "  <option value=\"%s\">%s</option>";
+const char *webpage_triggertype_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
+const char *webpage_triggertype_dropdown_end = "</select>";
