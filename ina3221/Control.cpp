@@ -303,10 +303,10 @@ const char *Control::stopperType2String(stopper_t t) {
 
 void Control::describeStopper(ESP8266WebServer *ws, uint8_t i) {
   char v[32];
-  sprintf(v, "<td>%d</td><td>", i);
+  snprintf(v, sizeof(v), "<td>%d</td><td>", i);
   ws->sendContent(v);
   ws->sendContent(stopperType2String(stoppers[i].st_tp));
-  sprintf(v, "</td><td>%d</td>", stoppers[i].amount);
+  snprintf(v, sizeof(v), "</td><td>%d</td>", stoppers[i].amount);
   ws->sendContent(v);
 }
 
@@ -320,12 +320,12 @@ void Control::sensorFieldDropdown(ESP8266WebServer *ws, const char *sensor, cons
       for (int fid=0; fid<MAX_FIELDS; fid++)
         if (sensors[sid].fields[fid] != 0) {
 	  char l[120], comb[30];
-	  sprintf(comb, "%s - %s", sensors[sid].name, sensors[sid].fields[fid]);
+	  snprintf(comb, sizeof(comb), "%s - %s", sensors[sid].name, sensors[sid].fields[fid]);
 
 	  if (strcmp(sensors[sid].name, sensor) == 0 && strcmp(sensors[sid].fields[fid], field) == 0)
-	    sprintf(l, webpage_sensor_dropdown_format_selected, comb, comb);
+	    snprintf(l, sizeof(l), webpage_sensor_dropdown_format_selected, comb, comb);
 	  else
-	    sprintf(l, webpage_sensor_dropdown_format, comb, comb);
+	    snprintf(l, sizeof(l), webpage_sensor_dropdown_format, comb, comb);
 	  ws->sendContent(l);
       }
     }
@@ -350,9 +350,9 @@ void Control::triggerTypeDropdown(ESP8266WebServer *ws, enum tt t) {
     char l[80];
 
     if (t == i)
-      sprintf(l, webpage_triggertype_dropdown_format_selected, triggerType2String(i), triggerType2String(i));
+      snprintf(l, sizeof(l), webpage_triggertype_dropdown_format_selected, triggerType2String(i), triggerType2String(i));
     else
-      sprintf(l, webpage_triggertype_dropdown_format, triggerType2String(i), triggerType2String(i));
+      snprintf(l, sizeof(l), webpage_triggertype_dropdown_format, triggerType2String(i), triggerType2String(i));
     ws->sendContent(l);
   }
 
