@@ -28,15 +28,15 @@ extern const char *webpage_configure_head, *webpage_configure_trail;
 extern const char *webpage_trigger_head, *webpage_trigger_trail;
 extern const char *webpage_stopper_head, *webpage_stopper_trail;
 
-extern const char *webpage_sensor_dropdown_start;
+extern const char *webpage_sensor_dropdown_start_format;
 extern const char *webpage_sensor_dropdown_format, *webpage_sensor_dropdown_format_selected;
 extern const char *webpage_sensor_dropdown_end;
 
-extern const char *webpage_triggertype_dropdown_start;
+extern const char *webpage_triggertype_dropdown_start_format;
 extern const char *webpage_triggertype_dropdown_format, *webpage_triggertype_dropdown_format_selected;
 extern const char *webpage_triggertype_dropdown_end;
 
-extern const char *webpage_stopper_dropdown_start;
+extern const char *webpage_stopper_dropdown_start_format;
 extern const char *webpage_stopper_dropdown_format, *webpage_stopper_dropdown_format_selected;
 extern const char *webpage_stopper_dropdown_end;
 

@@ -57,8 +57,8 @@ const char *webpage_configure_head =
   "<h1>Measure - Configuration</h1>\n"
 
   "<p><form>"
-  "  <input type=\"submit\" name=\"button\" value=\"Load\" />\n"
-  "  <input type=\"submit\" name=\"button\" value=\"Save\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Import\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Export\" />\n"
   "  <input type=\"submit\" name=\"button\" value=\"Start\" />\n"
   "  <input type=\"submit\" name=\"button\" value=\"Stop\" />\n"
   "  <input type=\"submit\" name=\"button\" value=\"Back\" />\n"
@@ -67,6 +67,9 @@ const char *webpage_configure_head =
   "\n";
 
 const char *webpage_configure_trail =
+  "<p>\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Save\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Cancel\" />\n"
   "</form>"
   "</body></html>";
 
@@ -86,17 +89,17 @@ const char *webpage_stopper_head =
 const char *webpage_stopper_trail =
   "</table>";
 
-const char *webpage_sensor_dropdown_start = "<select name=\"sensors\" id=\"sensors\">\n";
+const char *webpage_sensor_dropdown_start_format = "<select name=\"sensors-%d\" id=\"sensors-%d\">\n";
 const char *webpage_sensor_dropdown_format = "  <option value=\"%s\">%s</option>\n";
 const char *webpage_sensor_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>\n";
 const char *webpage_sensor_dropdown_end = "</select>\n";
 
-const char *webpage_triggertype_dropdown_start = "<select name=\"triggertypes\" id=\"triggertypes\">\n";
+const char *webpage_triggertype_dropdown_start_format = "<select name=\"triggertypes-%d\" id=\"triggertypes-%d\">\n";
 const char *webpage_triggertype_dropdown_format = "  <option value=\"%s\">%s</option>\n";
 const char *webpage_triggertype_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>\n";
 const char *webpage_triggertype_dropdown_end = "</select>\n";
 
-const char *webpage_stopper_dropdown_start = "<select name=\"stoppertypes\" id=\"stoppertypes\">\n";
+const char *webpage_stopper_dropdown_start_format = "<select name=\"stoppertypes-%d\" id=\"stoppertypes-%d\">\n";
 const char *webpage_stopper_dropdown_format = "  <option value=\"%s\">%s</option>\n";
 const char *webpage_stopper_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>\n";
 const char *webpage_stopper_dropdown_end = "</select>\n";

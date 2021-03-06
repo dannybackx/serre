@@ -305,17 +305,18 @@ void Control::describeStopper(ESP8266WebServer *ws, uint8_t i) {
   char v[64];
   snprintf(v, sizeof(v), "<td>%d</td><td>", i);
   ws->sendContent(v);
-  stopperTypeDropdown(ws, stoppers[i].st_tp);
+  stopperTypeDropdown(ws, i, stoppers[i].st_tp);
   snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%d\"> </td>", stoppers[i].amount);
   ws->sendContent(v);
 }
 
-void Control::stopperTypeDropdown(ESP8266WebServer *ws, stopper_t t) {
-  ws->sendContent(webpage_stopper_dropdown_start);
+void Control::stopperTypeDropdown(ESP8266WebServer *ws, uint8_t sti, stopper_t t) {
+  char l[80];
+  snprintf(l, sizeof(l), webpage_stopper_dropdown_start_format, sti, sti);
+  ws->sendContent(l);
 
   for (int ii=0; ii < (int)ST_LAST; ++ii) {
     stopper_t i = (stopper_t) ii;
-    char l[80];
 
     if (t == i)
       snprintf(l, sizeof(l), webpage_stopper_dropdown_format_selected, stopperType2String(i), stopperType2String(i));
@@ -330,13 +331,17 @@ void Control::stopperTypeDropdown(ESP8266WebServer *ws, stopper_t t) {
 /*
  * Build a dropdown with sensor/field combination, with specified items already preselected
  */
-void Control::sensorFieldDropdown(ESP8266WebServer *ws, const char *sensor, const char *field) {
-  ws->sendContent(webpage_sensor_dropdown_start);
+void Control::sensorFieldDropdown(ESP8266WebServer *ws, uint8_t i, const char *sensor, const char *field) {
+  char l[120];
+
+  snprintf(l, sizeof(l), webpage_sensor_dropdown_start_format, i, i);
+  ws->sendContent(l);
+
   for (int sid=0; sid<MAX_SENSORS; sid++)
     if (sensors[sid].name != 0) {
       for (int fid=0; fid<MAX_FIELDS; fid++)
         if (sensors[sid].fields[fid] != 0) {
-	  char l[120], comb[30];
+	  char comb[30];
 	  snprintf(comb, sizeof(comb), "%s - %s", sensors[sid].name, sensors[sid].fields[fid]);
 
 	  if (strcmp(sensors[sid].name, sensor) == 0 && strcmp(sensors[sid].fields[fid], field) == 0)
@@ -359,12 +364,16 @@ const char *Control::triggerType2String(enum tt t) {
   }
 }
 
-void Control::triggerTypeDropdown(ESP8266WebServer *ws, enum tt t) {
-  ws->sendContent(webpage_triggertype_dropdown_start);
+/*
+ * Create a dropdown menu for trigger tri, with default value t
+ */
+void Control::triggerTypeDropdown(ESP8266WebServer *ws, uint8_t tri, enum tt t) {
+  char l[80];
+  snprintf(l, sizeof(l), webpage_triggertype_dropdown_start_format, tri, tri);
+  ws->sendContent(l);
 
   for (int ii=0; ii < (int)TT_LAST; ++ii) {
     enum tt i = (enum tt) ii;
-    char l[80];
 
     if (t == i)
       snprintf(l, sizeof(l), webpage_triggertype_dropdown_format_selected, triggerType2String(i), triggerType2String(i));
@@ -397,9 +406,9 @@ void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   ws->sendContent(v);
 
   ws->sendContent("<td>");
-  triggerTypeDropdown(ws, ttv);
+  triggerTypeDropdown(ws, i, ttv);
   ws->sendContent("</td><td>");
-  sensorFieldDropdown(ws, sn, fn);
+  sensorFieldDropdown(ws, i, sn, fn);
 
   // Min. value
   v[0] = 0;
@@ -412,9 +421,9 @@ void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   // Max. value
   v[0] = 0;
   if (sensors[sid].fieldtypes[field] == FT_FLOAT) {
-    snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_max.f);
+    snprintf(v, sizeof(v), "<td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_max.f);
   } else if (sensors[sid].fieldtypes[field] == FT_INT) {
-    snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_max.i);
+    snprintf(v, sizeof(v), "<td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_max.i);
   }
   ws->sendContent(v);
   ws->sendContent("\n");

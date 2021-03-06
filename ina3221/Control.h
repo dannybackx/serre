@@ -166,10 +166,10 @@ private:
   int GetField(uint8_t, const char *);
 
   const char *stopperType2String(stopper_t);
-  void sensorFieldDropdown(ESP8266WebServer *ws, const char *sensor, const char *field);
-  void triggerTypeDropdown(ESP8266WebServer *ws, enum tt);
+  void sensorFieldDropdown(ESP8266WebServer *ws, uint8_t i, const char *sensor, const char *field);
+  void triggerTypeDropdown(ESP8266WebServer *ws, uint8_t tri, enum tt);
   const char *triggerType2String(enum tt);
-  void stopperTypeDropdown(ESP8266WebServer *ws, stopper_t t);
+  void stopperTypeDropdown(ESP8266WebServer *ws, uint8_t sti, stopper_t t);
 };
 
 extern Control *control;
