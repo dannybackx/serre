@@ -44,6 +44,7 @@ void ConfigureOTA();
 #include "ina3221.h"
 #include "d1mini.h"
 #include "ads1115.h"
+#include <html.h>
 
 struct mywifi {
   const char *ssid, *pass;
@@ -77,6 +78,7 @@ int		verbose = 0;
 String		ips, gws;
 int		state = 0;
 int		manual = 0;
+time_t		boot_time = 0;
 
 // Arduino setup function
 void setup() {
@@ -191,8 +193,13 @@ void time_is_set(bool from_sntp) {
   time_t now = time(0);
   struct tm *tmp = localtime(&now);
 
-  Serial.printf("Time set to %04d.%02d.%02d %02d:%02d:%02d\n",
-    tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
+  const char *fmt = time_msg_format;
+  if (boot_time == 0) {
+    boot_time = now;
+    fmt = boot_msg_format;
+  }
+
+  Serial.printf(fmt, tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
 }
 
 void ConfigureOTA() {
@@ -222,7 +229,7 @@ void ConfigureOTA() {
 char *timestamp(time_t t) {
   static char ret[80];
   tm *tmp = localtime(&t);
-  sprintf(ret, "%04d.%02d.%02d %02d:%02d:%02d",
+  sprintf(ret, timestamp_format,
 	tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
   return &ret[0];
 }

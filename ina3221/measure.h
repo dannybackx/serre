@@ -33,3 +33,5 @@
 
 extern char		*timestamp(time_t);
 extern WiFiClient	espClient;
+extern String		ips, gws;
+extern time_t		boot_time;

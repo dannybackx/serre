@@ -23,21 +23,19 @@
  *   THE SOFTWARE.
  */
 
-const char *webpage_main_head =
+const char *webpage_general_head =
   "<!DOCTYPE html><html>"
   "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-  "<link rel=\"icon\" href=\"data:,\">"
-  // CSS to style the on/off buttons
-  // Feel free to change the background-color and font-size attributes to fit your preferences
-  "<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}"
-  ".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;"
-  "text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}"
-  ".button2 {background-color: #77878A;}</style></head>"
 
   // Web Page Heading
   "<title>ESP8266 Web Server</title>"
   "<body><h1>ESP8266 Web Server</h1>\n"
+  "";
 
+const char *webpage_general_trail =
+  "</body></html>\n";
+
+const char *webpage_main_head =
   /*
    * Include trial buttons
    */
@@ -100,3 +98,7 @@ const char *webpage_triggertype_dropdown_start = "<select name=\"triggertypes\" 
 const char *webpage_triggertype_dropdown_format = "  <option value=\"%s\">%s</option>";
 const char *webpage_triggertype_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
 const char *webpage_triggertype_dropdown_end = "</select>\n";
+
+const char *boot_msg_format = "Boot, time set to %04d.%02d.%02d %02d:%02d:%02d\n";
+const char *time_msg_format = "Time set to %04d.%02d.%02d %02d:%02d:%02d\n";
+const char *timestamp_format = "%04d.%02d.%02d %02d:%02d:%02d";

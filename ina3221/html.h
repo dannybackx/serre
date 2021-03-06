@@ -35,3 +35,7 @@ extern const char *webpage_sensor_dropdown_end;
 extern const char *webpage_triggertype_dropdown_start;
 extern const char *webpage_triggertype_dropdown_format, *webpage_triggertype_dropdown_format_selected;
 extern const char *webpage_triggertype_dropdown_end;
+
+extern const char *webpage_general_head, *webpage_general_trail;
+extern const char *boot_msg_format, *time_msg_format;
+extern const char *timestamp_format;

@@ -170,6 +170,7 @@ static void handleHtmlQuery() {
     ws->sendContent(webpage_stopper_trail);
     ws->sendContent(webpage_configure_trail);
   } else {
+    ws->sendContent(webpage_general_head);
     ws->sendContent(webpage_main_head);
 
     // Query everything
@@ -205,6 +206,7 @@ static void handleStart() {
   }
   
   // FIXME
+  ws->sendContent(webpage_general_head);
   ws->sendContent(webpage_main_head);
 
   ws->sendContent(webpage_main_trail);
@@ -222,6 +224,7 @@ static void handleStop() {
   }
   
   // FIXME
+  ws->sendContent(webpage_general_head);
   ws->sendContent(webpage_main_head);
 
   ws->sendContent(webpage_main_trail);
@@ -325,21 +328,8 @@ static void listSensors() {
     return;
   }
   
-  ws->sendContent(
-	"<!DOCTYPE html><html>"
-	"<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-	"<link rel=\"icon\" href=\"data:,\">"
-	// CSS to style the on/off buttons
-	// Feel free to change the background-color and font-size attributes to fit your preferences
-	"<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}"
-	".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;"
-	"text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}"
-	".button2 {background-color: #77878A;}</style></head>"
-
-	// Web Page Heading
-	"<title>ESP8266 Web Server</title>"
-	"<body><h1>ESP8266 Web Server</h1>\n"
-	"\n\n<ul>\n");
+  ws->sendContent(webpage_general_head);
+  ws->sendContent("\n\n<ul>\n");
 
   // Query for an individual sensor
   for (int sid=0; sid<MAX_SENSORS; sid++) {
@@ -352,7 +342,30 @@ static void listSensors() {
     ws->sendContent(line);
   }
 
-  ws->sendContent("</ul></body></html>");
+  ws->sendContent("</ul>");
+  ws->sendContent(webpage_general_trail);
+  ws->chunkedResponseFinalize();
+}
+
+static void handleStatus() {
+  char line[120];
+
+  if (! ws->chunkedResponseModeStart(200, "text/html")) {
+    ws->send(500, "Want HTTP/1.1 for chunked responses");
+    return;
+  }
+
+  ws->sendContent(webpage_general_head);
+  sprintf(line, "IP address %s, gateway %s\n", ips.c_str(), gws.c_str());
+  ws->sendContent(line);
+
+  sprintf(line, "<br>Boot at %s, ", timestamp(boot_time));
+  int l = strlen(line);
+  time_t now = time(0);
+  sprintf(line + l, "time is now %s\n", timestamp(now));
+  ws->sendContent(line);
+
+  ws->sendContent(webpage_general_trail);
   ws->chunkedResponseFinalize();
 }
 
@@ -363,6 +376,7 @@ void ws_begin() {
   ws->on("/config", handleConfig);
   // ws->on("/set", handleSetConfig);
   ws->on("/sensors", listSensors);
+  ws->on("/status", handleStatus);
 
   // Root JSON and HTML handlers
   ws->on("/", handleHtmlQuery);		// Also dispatches the buttons on our web pages, e.g. http://measure.local/?button=Configure
