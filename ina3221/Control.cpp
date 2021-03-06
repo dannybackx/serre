@@ -45,8 +45,10 @@ Control::Control() {
     sensors[i].fn = 0;
     sensors[i].mdelay = 10;
     sensors[i].ts = 0;
-    for (int j=0; j<MAX_FIELDS; j++)
-      sensors[i].data[j].i = 0;
+    for (int j=0; j<MAX_FIELDS; j++) {
+      sensors[i].fieldtypes[j] = FT_NONE;
+      sensors[i].fields[j] = 0;
+    }
   }
   for (int i=0; i<MAX_TRIGGERS; i++) {
     triggers[i].trigger_min = false;
@@ -82,11 +84,14 @@ void Control::LogData() {
 }
 
 int Control::RegisterSensor(const char *name) {
-  // Serial.printf("RegisterSensor(%s) -> %d\n", name, nsensors);
   if (nsensors == MAX_SENSORS)
     return -1;
   sensors[nsensors].name = name;
   sensors[nsensors].fn = 0;
+  for (int i=0; i<MAX_FIELDS; i++) {
+    sensors[nsensors].fields[i] = 0;
+    sensors[nsensors].fieldtypes[i] = FT_NONE;
+  }
   return nsensors++;
 }
 
@@ -147,10 +152,8 @@ const char *Control::getFieldName(int sensor, int field) {
 
 const char *Control::getSensorName(int sensor) {
   if (sensor < 0 || sensor >= nsensors) {
-    // Serial.printf("%s(%d) -> %s\n", __FUNCTION__, sensor, "(null)");
     return 0;
   }
-  // Serial.printf("%s(%d) -> %s\n", __FUNCTION__, sensor, sensors[sensor].name);
   return sensors[sensor].name;
 }
 
@@ -312,7 +315,6 @@ void Control::describeStopper(ESP8266WebServer *ws, uint8_t i) {
  */
 void Control::sensorFieldDropdown(ESP8266WebServer *ws, const char *sensor, const char *field) {
   ws->sendContent(webpage_sensor_dropdown_start);
-  // Serial.printf("Sent : %s\n", webpage_sensor_dropdown_start);
   for (int sid=0; sid<MAX_SENSORS; sid++)
     if (sensors[sid].name != 0) {
       for (int fid=0; fid<MAX_FIELDS; fid++)
@@ -325,12 +327,10 @@ void Control::sensorFieldDropdown(ESP8266WebServer *ws, const char *sensor, cons
 	  else
 	    sprintf(l, webpage_sensor_dropdown_format, comb, comb);
 	  ws->sendContent(l);
-	  // Serial.printf("Sent : %s\n", l);
       }
     }
 
   ws->sendContent(webpage_sensor_dropdown_end);
-  // Serial.printf("Sent : %s\n", webpage_sensor_dropdown_end);
 }
 
 const char *Control::triggerType2String(enum tt t) {
@@ -360,7 +360,7 @@ void Control::triggerTypeDropdown(ESP8266WebServer *ws, enum tt t) {
 }
 
 void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
-  char v[32];
+  char v[64];
   uint8_t sid = triggers[i].sensorid;
   uint8_t field = triggers[i].field;
   enum ft tp = sensors[sid].fieldtypes[field];
@@ -376,12 +376,7 @@ void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   else if (triggers[i].trigger_max)
     ttv = TT_MAX;
 
-  // Serial.printf("Trigger %d : %s %s -> %d\n", i,
-  //   triggers[i].trigger_min ? "min" : "none",
-  //   triggers[i].trigger_max ? "max" : "none",
-  //   (int)ttv);
-
-  sprintf(v, "<td>%d</td>", i);
+  snprintf(v, sizeof(v), "<td>%d</td>", i);
   ws->sendContent(v);
 
   ws->sendContent("<td>");
@@ -390,17 +385,20 @@ void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   sensorFieldDropdown(ws, sn, fn);
 
   // Min. value
+  v[0] = 0;
   if (sensors[sid].fieldtypes[field] == FT_FLOAT)
-    sprintf(v, "</td><td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_min.f);
+    snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_min.f);
   else if (sensors[sid].fieldtypes[field] == FT_INT)
-    sprintf(v, "</td><td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_min.i);
+    snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_min.i);
   ws->sendContent(v);
 
   // Max. value
-  if (sensors[sid].fieldtypes[field] == FT_FLOAT)
-    sprintf(v, "</td><td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_max.f);
-  else if (sensors[sid].fieldtypes[field] == FT_INT)
-    sprintf(v, "</td><td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_max.i);
+  v[0] = 0;
+  if (sensors[sid].fieldtypes[field] == FT_FLOAT) {
+    snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_max.f);
+  } else if (sensors[sid].fieldtypes[field] == FT_INT) {
+    snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_max.i);
+  }
   ws->sendContent(v);
   ws->sendContent("\n");
 }
@@ -427,7 +425,6 @@ const char *Control::WriteConfig() {
       tr[i]["trigger"] = "min";
       tr[i]["sensor"] = sn;
       tr[i]["field"] = fn;
-      // tr[i]["type"] = FieldType(tp);
 
       if (sensors[sid].fieldtypes[field] == FT_FLOAT)
         tr[i]["value"] = triggers[i].data_min.f;
@@ -437,7 +434,6 @@ const char *Control::WriteConfig() {
       tr[i]["trigger"] = "max";
       tr[i]["sensor"] = sn;
       tr[i]["field"] = fn;
-      // tr[i]["type"] = FieldType(tp);
 
       if (sensors[sid].fieldtypes[field] == FT_FLOAT)
         tr[i]["value"] = triggers[i].data_max.f;
