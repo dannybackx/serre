@@ -153,6 +153,7 @@ static void handleHtmlQuery() {
   }
 
   if (in_configure) {
+    ws->sendContent(webpage_general_head);
     ws->sendContent(webpage_configure_head);
     ws->sendContent(webpage_trigger_head);
     for (int i=0; i<MAX_TRIGGERS; i++) {
@@ -169,6 +170,7 @@ static void handleHtmlQuery() {
     }
     ws->sendContent(webpage_stopper_trail);
     ws->sendContent(webpage_configure_trail);
+    ws->sendContent(webpage_general_trail);
   } else {
     ws->sendContent(webpage_general_head);
     ws->sendContent(webpage_main_head);
@@ -190,6 +192,7 @@ static void handleHtmlQuery() {
       }
     }
     ws->sendContent(webpage_main_trail);
+    ws->sendContent(webpage_general_trail);
   }
 
   ws->chunkedResponseFinalize();

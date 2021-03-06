@@ -25,25 +25,25 @@
 
 const char *webpage_general_head =
   "<!DOCTYPE html><html>"
-  "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-
-  // Web Page Heading
-  "<title>ESP8266 Web Server</title>"
-  "<body><h1>ESP8266 Web Server</h1>\n"
+  "<head>\n"
   "";
 
 const char *webpage_general_trail =
   "</body></html>\n";
 
 const char *webpage_main_head =
+  // Web Page Heading
+  "<title>Measurement station web server</title>"
+  "</head><body>\n"
+  "<h1>Measurement station web server</h1>\n"
   /*
    * Include trial buttons
    */
   "<p><form>"
-  "  <input type=\"submit\" name=\"button\" value=\"Submit\" />"
-  "  <input type=\"submit\" name=\"button\" value=\"Start\" />"
-  "  <input type=\"submit\" name=\"button\" value=\"Stop\" />"
-  "  <input type=\"submit\" name=\"button\" value=\"Configure\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Submit\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Start\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Stop\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Configure\" />\n"
   "</form>\n"
   "\n";
 
@@ -51,20 +51,17 @@ const char *webpage_main_trail =
   "</body></html>";
 
 const char *webpage_configure_head =
-  "<!DOCTYPE html><html>"
-  "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-  "<link rel=\"icon\" href=\"data:,\">"
-
   // Web Page Heading
-  "<title>ESP8266 Web Server</title>"
-  "<body><h1>ESP8266 Web Server</h1>\n"
+  "<title>Measure - Configuration</title>"
+  "</head><body>\n"
+  "<h1>Measure - Configuration</h1>\n"
 
   "<p><form>"
-  "  <input type=\"submit\" name=\"button\" value=\"Load\" />"
-  "  <input type=\"submit\" name=\"button\" value=\"Save\" />"
-  "  <input type=\"submit\" name=\"button\" value=\"Start\" />"
-  "  <input type=\"submit\" name=\"button\" value=\"Stop\" />"
-  "  <input type=\"submit\" name=\"button\" value=\"Back\" />"
+  "  <input type=\"submit\" name=\"button\" value=\"Load\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Save\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Start\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Stop\" />\n"
+  "  <input type=\"submit\" name=\"button\" value=\"Back\" />\n"
   // "</form>\n"
 
   "\n";
@@ -89,19 +86,19 @@ const char *webpage_stopper_head =
 const char *webpage_stopper_trail =
   "</table>";
 
-const char *webpage_sensor_dropdown_start = "<select name=\"sensors\" id=\"sensors\">";
-const char *webpage_sensor_dropdown_format = "  <option value=\"%s\">%s</option>";
-const char *webpage_sensor_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
+const char *webpage_sensor_dropdown_start = "<select name=\"sensors\" id=\"sensors\">\n";
+const char *webpage_sensor_dropdown_format = "  <option value=\"%s\">%s</option>\n";
+const char *webpage_sensor_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>\n";
 const char *webpage_sensor_dropdown_end = "</select>\n";
 
-const char *webpage_triggertype_dropdown_start = "<select name=\"triggertypes\" id=\"triggertypes\">";
-const char *webpage_triggertype_dropdown_format = "  <option value=\"%s\">%s</option>";
-const char *webpage_triggertype_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
+const char *webpage_triggertype_dropdown_start = "<select name=\"triggertypes\" id=\"triggertypes\">\n";
+const char *webpage_triggertype_dropdown_format = "  <option value=\"%s\">%s</option>\n";
+const char *webpage_triggertype_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>\n";
 const char *webpage_triggertype_dropdown_end = "</select>\n";
 
-const char *webpage_stopper_dropdown_start = "<select name=\"stoppertypes\" id=\"stoppertypes\">";
-const char *webpage_stopper_dropdown_format = "  <option value=\"%s\">%s</option>";
-const char *webpage_stopper_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
+const char *webpage_stopper_dropdown_start = "<select name=\"stoppertypes\" id=\"stoppertypes\">\n";
+const char *webpage_stopper_dropdown_format = "  <option value=\"%s\">%s</option>\n";
+const char *webpage_stopper_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>\n";
 const char *webpage_stopper_dropdown_end = "</select>\n";
 
 const char *boot_msg_format = "Boot, time set to %04d.%02d.%02d %02d:%02d:%02d\n";
