@@ -332,7 +332,7 @@ void Control::stopperTypeDropdown(ESP8266WebServer *ws, uint8_t sti, stopper_t t
  * Build a dropdown with sensor/field combination, with specified items already preselected
  */
 void Control::sensorFieldDropdown(ESP8266WebServer *ws, uint8_t i, const char *sensor, const char *field) {
-  char l[120];
+  char l[200];
 
   snprintf(l, sizeof(l), webpage_sensor_dropdown_start_format, i, i);
   ws->sendContent(l);
@@ -341,13 +341,16 @@ void Control::sensorFieldDropdown(ESP8266WebServer *ws, uint8_t i, const char *s
     if (sensors[sid].name != 0) {
       for (int fid=0; fid<MAX_FIELDS; fid++)
         if (sensors[sid].fields[fid] != 0) {
-	  char comb[30];
-	  snprintf(comb, sizeof(comb), "%s - %s", sensors[sid].name, sensors[sid].fields[fid]);
+	  char visual[60];	// Visual representation of this sensor/field combination
+	  char decode[12];	// Decodable version : sensorid-dot-fieldid
+
+	  snprintf(visual, sizeof(visual), "%s - %s", sensors[sid].name, sensors[sid].fields[fid]);
+	  snprintf(decode, sizeof(decode), "%d.%d", sid, fid);
 
 	  if (strcmp(sensors[sid].name, sensor) == 0 && strcmp(sensors[sid].fields[fid], field) == 0)
-	    snprintf(l, sizeof(l), webpage_sensor_dropdown_format_selected, comb, comb);
+	    snprintf(l, sizeof(l), webpage_sensor_dropdown_format_selected, decode, visual);
 	  else
-	    snprintf(l, sizeof(l), webpage_sensor_dropdown_format, comb, comb);
+	    snprintf(l, sizeof(l), webpage_sensor_dropdown_format, decode, visual);
 	  ws->sendContent(l);
       }
     }
