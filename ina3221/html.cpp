@@ -99,6 +99,11 @@ const char *webpage_triggertype_dropdown_format = "  <option value=\"%s\">%s</op
 const char *webpage_triggertype_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
 const char *webpage_triggertype_dropdown_end = "</select>\n";
 
+const char *webpage_stopper_dropdown_start = "<select name=\"stoppertypes\" id=\"stoppertypes\">";
+const char *webpage_stopper_dropdown_format = "  <option value=\"%s\">%s</option>";
+const char *webpage_stopper_dropdown_format_selected = "  <option value=\"%s\" selected=\"selected\">%s</option>";
+const char *webpage_stopper_dropdown_end = "</select>\n";
+
 const char *boot_msg_format = "Boot, time set to %04d.%02d.%02d %02d:%02d:%02d\n";
 const char *time_msg_format = "Time set to %04d.%02d.%02d %02d:%02d:%02d\n";
 const char *timestamp_format = "%04d.%02d.%02d %02d:%02d:%02d";

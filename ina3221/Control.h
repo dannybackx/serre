@@ -88,7 +88,11 @@ struct trigger {
 enum stopper_t {
   ST_NONE,
   ST_TIMER,
-  ST_AMOUNT
+  ST_AMOUNT,
+
+  // Add here
+
+  ST_LAST
 };
 
 // Stop conditions
@@ -165,6 +169,7 @@ private:
   void sensorFieldDropdown(ESP8266WebServer *ws, const char *sensor, const char *field);
   void triggerTypeDropdown(ESP8266WebServer *ws, enum tt);
   const char *triggerType2String(enum tt);
+  void stopperTypeDropdown(ESP8266WebServer *ws, stopper_t t);
 };
 
 extern Control *control;

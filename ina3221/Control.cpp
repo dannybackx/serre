@@ -302,12 +302,29 @@ const char *Control::stopperType2String(stopper_t t) {
 }
 
 void Control::describeStopper(ESP8266WebServer *ws, uint8_t i) {
-  char v[32];
+  char v[64];
   snprintf(v, sizeof(v), "<td>%d</td><td>", i);
   ws->sendContent(v);
-  ws->sendContent(stopperType2String(stoppers[i].st_tp));
-  snprintf(v, sizeof(v), "</td><td>%d</td>", stoppers[i].amount);
+  stopperTypeDropdown(ws, stoppers[i].st_tp);
+  snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%d\"> </td>", stoppers[i].amount);
   ws->sendContent(v);
+}
+
+void Control::stopperTypeDropdown(ESP8266WebServer *ws, stopper_t t) {
+  ws->sendContent(webpage_stopper_dropdown_start);
+
+  for (int ii=0; ii < (int)ST_LAST; ++ii) {
+    stopper_t i = (stopper_t) ii;
+    char l[80];
+
+    if (t == i)
+      snprintf(l, sizeof(l), webpage_stopper_dropdown_format_selected, stopperType2String(i), stopperType2String(i));
+    else
+      snprintf(l, sizeof(l), webpage_stopper_dropdown_format, stopperType2String(i), stopperType2String(i));
+    ws->sendContent(l);
+  }
+
+  ws->sendContent(webpage_stopper_dropdown_end);
 }
 
 /*
