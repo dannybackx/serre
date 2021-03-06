@@ -306,7 +306,7 @@ void Control::describeStopper(ESP8266WebServer *ws, uint8_t i) {
   snprintf(v, sizeof(v), "<td>%d</td><td>", i);
   ws->sendContent(v);
   stopperTypeDropdown(ws, i, stoppers[i].st_tp);
-  snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%d\"> </td>", stoppers[i].amount);
+  snprintf(v, sizeof(v), "</td><td><input name=\"stopper-%d\" type=\"text\" value=\"%d\"> </td>", i, stoppers[i].amount);
   ws->sendContent(v);
 }
 
@@ -386,7 +386,7 @@ void Control::triggerTypeDropdown(ESP8266WebServer *ws, uint8_t tri, enum tt t) 
 }
 
 void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
-  char v[64];
+  char v[80];
   uint8_t sid = triggers[i].sensorid;
   uint8_t field = triggers[i].field;
   enum ft tp = sensors[sid].fieldtypes[field];
@@ -413,17 +413,17 @@ void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   // Min. value
   v[0] = 0;
   if (sensors[sid].fieldtypes[field] == FT_FLOAT)
-    snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_min.f);
+    snprintf(v, sizeof(v), "</td><td><input name=\"min-%d\" type=\"text\" value=\"%f\"> </td>", i, triggers[i].data_min.f);
   else if (sensors[sid].fieldtypes[field] == FT_INT)
-    snprintf(v, sizeof(v), "</td><td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_min.i);
+    snprintf(v, sizeof(v), "</td><td><input name=\"min-%d\" type=\"text\" value=\"%d\"> </td>", i, triggers[i].data_min.i);
   ws->sendContent(v);
 
   // Max. value
   v[0] = 0;
   if (sensors[sid].fieldtypes[field] == FT_FLOAT) {
-    snprintf(v, sizeof(v), "<td><input type=\"text\" value=\"%f\"> </td>", triggers[i].data_max.f);
+    snprintf(v, sizeof(v), "<td><input name=\"max-%d\" type=\"text\" value=\"%f\"> </td>", i, triggers[i].data_max.f);
   } else if (sensors[sid].fieldtypes[field] == FT_INT) {
-    snprintf(v, sizeof(v), "<td><input type=\"text\" value=\"%d\"> </td>", triggers[i].data_max.i);
+    snprintf(v, sizeof(v), "<td><input name=\"max-%d\" type=\"text\" value=\"%d\"> </td>", i, triggers[i].data_max.i);
   }
   ws->sendContent(v);
   ws->sendContent("\n");

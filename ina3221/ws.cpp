@@ -129,21 +129,87 @@ static void QuerySensors(bool html) {
   ws->chunkedResponseFinalize();
 }
 
+static void SaveConfiguration() {
+}
+
+/*
+ * Show the web server configuration page.
+ * This call should be between chunkedResponseModeStart() and chunkedResponseFinalize().
+ */
+static void showConfigurationPage() {
+  ws->sendContent(webpage_general_head);
+  ws->sendContent(webpage_configure_head);
+  ws->sendContent(webpage_trigger_head);
+  for (int i=0; i<MAX_TRIGGERS; i++) {
+    ws->sendContent("<tr>");
+    control->describeTrigger(ws, i);
+    ws->sendContent("</tr>");
+  }
+  ws->sendContent(webpage_trigger_trail);
+  ws->sendContent(webpage_stopper_head);
+  for (int i=0; i<MAX_TRIGGERS; i++) {
+    ws->sendContent("<tr>");
+    control->describeStopper(ws, i);
+    ws->sendContent("</tr>");
+  }
+  ws->sendContent(webpage_stopper_trail);
+  ws->sendContent(webpage_configure_trail);
+  ws->sendContent(webpage_general_trail);
+}
+
+/*
+ * Show the web server main page.
+ * This call should be between chunkedResponseModeStart() and chunkedResponseFinalize().
+ */
+static void showMainPage() {
+  const char *uri = ws->uri().c_str();
+
+  ws->sendContent(webpage_general_head);
+  ws->sendContent(webpage_main_head);
+
+  // Query everything
+  if (uri == 0 || uri[1] == 0) {
+    QuerySensors(true);
+    return;
+  }
+
+  // Query for an individual sensor
+  for (int sid=0; sid<MAX_SENSORS; sid++) {
+    const char *sn = control->getSensorName(sid);
+    if (sn == 0)
+      continue;
+    if (strcmp(sn, uri+1) == 0) {	// Prefixed by "/"
+      QuerySensor(sid, true);
+      return;
+    }
+  }
+  ws->sendContent(webpage_main_trail);
+  ws->sendContent(webpage_general_trail);
+}
+
 /*
  * This handles a query on the / root URI
  * That includes queries such as triggered by one of our buttons, e.g. http://measure.local/?button=Configure
  *  Specifically, this translates into ws->argName(0) = "button", ws->args(1) = "Configure".
+ *  Or http://measure.local/?triggertypes-0=Min&sensors-0=AHT10+-+humidity&triggertypes-1=none&sensors-1=AHT10+-+temperature&stoppertypes-0=none&stoppertypes-1=none&button=Save
  */
 static void handleHtmlQuery() {
   const char *uri = ws->uri().c_str();
-  bool in_configure = false;
 
-  // Serial.printf("%s: uri %s args %d\n", __FUNCTION__, uri, ws->args());
+  bool	in_configure = false,
+  	configure_save = false;;
+
+  /*
+   * Do some analysis
+   */
+  Serial.printf("%s: uri %s args %d\n", __FUNCTION__, uri, ws->args());
   if (ws->args() > 0) {
     for (uint8_t i = 0; i < ws->args(); i++) {
-      // Serial.printf("\targ %d : %s - %s\n", i, ws->argName(i), ws->arg(i));
+      Serial.printf("\targ %d : %s - %s\n", i, ws->argName(i).c_str(), ws->arg(i).c_str());
       if (strcmp(ws->arg(i).c_str(), "Configure") == 0)
         in_configure = true;
+      if (strcmp(ws->argName(i).c_str(), "button") == 0 && strcmp(ws->arg(i).c_str(), "Save") == 0)
+        configure_save = true;
     }
   }
 
@@ -152,49 +218,22 @@ static void handleHtmlQuery() {
     return;
   }
 
-  if (in_configure) {
-    ws->sendContent(webpage_general_head);
-    ws->sendContent(webpage_configure_head);
-    ws->sendContent(webpage_trigger_head);
-    for (int i=0; i<MAX_TRIGGERS; i++) {
-      ws->sendContent("<tr>");
-      control->describeTrigger(ws, i);
-      ws->sendContent("</tr>");
-    }
-    ws->sendContent(webpage_trigger_trail);
-    ws->sendContent(webpage_stopper_head);
-    for (int i=0; i<MAX_TRIGGERS; i++) {
-      ws->sendContent("<tr>");
-      control->describeStopper(ws, i);
-      ws->sendContent("</tr>");
-    }
-    ws->sendContent(webpage_stopper_trail);
-    ws->sendContent(webpage_configure_trail);
-    ws->sendContent(webpage_general_trail);
-  } else {
-    ws->sendContent(webpage_general_head);
-    ws->sendContent(webpage_main_head);
-
-    // Query everything
-    if (uri == 0 || uri[1] == 0) {
-      QuerySensors(true);
-      return;
-    }
-
-    // Query for an individual sensor
-    for (int sid=0; sid<MAX_SENSORS; sid++) {
-      const char *sn = control->getSensorName(sid);
-      if (sn == 0)
-        continue;
-      if (strcmp(sn, uri+1) == 0) {	// Prefixed by "/"
-        QuerySensor(sid, true);
-        return;
-      }
-    }
-    ws->sendContent(webpage_main_trail);
-    ws->sendContent(webpage_general_trail);
+  /*
+   * After this, we should perform business logic, and decide which page to show next.
+   */
+  if (configure_save) {
+    SaveConfiguration();
+    showConfigurationPage();
+    return;
   }
 
+  if (in_configure) {
+    showConfigurationPage();
+  } else {
+    showMainPage();
+  }
+
+  // The end : wrap it up
   ws->chunkedResponseFinalize();
 }
 
