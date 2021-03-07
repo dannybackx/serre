@@ -301,6 +301,13 @@ const char *Control::stopperType2String(stopper_t t) {
   }
 }
 
+stopper_t Control::String2StopperType(const char *s) {
+  if (s == 0 || strcasecmp(s, "none") == 0)	return ST_NONE;
+  if (strcasecmp(s, "timer") == 0)		return ST_TIMER;
+  if (strcasecmp(s, "amount") == 0)		return ST_AMOUNT;
+  return ST_NONE;
+}
+
 void Control::describeStopper(ESP8266WebServer *ws, uint8_t i) {
   char v[64];
   snprintf(v, sizeof(v), "<td>%d</td><td>", i);
@@ -356,6 +363,14 @@ void Control::sensorFieldDropdown(ESP8266WebServer *ws, uint8_t i, const char *s
     }
 
   ws->sendContent(webpage_sensor_dropdown_end);
+}
+
+enum tt Control::String2TriggerType(const char *s) {
+  if (s == 0 || strcasecmp(s, "none") == 0) return TT_NONE;
+  if (strcasecmp(s, "min") == 0) return TT_MIN;
+  if (strcasecmp(s, "max") == 0) return TT_MAX;
+  if (strcasecmp(s, "minmax") == 0) return TT_MINMAX;
+  return TT_NONE;
 }
 
 const char *Control::triggerType2String(enum tt t) {
@@ -450,25 +465,27 @@ const char *Control::WriteConfig() {
     const char *sn = sensors[sid].name;
     const char *fn = sensors[sid].fields[field];
 
-    if (triggers[i].trigger_min) {
+    if (triggers[i].trigger_min && triggers[i].trigger_max)
+      tr[i]["trigger"] = "minmax";
+    else if (triggers[i].trigger_min)
       tr[i]["trigger"] = "min";
-      tr[i]["sensor"] = sn;
-      tr[i]["field"] = fn;
-
-      if (sensors[sid].fieldtypes[field] == FT_FLOAT)
-        tr[i]["value"] = triggers[i].data_min.f;
-      else if (sensors[sid].fieldtypes[field] == FT_INT)
-        tr[i]["value"] = triggers[i].data_min.i;
-    } else if (triggers[i].trigger_max) {
+    else if (triggers[i].trigger_max)
       tr[i]["trigger"] = "max";
-      tr[i]["sensor"] = sn;
-      tr[i]["field"] = fn;
+    else
+      tr[i]["trigger"] = "none";
+    
+    // tr[i]["trigger"] = triggerType2String(tp);
+    tr[i]["sensor"] = sn;
+    tr[i]["field"] = fn;
 
-      if (sensors[sid].fieldtypes[field] == FT_FLOAT)
-        tr[i]["value"] = triggers[i].data_max.f;
-      else if (sensors[sid].fieldtypes[field] == FT_INT)
-        tr[i]["value"] = triggers[i].data_max.i;
-    }
+    if (sensors[sid].fieldtypes[field] == FT_FLOAT)
+      tr[i]["min"] = triggers[i].data_min.f;
+    else if (sensors[sid].fieldtypes[field] == FT_INT)
+      tr[i]["min"] = triggers[i].data_min.i;
+    if (sensors[sid].fieldtypes[field] == FT_FLOAT)
+      tr[i]["max"] = triggers[i].data_max.f;
+    else if (sensors[sid].fieldtypes[field] == FT_INT)
+      tr[i]["max"] = triggers[i].data_max.i;
   }
 
   JsonArray st = json.createNestedArray("stoppers");
@@ -571,4 +588,87 @@ int Control::GetField(uint8_t sid, const char *fname) {
     if (strcasecmp(fname, sensors[sid].fields[i]) == 0)
       return i;
   return -1;
+}
+
+/*
+ * This Control:: member function actually picks up stuff from the web page and directly stores it in Control.
+ *   handleHtmlQuery: uri / args 25
+ *	arg 0 : triggertypes-0 - Min
+ *	arg 1 : sensors-0 - 0.1
+ *	arg 2 : min-0 - 1.230000
+ *	arg 3 : max-0 - 0.000000
+ */
+void Control::SaveConfiguration(ESP8266WebServer *ws) {
+  // Serial.printf("%s\n", __FUNCTION__);
+  for (int i=0; i<ws->args(); i++) {
+    const char *n = ws->argName(i).c_str();
+    const char *v = ws->arg(i).c_str();
+
+    if (strncmp(n, "triggertypes-", 13) == 0) {
+      int t;
+      sscanf(n, "triggertypes-%d", &t);
+      tt ttv = String2TriggerType(v);
+      triggers[t].trigger_min = (ttv == TT_MIN) || (ttv == TT_MINMAX);
+      triggers[t].trigger_max = (ttv == TT_MAX) || (ttv == TT_MINMAX);
+      // Serial.printf("  triggertypes-%d min %s max %s\n", t,
+      //   triggers[t].trigger_min ? "yes" : "no",
+      //   triggers[t].trigger_max ? "yes" : "no");
+    } else if (strncmp(n, "sensors-", 8) == 0) {
+      int t, s, f;
+      sscanf(n, "sensors-%d", &t);
+      sscanf(v, "%d.%d", &s, &f);
+      triggers[t].sensorid = s;
+      triggers[t].field = f;
+      // Serial.printf("  sensors-%d sensor %d %s field %d %s\n", t, s, sensors[s].name, f, sensors[s].fields[f]);
+    } else if (strncmp(n, "min-", 4) == 0) {
+      int t, i; float f;
+      sscanf(n, "min-%d", &t);
+      int sid, fid;
+      sid = triggers[t].sensorid;
+      fid = triggers[i].field;
+      switch (sensors[sid].fieldtypes[fid]) {
+      case FT_INT:
+        sscanf(v, "%d", &i);
+	triggers[t].data_min.i = i;
+        // Serial.printf("  min-%d sensor %d field %d int %d\n", t, sid, fid, i);
+	break;
+      case FT_FLOAT:
+        sscanf(v, "%f", &f);
+	triggers[t].data_min.f = f;
+        // Serial.printf("  min-%d sensor %d field %d float %f\n", t, sid, fid, f);
+	break;
+      }
+    } else if (strncmp(n, "max-", 4) == 0) {
+      int t, i; float f;
+      sscanf(n, "max-%d", &t);
+      int sid, fid;
+      sid = triggers[t].sensorid;
+      fid = triggers[i].field;
+      switch (sensors[sid].fieldtypes[fid]) {
+      case FT_INT:
+        sscanf(v, "%d", &i);
+	triggers[t].data_max.i = i;
+        // Serial.printf("  max-%d sensor %d field %d int %d\n", t, sid, fid, i);
+	break;
+      case FT_FLOAT:
+        sscanf(v, "%f", &f);
+	triggers[t].data_max.f = f;
+        // Serial.printf("  max-%d sensor %d field %d float %f\n", t, sid, fid, f);
+	break;
+      }
+    } else if (strncmp(n, "stopper-", 8) == 0) {
+      int t, a;
+      sscanf(n, "stopper-%d", &t);
+      sscanf(v, "%d", &a);
+      stoppers[t].amount = a;
+    } else if (strncmp(n, "stoppertypes-", 13) == 0) {
+      int t;
+      sscanf(n, "stoppertypes-%d", &t);
+      stoppers[t].st_tp = String2StopperType(v);
+    } else if (strcmp(n, "button") == 0) {
+    } else {
+      Serial.printf("%s: invalid value %s in argument %d\n", __FUNCTION__, n, i);
+      return;
+    }
+  }
 }

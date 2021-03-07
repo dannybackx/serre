@@ -137,6 +137,8 @@ public:
   void describeTrigger(ESP8266WebServer *ws, uint8_t i);
   void describeStopper(ESP8266WebServer *ws, uint8_t i);
 
+  void SaveConfiguration(ESP8266WebServer *ws);
+
 private:
   int		nalloc;
   int		next;
@@ -166,9 +168,11 @@ private:
   int GetField(uint8_t, const char *);
 
   const char *stopperType2String(stopper_t);
+  stopper_t String2StopperType(const char *);
   void sensorFieldDropdown(ESP8266WebServer *ws, uint8_t i, const char *sensor, const char *field);
   void triggerTypeDropdown(ESP8266WebServer *ws, uint8_t tri, enum tt);
   const char *triggerType2String(enum tt);
+  enum tt String2TriggerType(const char *s);
   void stopperTypeDropdown(ESP8266WebServer *ws, uint8_t sti, stopper_t t);
 };
 

@@ -129,9 +129,6 @@ static void QuerySensors(bool html) {
   ws->chunkedResponseFinalize();
 }
 
-static void SaveConfiguration() {
-}
-
 /*
  * Show the web server configuration page.
  * This call should be between chunkedResponseModeStart() and chunkedResponseFinalize().
@@ -202,10 +199,10 @@ static void handleHtmlQuery() {
   /*
    * Do some analysis
    */
-  Serial.printf("%s: uri %s args %d\n", __FUNCTION__, uri, ws->args());
+  // Serial.printf("%s: uri %s args %d\n", __FUNCTION__, uri, ws->args());
   if (ws->args() > 0) {
     for (uint8_t i = 0; i < ws->args(); i++) {
-      Serial.printf("\targ %d : %s - %s\n", i, ws->argName(i).c_str(), ws->arg(i).c_str());
+      // Serial.printf("\targ %d : %s - %s\n", i, ws->argName(i).c_str(), ws->arg(i).c_str());
       if (strcmp(ws->arg(i).c_str(), "Configure") == 0)
         in_configure = true;
       if (strcmp(ws->argName(i).c_str(), "button") == 0 && strcmp(ws->arg(i).c_str(), "Save") == 0)
@@ -222,7 +219,7 @@ static void handleHtmlQuery() {
    * After this, we should perform business logic, and decide which page to show next.
    */
   if (configure_save) {
-    SaveConfiguration();
+    control->SaveConfiguration(ws);
     showConfigurationPage();
     return;
   }
