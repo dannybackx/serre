@@ -164,6 +164,18 @@ static void showMainPage() {
   ws->sendContent(webpage_general_head);
   ws->sendContent(webpage_main_head);
 
+  ws->sendContent("<h1>Sensor list</h1><p><form>");
+
+  for (int i=0; i<MAX_SENSORS; i++)
+    if (control->getSensorName(i)) {
+      char line[80];
+      sprintf(line, "  <input type=\"submit\" name=\"button\" value=\"%s\" />\n", control->getSensorName(i));
+      ws->sendContent(line);
+    }
+
+  ws->sendContent("</form>");
+
+#if 0
   // Query everything
   if (uri == 0 || uri[1] == 0) {
     QuerySensors(true);
@@ -180,6 +192,8 @@ static void showMainPage() {
       return;
     }
   }
+#endif
+
   ws->sendContent(webpage_main_trail);
   ws->sendContent(webpage_general_trail);
 }
@@ -218,16 +232,34 @@ static void handleHtmlQuery() {
   /*
    * After this, we should perform business logic, and decide which page to show next.
    */
-  if (configure_save) {
-    control->SaveConfiguration(ws);
-    showConfigurationPage();
-    return;
+
+  // Trap per sensor pages first
+  bool sensor_page = false;
+  uint8_t sid;
+  if (ws->args() >= 1 && strcasecmp(ws->argName(0).c_str(), "button") == 0) {
+    for (int i=0; i<MAX_SENSORS; i++)
+      if (control->getSensorName(i) && strcmp(ws->arg(0).c_str(), control->getSensorName(i)) == 0) {
+        sensor_page = true;
+	sid = i;
+      }
   }
 
-  if (in_configure) {
-    showConfigurationPage();
+  if (sensor_page) {
+    // Show it
+    QuerySensor(sid, true);
   } else {
-    showMainPage();
+    // Other stuff
+    if (configure_save) {
+      control->SaveConfiguration(ws);
+      showConfigurationPage();
+      return;
+    }
+
+    if (in_configure) {
+      showConfigurationPage();
+    } else {
+      showMainPage();
+    }
   }
 
   // The end : wrap it up

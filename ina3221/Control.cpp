@@ -482,6 +482,7 @@ const char *Control::WriteConfig() {
       tr[i]["min"] = triggers[i].data_min.f;
     else if (sensors[sid].fieldtypes[field] == FT_INT)
       tr[i]["min"] = triggers[i].data_min.i;
+
     if (sensors[sid].fieldtypes[field] == FT_FLOAT)
       tr[i]["max"] = triggers[i].data_max.f;
     else if (sensors[sid].fieldtypes[field] == FT_INT)
@@ -491,13 +492,8 @@ const char *Control::WriteConfig() {
   JsonArray st = json.createNestedArray("stoppers");
 
   for (int i=0; i<MAX_TRIGGERS; i++) {
-    if (stoppers[i].st_tp == ST_TIMER) {
-      st[i]["trigger"] = "timer";
-      st[i]["amount"] = stoppers[i].amount;
-    } else if (stoppers[i].st_tp == ST_AMOUNT) {
-      st[i]["trigger"] = "amount";
-      st[i]["amount"] = stoppers[i].amount;
-    }
+    st[i]["trigger"] = stopperType2String(stoppers[i].st_tp);
+    st[i]["amount"] = stoppers[i].amount;
   }
 
   int len = measureJson(json);
