@@ -51,7 +51,7 @@ static void QuerySensor(int sid, bool html) {
 
     char line[80];
     if (html)
-      sprintf(line, "<H1>Sensor %s</H1>\n<table border=1><tr>\n", sn);
+      sprintf(line, webpage_sensor_head_format, sn, sn);
     else
       sprintf(line, "{\"sensor\": \"%s\", ", sn);
     SEND(line);
@@ -106,7 +106,7 @@ static void QuerySensor(int sid, bool html) {
       SEND(line);
     }
     if (html) {
-      SEND("</tr></table>\n");
+      SEND("</table>\n");
     } else
       SEND("]}\n");
 }
@@ -186,25 +186,6 @@ static void showMainPage() {
 
   ws->sendContent("</form>");
 
-#if 0
-  // Query everything
-  if (uri == 0 || uri[1] == 0) {
-    QuerySensors(true);
-    return;
-  }
-
-  // Query for an individual sensor
-  for (int sid=0; sid<MAX_SENSORS; sid++) {
-    const char *sn = control->getSensorName(sid);
-    if (sn == 0)
-      continue;
-    if (strcmp(sn, uri+1) == 0) {	// Prefixed by "/"
-      QuerySensor(sid, true);
-      return;
-    }
-  }
-#endif
-
   ws->sendContent(webpage_main_trail);
   ws->sendContent(webpage_general_trail);
 }
@@ -282,7 +263,9 @@ static void handleHtmlQuery() {
 
   if (sensor_page) {
     // Show it
+    ws->sendContent(webpage_general_head);
     QuerySensor(sid, true);
+    ws->sendContent(webpage_general_trail);
   } else {
     // Other stuff
     if (configure_save) {

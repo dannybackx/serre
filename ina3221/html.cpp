@@ -49,6 +49,11 @@ const char *webpage_main_head =
 const char *webpage_main_trail =
   "</body></html>";
 
+const char *webpage_sensor_head_format = 
+      "<title>Measurements - sensor %s</title>\n"
+      "</head><body>\n"
+      "<H1>Sensor %s</H1>\n<table border=1><tr>\n";
+
 const char *webpage_configure_head =
   // Web Page Heading
   "<title>Measure - Configuration</title>"
