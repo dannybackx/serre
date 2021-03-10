@@ -40,7 +40,6 @@ const char *webpage_main_head =
    * Include trial buttons
    */
   "<p><form>"
-  "  <input type=\"submit\" name=\"button\" value=\"Submit\" />\n"
   "  <input type=\"submit\" name=\"button\" value=\"Start\" />\n"
   "  <input type=\"submit\" name=\"button\" value=\"Stop\" />\n"
   "  <input type=\"submit\" name=\"button\" value=\"Configure\" />\n"

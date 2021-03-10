@@ -166,10 +166,21 @@ static void showMainPage() {
 
   ws->sendContent("<h1>Sensor list</h1><p><form>");
 
+  // Buttons to go to a sensor subpage
   for (int i=0; i<MAX_SENSORS; i++)
     if (control->getSensorName(i)) {
       char line[80];
       sprintf(line, "  <input type=\"submit\" name=\"button\" value=\"%s\" />\n", control->getSensorName(i));
+      ws->sendContent(line);
+    }
+
+  ws->sendContent("<p>");
+
+  // Buttons to export data
+  for (int i=0; i<MAX_SENSORS; i++)
+    if (control->getSensorName(i)) {
+      char line[80];
+      sprintf(line, "  <input type=\"submit\" name=\"get-json\" value=\"Export %s\" />\n", control->getSensorName(i));
       ws->sendContent(line);
     }
 
@@ -208,11 +219,33 @@ static void handleHtmlQuery() {
   const char *uri = ws->uri().c_str();
 
   bool	in_configure = false,
-  	configure_save = false;;
+  	configure_save = false,
+	start_button = false,
+	stop_button = false;
 
   /*
    * Do some analysis
    */
+  // JSON export buttons
+  bool sensor_page = false;
+  uint8_t sid;
+  if (ws->args() > 0) {
+    for (uint8_t i = 0; i < ws->args(); i++)
+      if (strcmp(ws->argName(i).c_str(), "get-json") == 0  && strcmp(ws->arg(i).c_str() + 7, control->getSensorName(i)) == 0) {
+        sensor_page = true;
+	sid = i;
+      }
+  }
+  if (sensor_page) {
+    if (! ws->chunkedResponseModeStart(200, "text/json")) {
+      ws->send(500, "Want HTTP/1.1 for chunked responses");
+      return;
+    }
+    QuerySensor(sid, false);
+    ws->chunkedResponseFinalize();
+    return;
+  }
+
   // Serial.printf("%s: uri %s args %d\n", __FUNCTION__, uri, ws->args());
   if (ws->args() > 0) {
     for (uint8_t i = 0; i < ws->args(); i++) {
@@ -221,6 +254,10 @@ static void handleHtmlQuery() {
         in_configure = true;
       if (strcmp(ws->argName(i).c_str(), "button") == 0 && strcmp(ws->arg(i).c_str(), "Save") == 0)
         configure_save = true;
+      if (strcmp(ws->argName(i).c_str(), "button") == 0 && strcmp(ws->arg(i).c_str(), "Start") == 0)
+        start_button = true;
+      if (strcmp(ws->argName(i).c_str(), "button") == 0 && strcmp(ws->arg(i).c_str(), "Stop") == 0)
+        stop_button = true;
     }
   }
 
@@ -234,8 +271,7 @@ static void handleHtmlQuery() {
    */
 
   // Trap per sensor pages first
-  bool sensor_page = false;
-  uint8_t sid;
+  sensor_page = false;
   if (ws->args() >= 1 && strcasecmp(ws->argName(0).c_str(), "button") == 0) {
     for (int i=0; i<MAX_SENSORS; i++)
       if (control->getSensorName(i) && strcmp(ws->arg(0).c_str(), control->getSensorName(i)) == 0) {
@@ -251,9 +287,16 @@ static void handleHtmlQuery() {
     // Other stuff
     if (configure_save) {
       control->SaveConfiguration(ws);
-      showConfigurationPage();
-      return;
+      in_configure = true;
     }
+
+    // Start button
+    if (start_button)
+      control->Start();
+
+    // Stop button
+    if (stop_button)
+      control->Stop();
 
     if (in_configure) {
       showConfigurationPage();
@@ -312,9 +355,6 @@ static void handleConfig() {
   ws->sendContent(json);
   free((void *)json);
   ws->chunkedResponseFinalize();
-}
-
-static void handleSetConfig() {
 }
 
 static void handleJsonQuery() {
@@ -445,7 +485,6 @@ void ws_begin() {
   
   ws->onNotFound(handleNotFound);
   ws->on("/config", handleConfig);
-  // ws->on("/set", handleSetConfig);
   ws->on("/sensors", listSensors);
   ws->on("/status", handleStatus);
 

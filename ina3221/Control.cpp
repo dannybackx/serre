@@ -426,6 +426,7 @@ void Control::describeTrigger(ESP8266WebServer *ws, uint8_t i) {
   ws->sendContent("<td>");
   triggerTypeDropdown(ws, i, ttv);
   ws->sendContent("</td><td>");
+  Serial.printf("%s: call sensorFieldDropdown(%d, %s, %s)\n", __FUNCTION__, i, sn ? sn : "(null)", fn ? fn : "(null)");
   sensorFieldDropdown(ws, i, sn, fn);
 
   // Min. value
