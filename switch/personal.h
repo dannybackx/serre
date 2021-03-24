@@ -27,11 +27,11 @@
 #ifdef DEBUG
 # define MQTT_CLIENT	"esp switch debug"
 # define SWITCH_TOPIC	"/testswitch"
-# define OTA_ID		"OTA-Switch-debug"
+# define OTA_ID		"Switch-debug"
 #else
 # define MQTT_CLIENT	"esp switch"
 # define SWITCH_TOPIC	"/switch"
-# define OTA_ID		"OTA-Switch"
+# define OTA_ID		"Switch"
 #endif
 
 #define	SSR_PIN		D3
