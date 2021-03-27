@@ -44,6 +44,7 @@ void ads1115_begin() {
     Serial.println("No ADS1115 sensor");
     delete ads;
     ads = 0;
+    return;
   }
 
   prev_ts = time(0);
