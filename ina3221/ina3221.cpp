@@ -67,9 +67,9 @@ void ina3221_loop(time_t now) {
   if (ina3221) {
     float	current, bus_voltage, shunt_voltage;
 
-    current = ina3221->getBusVoltage_V(1);
-    bus_voltage = ina3221->getShuntVoltage_mV(2);
-    shunt_voltage = ina3221->getCurrent_mA(3);
+    bus_voltage = ina3221->getBusVoltage_V(1);
+    shunt_voltage = ina3221->getShuntVoltage_mV(1);
+    current = ina3221->getCurrent_mA(1);
 
     Serial.printf("Bus v %3.1f shunt v %3.1f current %3.1f (ts %s)\n", bus_voltage, shunt_voltage, current, timestamp(now));
 
