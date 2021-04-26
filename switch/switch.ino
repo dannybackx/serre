@@ -140,7 +140,7 @@ void setup() {
     IPAddress	dns2((const uint8_t *)USE_IP_DNS2);
 
     if (! WiFi.config(me, gw, mask, dns1, dns2)) {
-      Serial.printf("Could not set configured IP address\n");
+      Serial.printf("Failed to set configured IP address\n");
     }
   }
 #endif
