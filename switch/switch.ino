@@ -103,7 +103,7 @@ struct dates {
 } date_table [] = {
   { 2, 10,	"21:00,1,22:35,0,06:58,1,07:25,0" },					// Late winter
   { 3, 1,	"21:00,1,22:35,0,06:48,1,07:05,0" },					
-  { 3, 15,	"21:00,1,22:35,0,06:28,1,06:39,0" },					
+  { 3, 15,	"20:12,1,22:05,0,06:28,1,06:39,0" },					
   { 4, 1,	"21:00,1,22:35,0" },							// Spring
   { 6, 15,	"22:00,1,22:45,0" },							// Summer
   { 11, 1,	"16:03,1,16:36,0,16:58,1,17:42,0,21:00,1,22:35,0,06:58,1,07:25,0" },	// Winter
@@ -129,6 +129,21 @@ void setup() {
 
   // Connect to WiFi
   WiFi.mode(WIFI_STA);
+
+#ifdef	USE_IP_FIXED
+  // Set fixed IP ?
+  {
+    IPAddress	me((const uint8_t *)USE_IP_ME);
+    IPAddress	gw((const uint8_t *)USE_IP_GW);
+    IPAddress	mask((const uint8_t *)USE_IP_MASK);
+    IPAddress	dns1((const uint8_t *)USE_IP_DNS1);
+    IPAddress	dns2((const uint8_t *)USE_IP_DNS2);
+
+    if (! WiFi.config(me, gw, mask, dns1, dns2)) {
+      Serial.printf("Could not set configured IP address\n");
+    }
+  }
+#endif
 
   int wcr = WL_IDLE_STATUS;
   for (int ix = 0; wcr != WL_CONNECTED && mywifi[ix].ssid != NULL; ix++) {
