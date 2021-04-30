@@ -1,5 +1,5 @@
 # Remote / programmable power switch
-(c) 2017 by Danny Backx
+(c) 2017, 2019, 2020, 2021 by Danny Backx
 
 This is a simple esp8266 based application to control a power switch.
 
