@@ -43,7 +43,7 @@ The app console should show something like this :
 ```
 
 Power switch
-(c) 2017 by Danny Backx
+(c) 2017-2021 by Danny Backx
 
 Boot version 6, flash chip size 4194304, SDK version 1.5.2
 Free sketch space 786432, application build 2017-08-25 16:33:15
